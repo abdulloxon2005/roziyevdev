@@ -5,33 +5,37 @@ html {
     scroll-behavior: smooth;
 }
 
-/* Custom scrollbars */
+/* Smooth background and text color transitions for theme changes */
+body, header, footer, div, section, a, button, input, textarea {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* Custom scrollbars - Light & Dark support */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #0b0f19;
+    background: transparent;
 }
 
-::-webkit-scrollbar-thumb {
+.dark ::-webkit-scrollbar-thumb {
     background: #1f2937;
     border-radius: 4px;
 }
-
-::-webkit-scrollbar-thumb:hover {
+.dark ::-webkit-scrollbar-thumb:hover {
     background: #374151;
 }
 
-/* Card hover glow effects */
-.hover-card-glow {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+html:not(.dark) ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
 }
-
-.hover-card-glow:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.1), 0 8px 10px -6px rgba(37, 99, 235, 0.1);
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 /* Utility to hide scrollbar for horizontal categories */

@@ -1,9 +1,22 @@
 <!DOCTYPE html>
-<html lang="uz" class="h-full">
+<html lang="uz" class="h-full dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}roziyevdev — Dasturlash bo'yicha Online Kurslar va IT Blog{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/static/images/logo_icon.png">
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+
+    <!-- Anti-flicker Theme Script -->
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -45,107 +58,114 @@
     <link rel="stylesheet" href="/static/css/style.css">
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-[#0b0f19] text-slate-100 font-sans antialiased flex flex-col min-h-screen selection:bg-blue-600 selection:text-white">
+<body class="bg-slate-50 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 font-sans antialiased flex flex-col min-h-screen selection:bg-blue-600 selection:text-white transition-colors duration-200">
 
     <!-- NAVBAR -->
-    <header class="sticky top-0 z-50 backdrop-blur-xl bg-[#0b0f19]/80 border-b border-slate-800/80 transition-all duration-200">
+    <header class="sticky top-0 z-50 backdrop-blur-xl bg-white/85 dark:bg-[#0b0f19]/85 border-b border-slate-200 dark:border-slate-800/80 transition-colors duration-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
-                <!-- LOGO -->
+                
+                <!-- LOGO WITH USER'S OFFICIAL BRANDING -->
                 <a href="{% url 'home' %}" class="flex items-center gap-3 group">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
-                        <i class="fa-solid fa-code text-white text-lg"></i>
+                    <div class="h-11 flex items-center bg-black rounded-xl p-1 px-2.5 border border-slate-700/60 shadow-md group-hover:scale-105 transition-transform">
+                        <img src="/static/images/logo.png" alt="RoziyevDev Logo" class="h-8 sm:h-9 w-auto object-contain">
                     </div>
-                    <div class="flex flex-col">
-                        <span class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-blue-400 group-hover:to-blue-300">
-                            roziyev<span class="text-blue-500">.dev</span>
-                        </span>
-                        <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Online Akademiya</span>
+                    <div class="hidden lg:flex flex-col">
+                        <span class="text-xs uppercase tracking-widest text-blue-600 dark:text-blue-400 font-bold">Online Akademiya</span>
+                        <span class="text-[11px] text-slate-500 dark:text-slate-400">Mobil &bull; Algoritmlar &bull; SQL</span>
                     </div>
                 </a>
 
                 <!-- DESKTOP NAV -->
                 <nav class="hidden md:flex items-center gap-8">
-                    <a href="{% url 'home' %}" class="text-sm font-medium hover:text-blue-400 transition-colors {% if request.path == '/' %}text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+                    <a href="{% url 'home' %}" class="text-sm font-medium transition-colors {% if request.path == '/' %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400{% endif %}">
                         Bosh sahifa
                     </a>
-                    <a href="{% url 'course_list' %}" class="text-sm font-medium hover:text-blue-400 transition-colors {% if '/courses/' in request.path %}text-blue-400 font-semibold{% else %}text-slate-300{% endif %}">
+                    <a href="{% url 'course_list' %}" class="text-sm font-medium transition-colors {% if '/courses/' in request.path %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400{% endif %}">
                         Kurslar
                     </a>
-                    <a href="{% url 'course_list' %}?category=mobil-dasturlash" class="text-sm font-medium text-slate-300 hover:text-blue-400 transition-colors">
+                    <a href="{% url 'course_list' %}?category=mobil-dasturlash" class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                         Mobil Dasturlash
                     </a>
-                    <a href="{% url 'course_list' %}?category=algoritmlar-va-malumotlar-tuzilmasi" class="text-sm font-medium text-slate-300 hover:text-blue-400 transition-colors">
+                    <a href="{% url 'course_list' %}?category=algoritmlar-va-malumotlar-tuzilmasi" class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                         Algoritmlar
                     </a>
-                    <a href="{% url 'swagger-ui' %}" target="_blank" class="text-sm font-medium text-slate-400 hover:text-amber-400 transition-colors flex items-center gap-1.5">
-                        <i class="fa-solid fa-bolt text-xs text-amber-400"></i> REST API
+                    <a href="{% url 'swagger-ui' %}" target="_blank" class="text-sm font-medium text-amber-600 dark:text-amber-400 hover:underline transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-bolt text-xs"></i> REST API
                     </a>
                 </nav>
 
-                <!-- RIGHT AUTH / PROFILE -->
-                <div class="flex items-center gap-4">
+                <!-- RIGHT CONTROLS: THEME SWITCHER & AUTH -->
+                <div class="flex items-center gap-3 sm:gap-4">
+                    
+                    <!-- THEME TOGGLE BUTTON (Tungi / Kunduzgi Rejim) -->
+                    <button id="theme-toggle" type="button" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 flex items-center justify-center shadow-sm" title="Rejimni o'zgartirish (Tungi / Kunduzgi)">
+                        <i id="theme-toggle-dark-icon" class="fa-solid fa-moon text-sm hidden"></i>
+                        <i id="theme-toggle-light-icon" class="fa-solid fa-sun text-sm hidden"></i>
+                        <span class="sr-only">Rejimni almashtirish</span>
+                    </button>
+
                     {% if user.is_authenticated %}
                         <!-- Authenticated User Menu -->
                         <div class="relative group">
-                            <button class="flex items-center gap-3 p-1.5 rounded-full hover:bg-slate-800/60 transition-colors border border-slate-700/60">
+                            <button class="flex items-center gap-2.5 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors border border-slate-200 dark:border-slate-700/60">
                                 <img src="{{ user.profile.avatar_url }}" alt="{{ user.display_name }}" class="w-9 h-9 rounded-full object-cover border border-blue-500/50">
-                                <span class="hidden lg:inline text-sm font-medium text-slate-200 pr-2">
+                                <span class="hidden lg:inline text-sm font-medium text-slate-700 dark:text-slate-200 pr-2">
                                     {{ user.first_name|default:user.username }}
                                 </span>
                                 <i class="fa-solid fa-chevron-down text-xs text-slate-400 pr-2"></i>
                             </button>
 
                             <!-- Dropdown -->
-                            <div class="absolute right-0 mt-2 w-56 bg-[#111827] border border-slate-800 rounded-2xl shadow-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 transform origin-top-right">
-                                <div class="px-4 py-3 border-b border-slate-800">
-                                    <p class="text-xs text-slate-400">Tizimga kirilgan:</p>
-                                    <p class="text-sm font-semibold text-white truncate">{{ user.email }}</p>
-                                    <span class="inline-block mt-1 text-[11px] font-medium bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full">
+                            <div class="absolute right-0 mt-2 w-56 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 transform origin-top-right z-50">
+                                <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Tizimga kirilgan:</p>
+                                    <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ user.email }}</p>
+                                    <span class="inline-block mt-1 text-[11px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
                                         {{ user.get_role_display }}
                                     </span>
                                 </div>
-                                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors">
-                                    <i class="fa-solid fa-user text-blue-400 w-4 text-center"></i> Mening Profilim
+                                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-user text-blue-500 w-4 text-center"></i> Mening Profilim
                                 </a>
-                                <a href="{% url 'profile_settings' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors">
+                                <a href="{% url 'profile_settings' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
                                     <i class="fa-solid fa-gear text-slate-400 w-4 text-center"></i> Profilni Sozlash
                                 </a>
                                 {% if user.is_staff %}
-                                <a href="/admin/" target="_blank" class="flex items-center gap-3 px-4 py-2.5 text-sm text-purple-400 hover:text-purple-300 hover:bg-slate-800/80 transition-colors">
-                                    <i class="fa-solid fa-shield-halved text-purple-400 w-4 text-center"></i> Admin Paneli
+                                <a href="/admin/" target="_blank" class="flex items-center gap-3 px-4 py-2.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-shield-halved text-purple-500 w-4 text-center"></i> Admin Paneli
                                 </a>
                                 {% endif %}
-                                <div class="border-t border-slate-800 my-1"></div>
-                                <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors">
+                                <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                                <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors">
                                     <i class="fa-solid fa-right-from-bracket w-4 text-center"></i> Chiqish
                                 </a>
                             </div>
                         </div>
                     {% else %}
                         <!-- Guest Buttons -->
-                        <a href="{% url 'login' %}" class="text-sm font-medium text-slate-300 hover:text-white px-3 py-2 transition-colors">
+                        <a href="{% url 'login' %}" class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-3 py-2 transition-colors">
                             Kirish
                         </a>
-                        <a href="{% url 'register' %}" class="text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all duration-200">
+                        <a href="{% url 'register' %}" class="text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all duration-200">
                             Ro'yxatdan o'tish
                         </a>
                     {% endif %}
 
                     <!-- Mobile Menu Button -->
-                    <button id="mobile-menu-btn" class="md:hidden text-slate-300 hover:text-white p-2">
+                    <button id="mobile-menu-btn" class="md:hidden text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white p-2">
                         <i class="fa-solid fa-bars text-xl"></i>
                     </button>
                 </div>
             </div>
 
             <!-- MOBILE MENU -->
-            <div id="mobile-menu" class="hidden md:hidden py-4 border-t border-slate-800 space-y-3">
-                <a href="{% url 'home' %}" class="block text-slate-300 hover:text-blue-400 py-2">Bosh sahifa</a>
-                <a href="{% url 'course_list' %}" class="block text-slate-300 hover:text-blue-400 py-2">Barcha Kurslar</a>
-                <a href="{% url 'course_list' %}?category=mobil-dasturlash" class="block text-slate-300 hover:text-blue-400 py-2">Mobil Dasturlash</a>
-                <a href="{% url 'course_list' %}?category=algoritmlar-va-malumotlar-tuzilmasi" class="block text-slate-300 hover:text-blue-400 py-2">Algoritmlar</a>
-                <a href="{% url 'swagger-ui' %}" target="_blank" class="block text-amber-400 py-2">REST API Hujjatlari</a>
+            <div id="mobile-menu" class="hidden md:hidden py-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                <a href="{% url 'home' %}" class="block text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">Bosh sahifa</a>
+                <a href="{% url 'course_list' %}" class="block text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">Barcha Kurslar</a>
+                <a href="{% url 'course_list' %}?category=mobil-dasturlash" class="block text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">Mobil Dasturlash</a>
+                <a href="{% url 'course_list' %}?category=algoritmlar-va-malumotlar-tuzilmasi" class="block text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">Algoritmlar</a>
+                <a href="{% url 'swagger-ui' %}" target="_blank" class="block text-amber-600 dark:text-amber-400 py-2">REST API Hujjatlari</a>
             </div>
         </div>
     </header>
@@ -154,18 +174,18 @@
     {% if messages %}
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
             {% for message in messages %}
-                <div class="p-4 mb-3 rounded-2xl flex items-center justify-between border {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/30 text-rose-300{% elif message.tags == 'success' %}bg-emerald-500/10 border-emerald-500/30 text-emerald-300{% else %}bg-blue-500/10 border-blue-500/30 text-blue-300{% endif %}">
+                <div class="p-4 mb-3 rounded-2xl flex items-center justify-between border {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300{% elif message.tags == 'success' %}bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300{% else %}bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300{% endif %}">
                     <div class="flex items-center gap-3">
                         {% if message.tags == 'error' %}
-                            <i class="fa-solid fa-circle-exclamation text-rose-400"></i>
+                            <i class="fa-solid fa-circle-exclamation text-rose-500"></i>
                         {% elif message.tags == 'success' %}
-                            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                            <i class="fa-solid fa-circle-check text-emerald-500"></i>
                         {% else %}
-                            <i class="fa-solid fa-circle-info text-blue-400"></i>
+                            <i class="fa-solid fa-circle-info text-blue-500"></i>
                         {% endif %}
                         <span class="text-sm font-medium">{{ message }}</span>
                     </div>
-                    <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white">
+                    <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -179,18 +199,13 @@
     </main>
 
     <!-- FOOTER -->
-    <footer class="bg-[#090d16] border-t border-slate-800/80 mt-20 pt-16 pb-12">
+    <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 mt-20 pt-16 pb-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
-                <!-- Col 1 -->
+                <!-- Col 1: Official Logo & Description -->
                 <div class="space-y-4 md:col-span-1">
-                    <a href="{% url 'home' %}" class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
-                            <i class="fa-solid fa-code text-white"></i>
-                        </div>
-                        <span class="text-xl font-bold text-white tracking-tight">
-                            roziyev<span class="text-blue-500">.dev</span>
-                        </span>
+                    <a href="{% url 'home' %}" class="inline-block bg-black p-2 rounded-xl border border-slate-800 shadow">
+                        <img src="/static/images/logo.png" alt="RoziyevDev Logo" class="h-10 w-auto object-contain">
                     </a>
                     <p class="text-sm text-slate-400 leading-relaxed">
                         Mobil dasturlash, algoritmlar, ma'lumotlar bazasi va zamonaviy web texnologiyalari bo'yicha professional onlayn ta'lim platformasi.
@@ -213,7 +228,7 @@
 
                 <!-- Col 2 -->
                 <div>
-                    <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Yo'nalishlar</h4>
+                    <h4 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Yo'nalishlar</h4>
                     <ul class="space-y-2.5 text-sm text-slate-400">
                         <li><a href="{% url 'course_list' %}?category=mobil-dasturlash" class="hover:text-white transition-colors">Mobil Dasturlash (Flutter, Android)</a></li>
                         <li><a href="{% url 'course_list' %}?category=algoritmlar-va-malumotlar-tuzilmasi" class="hover:text-white transition-colors">Algoritmlar & Data Structures</a></li>
@@ -224,7 +239,7 @@
 
                 <!-- Col 3 -->
                 <div>
-                    <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Platforma</h4>
+                    <h4 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Platforma</h4>
                     <ul class="space-y-2.5 text-sm text-slate-400">
                         <li><a href="{% url 'course_list' %}" class="hover:text-white transition-colors">Barcha kurslar</a></li>
                         <li><a href="{% url 'swagger-ui' %}" target="_blank" class="hover:text-white transition-colors">REST API Hujjatlari</a></li>
@@ -235,7 +250,7 @@
 
                 <!-- Col 4 -->
                 <div>
-                    <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-200 mb-4">Bog'lanish</h4>
+                    <h4 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Bog'lanish</h4>
                     <ul class="space-y-3 text-sm text-slate-400">
                         <li class="flex items-center gap-2.5">
                             <i class="fa-solid fa-envelope text-blue-400"></i>
@@ -263,8 +278,9 @@
         </div>
     </footer>
 
-    <!-- Mobile menu toggle script -->
+    <!-- Scripts: Mobile menu & Theme toggle -->
     <script>
+        // 1. Mobile Menu Toggle
         const menuBtn = document.getElementById('mobile-menu-btn');
         const menu = document.getElementById('mobile-menu');
         if (menuBtn && menu) {
@@ -272,7 +288,41 @@
                 menu.classList.toggle('hidden');
             });
         }
+
+        // 2. Light / Dark Theme Switcher Logic
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+        function updateThemeIcons() {
+            if (document.documentElement.classList.contains('dark')) {
+                // In dark mode: show Sun icon to switch to light
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            } else {
+                // In light mode: show Moon icon to switch to dark
+                darkIcon.classList.remove('hidden');
+                lightIcon.classList.add('hidden');
+            }
+        }
+
+        // Initialize icons on page load
+        updateThemeIcons();
+
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', function() {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+                updateThemeIcons();
+            });
+        }
     </script>
+    <script src="/static/js/main.js"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
