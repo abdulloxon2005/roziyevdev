@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Barcha Online Kurslar — roziyevdev{% endblock %}
+
+{% block content %}
+<div class="py-12 bg-[#0b0f19]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- HEADER & SEARCH -->
+        <div class="space-y-4 mb-10">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Online Kurslar Katalogi</h1>
+            <p class="text-slate-400 text-sm sm:text-base max-w-2xl">
+                Mobil dasturlash, algoritmlar, ma'lumotlar bazasi va zamonaviy backend texnologiyalari bo'yicha saralangan kurslar.
+            </p>
+
+            <!-- Search Form -->
+            <form method="GET" action="{% url 'course_list' %}" class="pt-4 flex flex-col sm:flex-row gap-3 max-w-3xl">
+                {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+                {% if selected_level %}<input type="hidden" name="level" value="{{ selected_level }}">{% endif %}
+                {% if price_filter %}<input type="hidden" name="price" value="{{ price_filter }}">{% endif %}
+
+                <div class="relative flex-grow">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input 
+                        type="text" 
+                        name="search" 
+                        value="{{ search_query }}" 
+                        placeholder="Kurs nomi yoki kalit so'z bo'yicha qidiring (masalan: Flutter, Big-O, SQL)..." 
+                        class="w-full pl-11 pr-4 py-3.5 rounded-xl bg-[#111827] border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                    >
+                </div>
+                <button type="submit" class="px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-search"></i>
+                    <span>Qidirish</span>
+                </button>
+                {% if search_query or selected_category or selected_level or price_filter %}
+                    <a href="{% url 'course_list' %}" class="px-5 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span>Tozalash</span>
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- CATEGORY TABS -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-4 mb-8 border-b border-slate-800 scrollbar-none">
+            <a href="{% url 'course_list' %}{% if search_query %}?search={{ search_query }}{% endif %}" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap {% if not selected_category %}bg-blue-600 text-white shadow-lg shadow-blue-600/30{% else %}bg-[#111827] text-slate-400 hover:text-white border border-slate-800{% endif %}">
+                Barcha kurslar
+            </a>
+            {% for cat in categories %}
+            <a href="{% url 'course_list' %}?category={{ cat.slug }}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap {% if selected_category == cat.slug %}bg-blue-600 text-white shadow-lg shadow-blue-600/30{% else %}bg-[#111827] text-slate-400 hover:text-white border border-slate-800{% endif %}">
+                <i class="{{ cat.icon }} mr-1.5 text-xs"></i> {{ cat.name }}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- SECONDARY FILTERS BAR (Daraja va Narx) -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-8 text-xs text-slate-400">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="font-semibold text-slate-300">Daraja:</span>
+                <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}{% if price_filter %}price={{ price_filter }}{% endif %}" class="px-3 py-1.5 rounded-lg border {% if not selected_level %}border-blue-500 text-blue-400 bg-blue-500/10{% else %}border-slate-800 hover:text-white{% endif %}">
+                    Hammasi
+                </a>
+                <a href="?level=beginner{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if price_filter %}&price={{ price_filter }}{% endif %}" class="px-3 py-1.5 rounded-lg border {% if selected_level == 'beginner' %}border-blue-500 text-blue-400 bg-blue-500/10{% else %}border-slate-800 hover:text-white{% endif %}">
+                    Boshlang'ich
+                </a>
+                <a href="?level=intermediate{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if price_filter %}&price={{ price_filter }}{% endif %}" class="px-3 py-1.5 rounded-lg border {% if selected_level == 'intermediate' %}border-blue-500 text-blue-400 bg-blue-500/10{% else %}border-slate-800 hover:text-white{% endif %}">
+                    O'rta
+                </a>
+                <a href="?level=advanced{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if price_filter %}&price={{ price_filter }}{% endif %}" class="px-3 py-1.5 rounded-lg border {% if selected_level == 'advanced' %}border-blue-500 text-blue-400 bg-blue-500/10{% else %}border-slate-800 hover:text-white{% endif %}">
+                    Yuqori
+                </a>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="font-semibold text-slate-300">Narx:</span>
+                <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if selected_level %}level={{ selected_level }}&{% endif %}{% if search_query %}search={{ search_query }}{% endif %}" class="px-3 py-1.5 rounded-lg border {% if not price_filter %}border-blue-500 text-blue-400 bg-blue-500/10{% else %}border-slate-800 hover:text-white{% endif %}">
+                    Hammasi
+                </a>
+                <a href="?price=free{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_level %}&level={{ selected_level }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 rounded-lg border {% if price_filter == 'free' %}border-emerald-500 text-emerald-400 bg-emerald-500/10{% else %}border-slate-800 hover:text-white{% endif %}">
+                    Bepul
+                </a>
+                <a href="?price=paid{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_level %}&level={{ selected_level }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="px-3 py-1.5 rounded-lg border {% if price_filter == 'paid' %}border-blue-500 text-blue-400 bg-blue-500/10{% else %}border-slate-800 hover:text-white{% endif %}">
+                    Pullik
+                </a>
+            </div>
+        </div>
+
+        <!-- COURSES GRID -->
+        {% if courses %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for course in courses %}
+                <div class="rounded-2xl bg-[#111827] border border-slate-800 overflow-hidden hover:border-slate-700 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 flex flex-col">
+                    <!-- Thumbnail -->
+                    <div class="relative h-48 w-full bg-slate-800 overflow-hidden group">
+                        <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#111827] via-transparent to-transparent"></div>
+                        
+                        <!-- Badges -->
+                        <div class="absolute top-3 left-3 flex gap-2">
+                            <span class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-blue-600/90 text-white backdrop-blur-sm shadow">
+                                {{ course.category.name }}
+                            </span>
+                            {% if course.is_free %}
+                                <span class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-600/90 text-white backdrop-blur-sm shadow">
+                                    Bepul
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="absolute bottom-3 left-3 text-xs text-slate-300 flex items-center gap-2">
+                            <span class="bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                                <i class="fa-solid fa-layer-group text-blue-400 mr-1"></i> {{ course.get_level_display }}
+                            </span>
+                            <span class="bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                                <i class="fa-regular fa-clock text-blue-400 mr-1"></i> {{ course.duration_hours }} soat
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Course Content -->
+                    <div class="p-6 flex-grow flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+                                <div class="flex items-center gap-1 text-amber-400 font-semibold">
+                                    <i class="fa-solid fa-star text-xs"></i>
+                                    <span>{{ course.rating }}</span>
+                                </div>
+                                <span class="text-slate-400"><i class="fa-solid fa-user-group text-slate-500 mr-1"></i> {{ course.students_count }} o'quvchi</span>
+                            </div>
+
+                            <h3 class="text-lg font-bold text-white leading-snug line-clamp-2 hover:text-blue-400 transition-colors">
+                                <a href="{% url 'course_detail' course.slug %}">{{ course.title }}</a>
+                            </h3>
+
+                            <p class="text-xs text-slate-400 line-clamp-2 mt-2 leading-relaxed">
+                                {{ course.short_description }}
+                            </p>
+                        </div>
+
+                        <!-- Price & CTA Button -->
+                        <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs text-slate-400 block">Narxi:</span>
+                                <span class="text-lg font-extrabold {% if course.is_free %}text-emerald-400{% else %}text-white{% endif %}">
+                                    {{ course.formatted_price }}
+                                </span>
+                            </div>
+                            <a href="{% url 'course_detail' course.slug %}" class="px-5 py-2.5 rounded-xl bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 text-xs font-bold transition-all duration-200">
+                                Tanlash &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- EMPTY STATE -->
+            <div class="text-center py-20 rounded-2xl bg-[#111827] border border-slate-800 space-y-4">
+                <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-2xl text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Hech qanday kurs topilmadi</h3>
+                <p class="text-slate-400 text-sm max-w-md mx-auto">
+                    Kiritilgan filtr yoki qidiruv so'zi bo'yicha hech narsa chiqmadi. Filtrlarni tozalab qaytadan ko'ring.
+                </p>
+                <div class="pt-2">
+                    <a href="{% url 'course_list' %}" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors">
+                        Barcha kurslarni qaytarish
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }} — roziyevdev{% endblock %}
+
+{% block content %}
+<!-- COURSE HEADER -->
+<div class="bg-[#090d16] border-b border-slate-800/80 py-12 lg:py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Breadcrumbs -->
+        <nav class="flex items-center gap-2 text-xs text-slate-400 mb-6">
+            <a href="{% url 'home' %}" class="hover:text-white transition-colors">Bosh sahifa</a>
+            <span>/</span>
+            <a href="{% url 'course_list' %}" class="hover:text-white transition-colors">Kurslar</a>
+            <span>/</span>
+            <a href="{% url 'course_list' %}?category={{ course.category.slug }}" class="text-blue-400 hover:text-blue-300 transition-colors">{{ course.category.name }}</a>
+        </nav>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+            <div class="lg:col-span-8 space-y-5">
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="px-3 py-1 rounded-md text-xs font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                        {{ course.category.name }}
+                    </span>
+                    <span class="px-3 py-1 rounded-md text-xs font-semibold bg-slate-800 text-slate-300">
+                        {{ course.get_level_display }}
+                    </span>
+                    {% if course.is_free %}
+                        <span class="px-3 py-1 rounded-md text-xs font-bold bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
+                            Bepul Kurs
+                        </span>
+                    {% endif %}
+                </div>
+
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+                    {{ course.title }}
+                </h1>
+
+                <p class="text-slate-300 text-base sm:text-lg leading-relaxed">
+                    {{ course.short_description }}
+                </p>
+
+                <div class="flex flex-wrap items-center gap-6 pt-2 text-sm text-slate-400">
+                    <div class="flex items-center gap-2 text-amber-400 font-bold">
+                        <i class="fa-solid fa-star"></i>
+                        <span>{{ course.rating }}</span>
+                        <span class="text-slate-500 font-normal">({{ course.students_count }} talaba)</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <i class="fa-regular fa-clock text-blue-400"></i>
+                        <span>{{ course.duration_hours }} soat amaliyot</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <i class="fa-regular fa-circle-play text-blue-400"></i>
+                        <span>{{ course.modules.count }} ta modul</span>
+                    </div>
+
+                    {% if course.instructor %}
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-chalkboard-user text-blue-400"></i>
+                        <span>Muallif: <strong class="text-slate-200">{{ course.instructor.display_name }}</strong></span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- COURSE DETAILS CONTENT & SIDEBAR -->
+<div class="py-12 bg-[#0b0f19]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            
+            <!-- LEFT MAIN COLUMN -->
+            <div class="lg:col-span-8 space-y-12">
+                
+                <!-- WHAT YOU WILL LEARN -->
+                {% if course.learn_points %}
+                <div class="p-8 rounded-2xl bg-[#111827] border border-slate-800 space-y-6">
+                    <h3 class="text-2xl font-bold text-white flex items-center gap-3">
+                        <i class="fa-solid fa-bullseye text-blue-500"></i>
+                        <span>Ushbu kursda nimalarni o'rganasiz?</span>
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {% for point in course.learn_points %}
+                        <div class="flex items-start gap-3 text-sm text-slate-300">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-1 flex-shrink-0"></i>
+                            <span class="leading-relaxed">{{ point }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- COURSE SYLLABUS / MUNDARIJA -->
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-2xl font-bold text-white">Kurs Mundarijasi</h3>
+                            <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                                {{ course.modules.count }} ta modul &bull; Har bir modul amaliy darslar va kod fayllari bilan ta'minlangan
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        {% for module in course.modules.all %}
+                        <div class="rounded-xl bg-[#111827] border border-slate-800 overflow-hidden">
+                            <!-- Module Header -->
+                            <div class="p-4 sm:p-5 bg-slate-800/40 border-b border-slate-800 flex items-center justify-between cursor-pointer">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 font-bold text-xs flex items-center justify-center">
+                                        {{ forloop.counter }}
+                                    </span>
+                                    <h4 class="font-bold text-white text-base">{{ module.title }}</h4>
+                                </div>
+                                <span class="text-xs text-slate-400 font-medium">
+                                    {{ module.lessons.count }} ta dars
+                                </span>
+                            </div>
+
+                            <!-- Module Lessons -->
+                            <div class="divide-y divide-slate-800/60">
+                                {% for lesson in module.lessons.all %}
+                                <div class="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-800/20 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fa-regular fa-circle-play text-slate-500 text-sm"></i>
+                                        <span class="text-sm text-slate-200">{{ lesson.title }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        {% if lesson.is_preview %}
+                                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                Preview
+                                            </span>
+                                        {% endif %}
+                                        <span class="text-xs text-slate-500">
+                                            {{ lesson.duration_minutes }} daq
+                                        </span>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="p-4 text-xs text-slate-500 text-center">
+                                    Darslar tez orada yuklanadi
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="p-8 rounded-xl bg-[#111827] border border-slate-800 text-center text-slate-400 text-sm">
+                            Hozircha modullar rejasi yangilanmoqda.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- FULL DESCRIPTION -->
+                <div class="p-8 rounded-2xl bg-[#111827] border border-slate-800 space-y-4">
+                    <h3 class="text-2xl font-bold text-white">Kurs Haqida To'liq Ma'lumot</h3>
+                    <div class="text-slate-300 text-sm sm:text-base leading-relaxed space-y-4">
+                        <p>{{ course.description|linebreaks }}</p>
+                    </div>
+                </div>
+
+                <!-- REQUIREMENTS -->
+                {% if course.requirement_points %}
+                <div class="p-8 rounded-2xl bg-[#111827] border border-slate-800 space-y-4">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-blue-400"></i>
+                        <span>Boshlang'ich Talablar</span>
+                    </h3>
+                    <ul class="space-y-2.5 text-sm text-slate-300">
+                        {% for req in course.requirement_points %}
+                        <li class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-chevron-right text-xs text-blue-400 mt-1"></i>
+                            <span>{{ req }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- INSTRUCTOR CARD -->
+                {% if course.instructor %}
+                <div class="p-8 rounded-2xl bg-[#111827] border border-slate-800 space-y-6">
+                    <h3 class="text-xl font-bold text-white">O'qituvchi Haqida</h3>
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                        <img src="{{ course.instructor.profile.avatar_url }}" alt="{{ course.instructor.display_name }}" class="w-24 h-24 rounded-full object-cover border-2 border-blue-500/50">
+                        <div class="space-y-2 text-center sm:text-left">
+                            <h4 class="text-lg font-bold text-white">{{ course.instructor.display_name }}</h4>
+                            <p class="text-xs font-semibold text-blue-400">{{ course.instructor.profile.headline|default:"Senior Developer & Instructor" }}</p>
+                            <p class="text-xs text-slate-400 leading-relaxed max-w-xl">
+                                {{ course.instructor.profile.bio|default:"Dasturlash va muhandislik yo'nalishlarida ko'p yillik amaliy tajribaga ega mutaxassis." }}
+                            </p>
+                            <div class="flex items-center justify-center sm:justify-start gap-3 pt-2">
+                                {% if course.instructor.profile.telegram %}
+                                    <a href="https://t.me/{{ course.instructor.profile.telegram|cut:'@' }}" target="_blank" class="text-slate-400 hover:text-blue-400 text-sm">
+                                        <i class="fa-brands fa-telegram"></i> Telegram
+                                    </a>
+                                {% endif %}
+                                {% if course.instructor.profile.github %}
+                                    <a href="{{ course.instructor.profile.github }}" target="_blank" class="text-slate-400 hover:text-white text-sm">
+                                        <i class="fa-brands fa-github"></i> GitHub
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- RIGHT STICKY SIDEBAR -->
+            <div class="lg:col-span-4 lg:sticky lg:top-28">
+                <div class="rounded-2xl bg-[#111827] border border-slate-800 p-6 shadow-2xl space-y-6">
+                    <!-- Preview Image -->
+                    <div class="relative h-48 w-full rounded-xl overflow-hidden bg-slate-800">
+                        <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-play ml-0.5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="space-y-1">
+                        <span class="text-xs text-slate-400 block font-medium">To'liq kurs narxi:</span>
+                        <div class="text-3xl font-extrabold {% if course.is_free %}text-emerald-400{% else %}text-white{% endif %}">
+                            {{ course.formatted_price }}
+                        </div>
+                    </div>
+
+                    <!-- CTA Buttons -->
+                    <div class="space-y-3">
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'profile' %}" class="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-center block shadow-lg shadow-blue-600/30 transition-all duration-200">
+                                <i class="fa-solid fa-graduation-cap mr-2"></i> Kursga Yozilish
+                            </a>
+                        {% else %}
+                            <a href="{% url 'register' %}?next={% url 'course_detail' course.slug %}" class="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-center block shadow-lg shadow-blue-600/30 transition-all duration-200">
+                                Ro'yxatdan O'tib Boshlash
+                            </a>
+                            <a href="{% url 'login' %}?next={% url 'course_detail' course.slug %}" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-center block text-sm transition-colors">
+                                Hisobga kirish
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    <!-- Course Highlights -->
+                    <div class="space-y-3 pt-4 border-t border-slate-800 text-xs text-slate-300 font-medium">
+                        <div class="text-xs uppercase font-bold text-slate-400 tracking-wider mb-2">Ushbu kurs o'z ichiga oladi:</div>
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-video text-blue-400 w-4"></i>
+                            <span>{{ course.duration_hours }} soatlik amaliy video darslar</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-code text-blue-400 w-4"></i>
+                            <span>Loyiha manba kodlari (GitHub repository)</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-mobile-screen text-blue-400 w-4"></i>
+                            <span>Mobil va kompyuterdan kirish</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-infinity text-blue-400 w-4"></i>
+                            <span>Bir martalik to'lov — doimiy kirish</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-certificate text-blue-400 w-4"></i>
+                            <span>Yakuniy tekshiriluvchi Sertifikat</span>
+                        </div>
+                    </div>
+
+                    <!-- Share -->
+                    <div class="pt-4 border-t border-slate-800 text-center">
+                        <span class="text-xs text-slate-400 block mb-3">Kursni do'stlaringiz bilan ulashing:</span>
+                        <div class="flex items-center justify-center gap-3">
+                            <a href="https://t.me/share/url?url={{ request.build_absolute_uri }}&text={{ course.title }}" target="_blank" class="w-9 h-9 rounded-lg bg-slate-800 text-blue-400 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors">
+                                <i class="fa-brands fa-telegram"></i>
+                            </a>
+                            <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" target="_blank" class="w-9 h-9 rounded-lg bg-slate-800 text-blue-500 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors">
+                                <i class="fa-brands fa-linkedin"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
