@@ -1,0 +1,1004 @@
+{% extends 'student/base_student.html' %}
+{% load core_extras %}
+
+{% block title %}{{ current_lesson.title }} — {{ course.title }}{% endblock %}
+{% block page_title %}{{ course.title }}{% endblock %}
+{% block page_subtitle %}{{ current_lesson.module.title }} &bull; {{ current_lesson.title }}{% endblock %}
+
+{% block extra_head %}
+{% if assignment and assignment.allow_flowchart %}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-900 text-slate-100 flex flex-col rounded-3xl overflow-hidden border border-slate-800">
+
+    <!-- TOP BAR -->
+    <div class="bg-slate-950/90 border-b border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between backdrop-blur-md">
+        <div class="flex items-center gap-4 min-w-0">
+            <a href="{% url 'course_detail' course.slug %}" class="text-slate-400 hover:text-white transition-colors flex items-center gap-1.5 text-xs sm:text-sm font-semibold shrink-0">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span class="hidden sm:inline">Kursga qaytish</span>
+            </a>
+            <span class="text-slate-700 hidden sm:inline">|</span>
+            <div class="min-w-0">
+                <h1 class="text-xs sm:text-sm font-bold text-white truncate">{{ course.title }}</h1>
+                <p class="text-[11px] text-blue-400 truncate">{{ current_lesson.module.title }} &bull; {{ current_lesson.title }}</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4 shrink-0">
+            {% if enrollment %}
+                <div class="hidden md:flex items-center gap-2">
+                    <span class="text-xs font-semibold text-slate-300">Progress:</span>
+                    <div class="w-28 bg-slate-800 rounded-full h-2 overflow-hidden">
+                        <div id="progress-bar-fill" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-2 rounded-full transition-all duration-300" style="width: {{ enrollment.progress_percent }}%"></div>
+                    </div>
+                    <span id="progress-percent-label" class="text-xs font-bold text-emerald-400">{{ enrollment.progress_percent }}%</span>
+                </div>
+            {% endif %}
+
+            {% if user.is_authenticated %}
+                <a href="{% url 'profile' %}#wallet" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-extrabold text-xs hover:bg-amber-500/20 transition-all shadow-sm" title="Mening tangalarim">
+                    <span class="material-symbols-outlined text-[16px] text-amber-500">monetization_on</span>
+                    <span id="player-coins-counter">{{ user.coins }}</span>
+                    <span class="hidden xl:inline text-[10px] text-amber-500/80">tanga</span>
+                </a>
+            {% endif %}
+
+            <button id="toggle-sidebar-btn" class="lg:hidden p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white">
+                <i class="fa-solid fa-list-ul"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN GRID: PLAYER & SYLLABUS -->
+    <div class="flex-grow grid grid-cols-1 lg:grid-cols-12 min-h-0">
+
+        <!-- LEFT: LESSON CONTENT AREA (Cols 8 or 9) -->
+        <div class="lg:col-span-8 xl:col-span-9 p-4 sm:p-6 lg:p-8 space-y-6 overflow-y-auto max-w-5xl mx-auto w-full">
+
+            {% if can_view %}
+                <!-- VIDEO PLAYER -->
+                {% if current_lesson.lesson_type == 'video' and current_lesson.video_file %}
+                    <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
+                        <video 
+                            src="{{ current_lesson.video_file.url }}" 
+                            controls 
+                            controlsList="nodownload" 
+                            playsinline
+                            class="w-full h-full object-contain"
+                            poster="{{ course.thumbnail_url }}">
+                            Sizning brauzeringiz HTML5 videoni qo'llab-quvvatlamaydi.
+                        </video>
+                    </div>
+                {% elif current_lesson.lesson_type == 'video' and current_lesson.embed_url %}
+                    <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
+                        <iframe 
+                            src="{{ current_lesson.embed_url }}" 
+                            title="{{ current_lesson.title }}" 
+                            class="absolute inset-0 w-full h-full border-0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                {% elif current_lesson.lesson_type == 'video' and not current_lesson.embed_url and not current_lesson.video_file %}
+                    <div class="aspect-video bg-slate-950 rounded-2xl flex flex-col items-center justify-center border border-slate-800 p-6 text-center space-y-3">
+                        <div class="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-video"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">Video dars tez orada yuklanadi</h3>
+                        <p class="text-xs text-slate-400 max-w-md">Dars videosi hozirda qayta ishlanmoqda. Quyidagi matnli qo'llanma bilan tanishib chiqishingiz mumkin.</p>
+                    </div>
+                {% endif %}
+
+                <!-- LESSON HEADER & ACTIONS -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                {{ current_lesson.get_lesson_type_display }}
+                            </span>
+                            <span class="text-xs text-slate-400">
+                                <i class="fa-regular fa-clock mr-1"></i> {{ current_lesson.duration_minutes }} daqiqa
+                            </span>
+                            {% if current_lesson.is_preview %}
+                                <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-400">
+                                    Ochiq dars
+                                </span>
+                            {% endif %}
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-white">{{ current_lesson.title }}</h2>
+                    </div>
+
+                    {% if enrollment %}
+                        <!-- TOGGLE COMPLETE BUTTON -->
+                        <form id="toggle-lesson-form" method="POST" action="{% url 'toggle_lesson_progress' current_lesson.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button 
+                                type="submit" 
+                                id="toggle-complete-btn" 
+                                class="w-full sm:w-auto px-5 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-md {% if current_lesson.id in completed_lesson_ids %}bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20{% else %}bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700{% endif %}"
+                            >
+                                <i class="fa-solid {% if current_lesson.id in completed_lesson_ids %}fa-circle-check text-base{% else %}fa-check{% endif %}"></i>
+                                <span>{% if current_lesson.id in completed_lesson_ids %}Tugatildi (Qaytarish){% else %}Darsni tugatdim{% endif %}</span>
+                            </button>
+                        </form>
+                    {% elif not user.is_authenticated %}
+                        <a href="{% url 'login' %}?next={{ request.get_full_path }}" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors">
+                            Progressni saqlash uchun kiring
+                        </a>
+                    {% endif %}
+                </div>
+
+                {% if assignment %}
+                    <!-- TABS SELECTOR (DARS QO'LLANMASI / AMALIY VAZIFA) -->
+                    <div class="flex items-center gap-2 border-b border-slate-800 pb-2">
+                        <button 
+                            id="tab-btn-content" 
+                            type="button" 
+                            onclick="switchPlayerTab('content')" 
+                            class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                        >
+                            <i class="fa-solid fa-book-open"></i>
+                            <span>Dars Qo'llanmasi</span>
+                        </button>
+
+                        <button 
+                            id="tab-btn-assignment" 
+                            type="button" 
+                            onclick="switchPlayerTab('assignment')" 
+                            class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                        >
+                            <i class="fa-solid fa-laptop-code text-amber-400"></i>
+                            <span>Amaliy Vazifa</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30 inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[13px] text-amber-500">monetization_on</span> +{{ assignment.coin_reward }}
+                            </span>
+                            {% if user_submission %}
+                                {% if user_submission.status == 'approved' %}
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400" title="Qabul qilingan"></span>
+                                {% elif user_submission.status == 'pending' %}
+                                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping" title="Kutilmoqda"></span>
+                                {% elif user_submission.status == 'rejected' %}
+                                    <span class="w-2 h-2 rounded-full bg-rose-400" title="Qaytarilgan"></span>
+                                {% endif %}
+                            {% endif %}
+                        </button>
+                    </div>
+                {% endif %}
+
+                <!-- PANEL 1: LESSON CONTENT & ATTACHMENTS -->
+                <div id="panel-lesson-content" class="space-y-6">
+                    <!-- LESSON CONTENT (MARKDOWN) -->
+                    {% if current_lesson.content %}
+                        <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-4">
+                            <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-book-open text-blue-400"></i>
+                                <span>Dars Qo'llanmasi & Konspekt</span>
+                            </h3>
+                            <div class="prose prose-invert prose-blue max-w-none text-slate-300 text-sm sm:text-base leading-relaxed">
+                                {{ current_lesson.content|markdownify }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- ATTACHMENTS & SOURCE CODE -->
+                    {% if current_lesson.attachment or current_lesson.source_code_url %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {% if current_lesson.source_code_url %}
+                                <a href="{{ current_lesson.source_code_url }}" target="_blank" rel="noopener" class="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 flex items-center gap-4 group transition-all">
+                                    <div class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-xl text-slate-300 group-hover:text-white">
+                                        <i class="fa-brands fa-github"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-slate-400">Dars manba kodi</div>
+                                        <div class="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">GitHub Repository &rarr;</div>
+                                    </div>
+                                </a>
+                            {% endif %}
+
+                            {% if current_lesson.attachment %}
+                                <a href="{{ current_lesson.attachment.url }}" download class="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 flex items-center gap-4 group transition-all">
+                                    <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl">
+                                        <i class="fa-solid fa-file-arrow-down"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-xs text-slate-400">Biriktirilgan material</div>
+                                        <div class="text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate">Faylni yuklab olish &darr;</div>
+                                    </div>
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- PANEL 2: ASSIGNMENT WORKSPACE & FLOWGORITHM ENGINE -->
+                {% if assignment %}
+                <div id="panel-lesson-assignment" class="space-y-6 hidden">
+                    
+                    <!-- ASSIGNMENT BRIEF & REWARDS -->
+                    <div class="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                            <div>
+                                <span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                    Amaliy Topshiriq
+                                </span>
+                                <h3 class="text-xl sm:text-2xl font-black text-white mt-1">{{ assignment.title }}</h3>
+                            </div>
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <span class="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-sm">
+                                    <span class="material-symbols-outlined text-[16px] text-amber-500">monetization_on</span>
+                                    <span>+{{ assignment.coin_reward }} tanga</span>
+                                </span>
+                                <span class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">
+                                    Maksimal: <strong class="text-white">{{ assignment.max_score }}</strong> ball
+                                </span>
+                                <span class="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
+                                    O'tish: {{ assignment.passing_score }} ball
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Assignment Description Markdown -->
+                        <div class="prose prose-invert prose-blue max-w-none text-slate-300 text-xs sm:text-sm leading-relaxed">
+                            {{ assignment.description|markdownify }}
+                        </div>
+                    </div>
+
+                    <!-- SUBMISSION STATUS BANNER -->
+                    {% if user_submission %}
+                        {% if user_submission.status == 'approved' %}
+                            <div class="p-6 rounded-3xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 space-y-3">
+                                <div class="flex items-center justify-between gap-3 flex-wrap">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg shrink-0">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-sm sm:text-base font-bold text-white">Tabriklaymiz! Vazifangiz qabul qilindi.</h4>
+                                            <p class="text-xs text-emerald-400">
+                                                To'plangan ball: <strong>{{ user_submission.score }}/{{ assignment.max_score }}</strong> &bull; Mukofot: <strong><span class="material-symbols-outlined text-[14px] text-amber-500 align-middle">monetization_on</span> +{{ user_submission.coins_awarded }} tanga</strong>!
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="celebrateCoins({{ user_submission.coins_awarded }}, 'Vazifangiz qabul qilindi!')" class="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-400 text-xs font-bold transition-all flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-amber-500 text-lg animate-bounce">monetization_on</span>
+                                        <span>Tangalarni nishonlash</span>
+                                    </button>
+                                </div>
+                                {% if user_submission.instructor_feedback %}
+                                    <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200">
+                                        <strong class="text-emerald-400 block mb-1">Ustoz taqrizi va izohi:</strong>
+                                        {{ user_submission.instructor_feedback }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% elif user_submission.status == 'pending' %}
+                            <div class="p-5 rounded-2xl bg-amber-950/40 border border-amber-500/40 text-amber-300 flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-base shrink-0">
+                                    <i class="fa-solid fa-hourglass-half animate-spin"></i>
+                                </div>
+                                <div class="text-xs sm:text-sm">
+                                    <span class="font-bold text-white">Vazifangiz tekshirish uchun yuborilgan.</span>
+                                    <p class="text-amber-400/90 text-xs mt-0.5">Ustoz tez orada tekshirib ball va tangalarni taqdim etadi. Xohlasangiz, quyidagi yechimni tahrirlab qaytadan yuborishingiz mumkin.</p>
+                                </div>
+                            </div>
+                        {% elif user_submission.status == 'rejected' %}
+                            <div class="p-6 rounded-3xl bg-rose-950/40 border border-rose-500/40 text-rose-300 space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg shrink-0">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm sm:text-base font-bold text-white">Vazifani qayta ishlash tavsiya etildi.</h4>
+                                        <p class="text-xs text-rose-400">
+                                            Qo'yilgan ball: <strong>{{ user_submission.score|default:'0' }}/{{ assignment.max_score }}</strong>.
+                                        </p>
+                                    </div>
+                                </div>
+                                {% if user_submission.instructor_feedback %}
+                                    <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200">
+                                        <strong class="text-rose-400 block mb-1">Ustoz ko'rsatmasi:</strong>
+                                        {{ user_submission.instructor_feedback }}
+                                    </div>
+                                {% endif %}
+                                <p class="text-xs text-slate-400">Iltimos, yuqoridagi ko'rsatmalarga asosan yechimni to'g'irlab, qaytadan topshiring.</p>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- SUBMISSION FORM -->
+                    <form id="assignment-submission-form" method="POST" action="{% url 'submit_assignment' assignment.id %}" enctype="multipart/form-data" class="space-y-6">
+                        {% csrf_token %}
+
+                        <!-- SECTION A: CODE EDITOR -->
+                        {% if assignment.allow_code %}
+                            <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xs">
+                                            <i class="fa-solid fa-code"></i>
+                                        </span>
+                                        <div>
+                                            <h4 class="text-sm font-bold text-white">Kod Muharriri</h4>
+                                            <p class="text-[11px] text-slate-400">Dasturlash tilida yechim kodingizni kiriting</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        {% if assignment.starter_code %}
+                                            <button type="button" id="reset-starter-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors flex items-center gap-1.5">
+                                                <i class="fa-solid fa-rotate-left text-[10px]"></i> Shablonni tiklash
+                                            </button>
+                                        {% endif %}
+                                        {% if assignment.allow_flowchart %}
+                                            <button type="button" id="code-to-flowchart-btn" class="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/30 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> Kodni Blok-sxemaga o'tkazish &darr;
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="relative">
+                                    <textarea 
+                                        id="submitted-code-input" 
+                                        name="submitted_code" 
+                                        rows="10" 
+                                        placeholder="Kodingizni shu yerga yozing..." 
+                                        class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-blue-500 outline-none leading-relaxed resize-y"
+                                        spellcheck="false"
+                                    >{{ user_submission.submitted_code|default:assignment.starter_code }}</textarea>
+                                    <div class="absolute right-3 bottom-3 text-[10px] text-slate-500 font-mono pointer-events-none">Tab = 4 ta bo'sh joy</div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- SECTION B: FLOWGORITHM FLOWCHART BUILDER -->
+                        {% if assignment.allow_flowchart %}
+                            <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+                                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs">
+                                            <i class="fa-solid fa-diagram-project"></i>
+                                        </span>
+                                        <div>
+                                            <h4 class="text-sm font-bold text-white">Flowgorithm Blok-Sxema Muharriri</h4>
+                                            <p class="text-[11px] text-slate-400">Algoritm bloklarini qo'lda qo'shing yoki koddan avtomatik yarating</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" onclick="loadSampleFlowchart()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors flex items-center gap-1">
+                                            <i class="fa-regular fa-lightbulb"></i> Namuna sxema
+                                        </button>
+                                        <button type="button" onclick="clearFlowchart()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 text-xs font-semibold transition-colors flex items-center gap-1">
+                                            <i class="fa-regular fa-trash-can"></i> Tozalash
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- FLOWGORITHM SHAPES PALETTE -->
+                                <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800/80 space-y-2">
+                                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <i class="fa-solid fa-shapes text-purple-400"></i> Shakllar to'plami (Flowgorithm bloklari):
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button type="button" onclick="insertFlowShape('start')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-purple-900/40 text-purple-300 text-xs font-bold border border-purple-500/30 flex items-center gap-1.5 transition-all">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span> [Boshlanish]
+                                        </button>
+                                        <button type="button" onclick="insertFlowShape('input')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-blue-900/40 text-blue-300 text-xs font-bold border border-blue-500/30 flex items-center gap-1.5 transition-all">
+                                            <i class="fa-solid fa-arrow-right-to-bracket text-[10px]"></i> [/ Kiritish /]
+                                        </button>
+                                        <button type="button" onclick="insertFlowShape('process')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/40 text-emerald-300 text-xs font-bold border border-emerald-500/30 flex items-center gap-1.5 transition-all">
+                                            <i class="fa-solid fa-gears text-[10px]"></i> [ Jarayon ]
+                                        </button>
+                                        <button type="button" onclick="insertFlowShape('decision')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-amber-900/40 text-amber-300 text-xs font-bold border border-amber-500/30 flex items-center gap-1.5 transition-all">
+                                            <i class="fa-solid fa-code-branch text-[10px]"></i> { Shart (If/Else) }
+                                        </button>
+                                        <button type="button" onclick="insertFlowShape('loop')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-indigo-900/40 text-indigo-300 text-xs font-bold border border-indigo-500/30 flex items-center gap-1.5 transition-all">
+                                            <i class="fa-solid fa-arrows-rotate text-[10px]"></i> { Sikl (Loop) }
+                                        </button>
+                                        <button type="button" onclick="insertFlowShape('output')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-cyan-900/40 text-cyan-300 text-xs font-bold border border-cyan-500/30 flex items-center gap-1.5 transition-all">
+                                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> [\ Chiqarish \]
+                                        </button>
+                                        <button type="button" onclick="insertFlowShape('end')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-rose-300 text-xs font-bold border border-rose-500/30 flex items-center gap-1.5 transition-all">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> [Tamom]
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- LIVE MERMAID CANVAS -->
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between text-xs text-slate-400 font-semibold">
+                                        <span>Jonli Blok-Sxema Vizualizatsiyasi:</span>
+                                        <span class="text-[10px] text-purple-400">Mermaid.js Flowchart Engine</span>
+                                    </div>
+                                    <div id="flowchart-preview-canvas" class="p-6 bg-slate-900 border border-slate-800 rounded-xl min-h-[180px] flex items-center justify-center overflow-x-auto text-center transition-all">
+                                        <!-- Rendered live flowchart -->
+                                    </div>
+                                </div>
+
+                                <!-- RAW CODE TEXTAREA (COLLAPSIBLE) -->
+                                <details class="text-xs text-slate-400">
+                                    <summary class="cursor-pointer font-bold hover:text-purple-400 transition-colors">
+                                        <i class="fa-solid fa-code text-[11px] mr-1"></i> Sxema manba kodi (Mermaid sintaksisi)
+                                    </summary>
+                                    <div class="mt-2">
+                                        <textarea 
+                                            id="flowchart-editor" 
+                                            name="flowchart_data" 
+                                            rows="5" 
+                                            placeholder="graph TD&#10;    Start([Boshlanish]) --> End([Tamom])" 
+                                            class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-xs text-purple-200 focus:ring-2 focus:ring-purple-500 outline-none leading-relaxed"
+                                            spellcheck="false"
+                                        >{{ user_submission.flowchart_data }}</textarea>
+                                    </div>
+                                </details>
+                            </div>
+                        {% endif %}
+
+                        <!-- SECTION C: FILE ATTACHMENT -->
+                        {% if assignment.allow_file_upload %}
+                            <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-3">
+                                <div class="flex items-center gap-2 border-b border-slate-800/80 pb-3">
+                                    <span class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-paperclip"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">Amaliy Fayl Biriktirish</h4>
+                                        <p class="text-[11px] text-slate-400">Loyiha fayli, arxiv (.zip) yoki dastur kodini yuklang</p>
+                                    </div>
+                                </div>
+
+                                <div 
+                                    id="file-dropzone" 
+                                    class="border-2 border-dashed border-slate-800 hover:border-emerald-500/60 rounded-2xl p-6 text-center cursor-pointer transition-all bg-slate-900/50 hover:bg-slate-900"
+                                >
+                                    <input 
+                                        type="file" 
+                                        id="assignment-file-input" 
+                                        name="attached_file" 
+                                        class="hidden" 
+                                        accept=".zip,.rar,.pdf,.dart,.py,.sql,.txt,.docx,.png,.jpg"
+                                    >
+                                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mx-auto mb-2">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    </div>
+                                    <div class="text-xs sm:text-sm font-bold text-white">Faylni tanlang yoki bu yerga sudrab tashlang</div>
+                                    <p class="text-[11px] text-slate-500 mt-1">Qo'llab-quvvatlanadigan formatlar: .zip, .pdf, .dart, .py, .sql, .txt (max: 25 MB)</p>
+                                    <div id="selected-file-badge" class="hidden mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+                                        <i class="fa-solid fa-check"></i>
+                                        <span id="selected-file-name"></span>
+                                    </div>
+                                </div>
+
+                                {% if user_submission.attached_file %}
+                                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                                        <div class="flex items-center gap-2 text-slate-300 truncate">
+                                            <i class="fa-solid fa-file-circle-check text-emerald-400"></i>
+                                            <span>Avval yuklangan fayl: <strong>{{ user_submission.attached_file.name }}</strong></span>
+                                        </div>
+                                        <a href="{{ user_submission.attached_file.url }}" download class="text-emerald-400 hover:underline font-bold shrink-0 ml-2">
+                                            Yuklab olish &darr;
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <!-- SUBMIT BUTTON / APPROVED LOCK -->
+                        <div class="flex items-center justify-end gap-4 pt-2">
+                            {% if user_submission and user_submission.status == 'approved' %}
+                                <div class="w-full sm:w-auto p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between gap-4 shadow-md">
+                                    <span class="flex items-center gap-2">
+                                        <i class="fa-solid fa-lock text-emerald-400"></i>
+                                        <span>Vazifa ustoz tomonidan qabul qilingan va baholangan (Qayta topshirish talab etilmaydi).</span>
+                                    </span>
+                                    <span class="text-amber-400 font-extrabold shrink-0 inline-flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[15px] text-amber-500">monetization_on</span> +{{ user_submission.coins_awarded }} tanga
+                                    </span>
+                                </div>
+                            {% else %}
+                                <button 
+                                    type="submit" 
+                                    class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Vazifani topshirish (Tekshirishga yuborish)</span>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </form>
+
+                </div>
+                {% endif %}
+
+                <!-- NAVIGATION BUTTONS (PREV / NEXT) -->
+                <div class="pt-4 flex items-center justify-between gap-4 border-t border-slate-800">
+                    {% if prev_lesson %}
+                        <a href="{% url 'course_learn_lesson' course.slug prev_lesson.id %}" class="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <span class="hidden sm:inline">Oldingi:</span>
+                            <span class="truncate max-w-[150px]">{{ prev_lesson.title }}</span>
+                        </a>
+                    {% else %}
+                        <div></div>
+                    {% endif %}
+
+                    {% if next_lesson %}
+                        <a href="{% url 'course_learn_lesson' course.slug next_lesson.id %}" class="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold transition-colors flex items-center gap-2 shadow-lg shadow-blue-600/30">
+                            <span class="hidden sm:inline">Keyingi:</span>
+                            <span class="truncate max-w-[150px]">{{ next_lesson.title }}</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    {% elif enrollment and enrollment.is_completed %}
+                        <a href="{% if enrollment.certificate %}{% url 'certificate_verify' enrollment.certificate.certificate_code %}{% else %}{% url 'my_certificates' %}{% endif %}" class="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-xl flex items-center gap-2">
+                            <i class="fa-solid fa-award text-base"></i>
+                            <span>Sertifikatni olish!</span>
+                        </a>
+                    {% endif %}
+                </div>
+
+            {% else %}
+                <!-- LOCKED LESSON CARD -->
+                <div class="p-8 sm:p-12 rounded-3xl bg-slate-950/80 border border-slate-800 text-center max-w-xl mx-auto space-y-6 my-12">
+                    <div class="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-3xl mx-auto">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h2 class="text-2xl font-extrabold text-white">Ushbu dars qulflangan</h2>
+                        <p class="text-sm text-slate-400">
+                            Ushbu darsni ko'rish uchun siz <strong>"{{ course.title }}"</strong> kursiga yozilishingiz kerak.
+                        </p>
+                    </div>
+
+                    <div class="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        {% if course.is_paid %}
+                            <a href="{% url 'order_checkout' course.slug %}" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30">
+                                Kursni xarid qilish ({{ course.formatted_price }})
+                            </a>
+                        {% else %}
+                            <a href="{% url 'enroll_course' course.slug %}" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30">
+                                Bepul yozilish
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'course_detail' course.slug %}" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm">
+                            Kurs haqida
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+
+        <!-- RIGHT: SYLLABUS SIDEBAR (Cols 4 or 3) -->
+        <aside id="syllabus-sidebar" class="hidden lg:block lg:col-span-4 xl:col-span-3 bg-slate-950 border-l border-slate-800 overflow-y-auto max-h-[calc(100vh-130px)] sticky top-[130px]">
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">Kurs Mundarijasi</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ total_lessons }} ta dars</p>
+                </div>
+                {% if enrollment and enrollment.is_completed %}
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <i class="fa-solid fa-check"></i> Tugatildi
+                    </span>
+                {% endif %}
+            </div>
+
+            <!-- MODULES ACCORDION -->
+            <div class="divide-y divide-slate-800/80">
+                {% for item in modules_with_lessons %}
+                    <div class="py-2">
+                        <div class="px-5 py-2.5 text-xs font-bold text-slate-300 flex items-center justify-between">
+                            <span class="truncate">{{ item.module.title }}</span>
+                            <span class="text-[11px] text-slate-500 font-normal ml-2">{{ item.lessons|length }} dars</span>
+                        </div>
+
+                        <div class="space-y-0.5 px-2">
+                            {% for l in item.lessons %}
+                                <a 
+                                    href="{% url 'course_learn_lesson' course.slug l.id %}" 
+                                    class="group px-3 py-2.5 rounded-xl text-xs flex items-center justify-between gap-3 transition-colors {% if l.id == current_lesson.id %}bg-blue-600/20 text-blue-400 border border-blue-500/30 font-bold{% else %}text-slate-300 hover:bg-slate-900 hover:text-white{% endif %}"
+                                >
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        {% if l.id in completed_lesson_ids %}
+                                            <i class="fa-solid fa-circle-check text-emerald-400 text-xs shrink-0"></i>
+                                        {% elif l.id == current_lesson.id %}
+                                            <i class="fa-solid fa-play text-blue-400 text-[10px] shrink-0 animate-pulse"></i>
+                                        {% elif not has_access and not l.is_preview %}
+                                            <i class="fa-solid fa-lock text-slate-600 text-xs shrink-0"></i>
+                                        {% else %}
+                                            <i class="fa-regular fa-circle text-slate-600 text-xs shrink-0"></i>
+                                        {% endif %}
+                                        <span class="truncate">{{ l.title }}</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500 shrink-0 font-mono">{{ l.duration_minutes }}m</span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </aside>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Tab switching between Lesson Content and Assignment
+    function switchPlayerTab(tab) {
+        const btnContent = document.getElementById('tab-btn-content');
+        const btnAssignment = document.getElementById('tab-btn-assignment');
+        const panelContent = document.getElementById('panel-lesson-content');
+        const panelAssignment = document.getElementById('panel-lesson-assignment');
+
+        if (!btnContent || !btnAssignment || !panelContent || !panelAssignment) return;
+
+        if (tab === 'assignment') {
+            panelContent.classList.add('hidden');
+            panelAssignment.classList.remove('hidden');
+
+            btnContent.className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700";
+            btnAssignment.className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2.5 bg-blue-600 text-white shadow-md shadow-blue-600/20";
+
+            renderFlowchartLive();
+        } else {
+            panelAssignment.classList.add('hidden');
+            panelContent.classList.remove('hidden');
+
+            btnContent.className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 bg-blue-600 text-white shadow-md shadow-blue-600/20";
+            btnAssignment.className = "px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700";
+        }
+    }
+
+    // Tab key indentation for code editor
+    const codeTextarea = document.getElementById('submitted-code-input');
+    if (codeTextarea) {
+        codeTextarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+    }
+
+    // Reset to Starter Code
+    const resetStarterBtn = document.getElementById('reset-starter-btn');
+    const STARTER_CODE = `{{ assignment.starter_code|default:''|escapejs }}`;
+    if (resetStarterBtn && codeTextarea) {
+        resetStarterBtn.addEventListener('click', function() {
+            if (confirm("Kodni boshlang'ich shablonga qaytarishni xohlaysizmi?")) {
+                codeTextarea.value = STARTER_CODE;
+            }
+        });
+    }
+
+    // FLOWCHART ENGINE (FLOWGORITHM STYLE)
+    let renderCounter = 0;
+    async function renderFlowchartLive() {
+        const editor = document.getElementById('flowchart-editor');
+        const canvas = document.getElementById('flowchart-preview-canvas');
+        if (!editor || !canvas) return;
+
+        let code = editor.value.trim();
+        if (!code) {
+            canvas.innerHTML = '<div class="text-xs text-slate-500 py-6"><i class="fa-solid fa-diagram-project text-3xl mb-2 block opacity-30 text-purple-400"></i>Hozircha blok-sxema mavjud emas.<br>Yuqoridagi shakllarni bosing yoki "Kodni Blok-sxemaga o\'tkazish" tugmasidan foydalaning.</div>';
+            return;
+        }
+
+        if (!code.startsWith('graph') && !code.startsWith('flowchart')) {
+            code = 'graph TD\n' + code;
+        }
+
+        try {
+            if (window.mermaid) {
+                renderCounter++;
+                const id = 'mermaid-chart-' + renderCounter;
+                const { svg } = await mermaid.render(id, code);
+                canvas.innerHTML = svg;
+            }
+        } catch (err) {
+            console.warn("Mermaid live render warning:", err);
+        }
+    }
+
+    function insertFlowShape(type) {
+        const editor = document.getElementById('flowchart-editor');
+        if (!editor) return;
+
+        let snippet = '';
+        const id = 'N' + Math.floor(Math.random() * 1000);
+
+        if (type === 'start') {
+            snippet = `\n    ${id}(["[Boshlanish]"])`;
+        } else if (type === 'end') {
+            snippet = `\n    --> ${id}(["[Tamom]"])`;
+        } else if (type === 'process') {
+            snippet = `\n    --> ${id}["Jarayon: x = a + b"]`;
+        } else if (type === 'input') {
+            snippet = `\n    --> ${id}[/"Kiritish: a, b"/]`;
+        } else if (type === 'output') {
+            snippet = `\n    --> ${id}[\\Chiqarish: natija\\]`;
+        } else if (type === 'decision') {
+            snippet = `\n    --> ${id}{"Shart: a > b ?"}\n    ${id} -- Ha --> ${id}_yes["To'g'ri"]\n    ${id} -- Yo'q --> ${id}_no["Noto'g'ri"]`;
+        } else if (type === 'loop') {
+            snippet = `\n    --> ${id}{"Sikl: i < n ?"}\n    ${id} -- Takrorlash --> ${id}_body["Amal"]\n    ${id}_body --> ${id}`;
+        }
+
+        if (!editor.value.trim().startsWith('graph')) {
+            editor.value = 'graph TD' + snippet;
+        } else {
+            editor.value += snippet;
+        }
+        renderFlowchartLive();
+        if (window.playCoinSound) window.playCoinSound();
+    }
+
+    function loadSampleFlowchart() {
+        const editor = document.getElementById('flowchart-editor');
+        if (!editor) return;
+        editor.value = `graph TD
+    Start(["[Boshlanish]"]) --> In1[/"Kiritish: a, b"/]
+    In1 --> Calc["yigindi = a + b"]
+    Calc --> Cond{"yigindi > 10 ?"}
+    Cond -- Ha --> Out1[\\Chiqarish: Katta son\\]
+    Cond -- Yo'q --> Out2[\\Chiqarish: Kichik son\\]
+    Out1 --> End(["[Tamom]"])
+    Out2 --> End`;
+        renderFlowchartLive();
+        if (window.playCoinSound) window.playCoinSound();
+    }
+
+    function clearFlowchart() {
+        if (confirm("Blok-sxemani tozalashni xohlaysizmi?")) {
+            const editor = document.getElementById('flowchart-editor');
+            if (editor) {
+                editor.value = "";
+                renderFlowchartLive();
+            }
+        }
+    }
+
+    // CODE TO FLOWCHART CONVERTER (FLOWGORITHM ENGINE)
+    function generateFlowchartFromCode(code) {
+        if (!code || !code.trim()) {
+            alert("Blok-sxema tuzish uchun avval kod muharririda dastur kodi yozing!");
+            return "";
+        }
+
+        const lines = code.split('\n');
+        let m = 'graph TD\n';
+        m += '    StartNode(["[Boshlanish]"])\n';
+
+        let prevNode = 'StartNode';
+        let nodeCount = 1;
+        let activeDecisionNode = null;
+        let ifBranchLastNode = null;
+        let mergeNodes = [];
+
+        for (let rawLine of lines) {
+            let line = rawLine.trim();
+            if (!line || line.startsWith('#') || line.startsWith('//')) continue;
+
+            let nid = 'Node_' + (nodeCount++);
+
+            // 1. Input detection
+            if (/input\s*\(|read\s*\(|stdin|cin/i.test(line)) {
+                let clean = line.replace(/["'\[\]\(\)]/g, ' ').replace(/\s+/g, ' ').trim();
+                let label = clean.substring(0, 32);
+                if (activeDecisionNode && prevNode === activeDecisionNode) {
+                    m += `    ${activeDecisionNode} -- Ha --> ${nid}[/"Kiritish: ${label}"/]\n`;
+                } else {
+                    m += `    ${prevNode} --> ${nid}[/"Kiritish: ${label}"/]\n`;
+                }
+                prevNode = nid;
+            }
+            // 2. Output detection
+            else if (/print\s*\(|console\.log|cout|printf|System\.out/i.test(line)) {
+                let clean = line.replace(/print\(|console\.log\(|cout\s*<<|printf\(|\)/g, '').replace(/["'\[\]\\]/g, '').trim();
+                let label = clean.substring(0, 32);
+                if (activeDecisionNode && prevNode === activeDecisionNode) {
+                    m += `    ${activeDecisionNode} -- Ha --> ${nid}[\\Chiqarish: ${label}\\]\n`;
+                } else {
+                    m += `    ${prevNode} --> ${nid}[\\Chiqarish: ${label}\\]\n`;
+                }
+                prevNode = nid;
+            }
+            // 3. Conditional (If)
+            else if (/^if\s+/i.test(line)) {
+                let cond = line.replace(/^if\s+|\s*:\s*$/g, '').replace(/["'\[\]\(\)\{\}]/g, '').trim();
+                m += `    ${prevNode} --> ${nid}{"${cond} ?"}\n`;
+                activeDecisionNode = nid;
+                prevNode = nid;
+            }
+            // 4. Else branch
+            else if (/^else\s*:?/i.test(line)) {
+                if (activeDecisionNode) {
+                    ifBranchLastNode = prevNode;
+                    prevNode = activeDecisionNode;
+                }
+            }
+            // 5. Loops (While / For)
+            else if (/^(while|for)\s+/i.test(line)) {
+                let cond = line.replace(/:\s*$/, '').replace(/["'\[\]\(\)\{\}]/g, '').trim();
+                m += `    ${prevNode} --> ${nid}{"${cond} ?"}\n`;
+                prevNode = nid;
+            }
+            // 6. Assignment / Processing
+            else {
+                let clean = line.replace(/["'\[\]\{\}\\]/g, '').replace(/;$/, '').trim();
+                if (clean.length > 0) {
+                    let label = clean.substring(0, 35);
+                    if (activeDecisionNode && prevNode === activeDecisionNode && ifBranchLastNode) {
+                        m += `    ${activeDecisionNode} -- Yo'q --> ${nid}["${label}"]\n`;
+                        mergeNodes.push(ifBranchLastNode);
+                        mergeNodes.push(nid);
+                        activeDecisionNode = null;
+                        ifBranchLastNode = null;
+                    } else if (activeDecisionNode && prevNode === activeDecisionNode) {
+                        m += `    ${activeDecisionNode} -- Ha --> ${nid}["${label}"]\n`;
+                    } else {
+                        m += `    ${prevNode} --> ${nid}["${label}"]\n`;
+                    }
+                    prevNode = nid;
+                }
+            }
+        }
+
+        if (ifBranchLastNode) {
+            mergeNodes.push(ifBranchLastNode);
+        }
+        if (mergeNodes.length > 0) {
+            for (let mn of mergeNodes) {
+                m += `    ${mn} --> EndNode(["[Tamom]"])\n`;
+            }
+        } else {
+            m += `    ${prevNode} --> EndNode(["[Tamom]"])\n`;
+        }
+        return m;
+    }
+
+    const codeToFlowchartBtn = document.getElementById('code-to-flowchart-btn');
+    if (codeToFlowchartBtn && codeTextarea) {
+        codeToFlowchartBtn.addEventListener('click', function() {
+            const code = codeTextarea.value;
+            const flowchart = generateFlowchartFromCode(code);
+            if (flowchart) {
+                const editor = document.getElementById('flowchart-editor');
+                if (editor) {
+                    editor.value = flowchart;
+                    renderFlowchartLive();
+                    if (window.playCoinSound) window.playCoinSound();
+                }
+            }
+        });
+    }
+
+    // Flowchart editor live input listener
+    const flowchartEditor = document.getElementById('flowchart-editor');
+    if (flowchartEditor) {
+        flowchartEditor.addEventListener('input', () => {
+            renderFlowchartLive();
+        });
+    }
+
+    // FILE DROPZONE
+    const dropzone = document.getElementById('file-dropzone');
+    const fileInput = document.getElementById('assignment-file-input');
+    const badge = document.getElementById('selected-file-badge');
+    const nameLabel = document.getElementById('selected-file-name');
+
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-emerald-500', 'bg-slate-900');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-emerald-500');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-emerald-500');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const sizeKb = Math.round(file.size / 1024);
+                nameLabel.textContent = `${file.name} (${sizeKb} KB)`;
+                badge.classList.remove('hidden');
+            }
+        }
+    }
+
+    // Initialize Mermaid on DOM load
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.mermaid) {
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: 'dark',
+                securityLevel: 'loose',
+                flowchart: {
+                    useMaxWidth: true,
+                    htmlLabels: true,
+                    curve: 'basis'
+                }
+            });
+            renderFlowchartLive();
+        }
+
+        // Open assignment tab if URL has ?tab=assignment or submission was rejected
+        const params = new URLSearchParams(window.location.search);
+        {% if user_submission and user_submission.status == 'rejected' %}
+            switchPlayerTab('assignment');
+        {% else %}
+            if (params.get('tab') === 'assignment') {
+                switchPlayerTab('assignment');
+            }
+        {% endif %}
+    });
+
+    // Mobile sidebar toggle
+    const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+    const sidebar = document.getElementById('syllabus-sidebar');
+    if (toggleSidebarBtn && sidebar) {
+        toggleSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('fixed');
+            sidebar.classList.toggle('inset-0');
+            sidebar.classList.toggle('z-50');
+        });
+    }
+
+    // AJAX complete toggle
+    const form = document.getElementById('toggle-lesson-form');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('toggle-complete-btn');
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.is_completed) {
+                        btn.className = "w-full sm:w-auto px-5 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-md bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20";
+                        btn.innerHTML = '<i class="fa-solid fa-circle-check text-base"></i><span>Tugatildi (Qaytarish)</span>';
+                    } else {
+                        btn.className = "w-full sm:w-auto px-5 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700";
+                        btn.innerHTML = '<i class="fa-solid fa-check"></i><span>Darsni tugatdim</span>';
+                    }
+                    const bar = document.getElementById('progress-bar-fill');
+                    const label = document.getElementById('progress-percent-label');
+                    if (bar) bar.style.width = data.progress_percent + '%';
+                    if (label) label.textContent = data.progress_percent + '%';
+
+                    if (data.is_course_completed) {
+                        alert("Tabriklaymiz! Siz ushbu kursni 100% muvaffaqiyatli tamomladingiz!");
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                form.submit();
+            }
+        });
+    }
+</script>
+{% endblock %}

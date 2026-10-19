@@ -1,0 +1,401 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Boshqaruv Paneli — O'quvchi Kabineti — roziyevdev{% endblock %}
+{% block page_title %}Boshqaruv Paneli{% endblock %}
+{% block page_subtitle %}Xush kelibsiz, {{ user.display_name }}! O'quv faolligingiz va ko'rsatkichlaringiz.{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-7xl mx-auto">
+
+    <!-- HERO BANNER -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 p-6 sm:p-8 text-white shadow-2xl border border-blue-500/20">
+        <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-blue-500/20 rounded-full blur-[90px] pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="space-y-2 max-w-2xl">
+                <span class="px-3 py-1 rounded-full text-[11px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/30 inline-block">
+                    🚀 Shaxsiy O'quv Markazi
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
+                    Bugungi yangi marralarga tayyormisiz, {{ user.first_name|default:user.username }}?
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Darslarni o'zlashtiring, platformada amaliy vazifalarni bajaring, kursdoshlaringiz bilan reytingda bellashing va o'z portfoliosingizni boyiting.
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                {% if recent_enrollment %}
+                <a href="{% url 'course_learn' recent_enrollment.course.slug %}" class="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition-all shadow-lg shadow-blue-600/30 flex items-center gap-2">
+                    <i class="fa-solid fa-play text-xs"></i>
+                    <span>Darsni davom ettirish</span>
+                </a>
+                {% endif %}
+                <a href="{% url 'student_assignments_hub' %}" class="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm backdrop-blur transition-all border border-white/20 flex items-center gap-2">
+                    <i class="fa-solid fa-laptop-code text-xs"></i>
+                    <span>Vazifalar studiyasi</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 STATS CARDS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <!-- 1. Enrolled courses -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2 hover:border-blue-500/40 transition-colors">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                {{ stats.enrolled_courses_count }} <span class="text-sm font-semibold text-slate-400">ta</span>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Faol Kurslarim</div>
+        </div>
+
+        <!-- 2. Completed lessons -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2 hover:border-emerald-500/40 transition-colors">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                {{ stats.completed_lessons_count }} <span class="text-sm font-semibold text-slate-400">ta</span>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Tugatilgan Darslar</div>
+        </div>
+
+        <!-- 3. Approved assignments -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2 hover:border-indigo-500/40 transition-colors">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                {{ stats.approved_submissions_count }} <span class="text-sm font-semibold text-slate-400">ta</span>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Qabul Qilingan Vazifalar</div>
+        </div>
+
+        <!-- 4. Coins Wallet -->
+        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111827] border border-amber-500/30 shadow-sm space-y-2 hover:border-amber-500/60 transition-colors group cursor-pointer" onclick="celebrateCoins({{ user.coins }}, 'Tangalaringiz!')">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-lg">
+                    <span class="material-symbols-outlined text-2xl">monetization_on</span>
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                    Hamyon
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-amber-500">
+                {{ user.coins }} <span class="text-sm font-semibold">tanga</span>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Topshiriqlar mukofoti</div>
+        </div>
+    </div>
+
+    <!-- 5 ASOSIY MODULGA TEZKOR O'TISH KARTALARI -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <i class="fa-solid fa-compass text-blue-500"></i>
+                <span>Asosiy O'quv Bo'limlari</span>
+            </h2>
+            <span class="text-xs text-slate-500 dark:text-slate-400">5 ta faol modul</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <!-- 1. Vazifalar Studiyasi -->
+            <a href="{% url 'student_assignments_hub' %}" class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-indigo-500 shadow-sm transition-all group flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="w-11 h-11 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-laptop-code"></i>
+                    </div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white group-hover:text-indigo-500 transition-colors">
+                        Vazifalar Studiyasi
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                        Platformaning o'zida kod yozish, blok-sxema chizish va ustozga yuborish.
+                    </p>
+                </div>
+                <div class="pt-4 flex items-center justify-between text-xs font-bold text-indigo-500">
+                    <span>Ochish</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <!-- 2. Kurs Reytingi -->
+            <a href="{% url 'student_leaderboard' %}" class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-amber-500 shadow-sm transition-all group flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors">
+                        Kurs Reytingi
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                        Kursdoshlar orasidagi o'rningiz, to'plangan XP va ligalar shoxsupasi.
+                    </p>
+                </div>
+                <div class="pt-4 flex items-center justify-between text-xs font-bold text-amber-500">
+                    <span>Reytingni ko'rish</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <!-- 3. Musobaqalar -->
+            <a href="{% url 'student_contests' %}" class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-rose-500 shadow-sm transition-all group flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="w-11 h-11 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white group-hover:text-rose-500 transition-colors">
+                        Musobaqalar
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                        Xakatonlar va kodlash chempionatlari. Tangalar va sovrinlar yuting.
+                    </p>
+                </div>
+                <div class="pt-4 flex items-center justify-between text-xs font-bold text-rose-500">
+                    <span>Ishtirok etish</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <!-- 4. Loyihalar -->
+            <a href="{% url 'student_projects' %}" class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-purple-500 shadow-sm transition-all group flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="w-11 h-11 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-rocket"></i>
+                    </div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white group-hover:text-purple-500 transition-colors">
+                        Loyihalar & Ko'rgazma
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                        Kurs bitiruv loyihalari, shaxsiy portfolio va eng sara ishlar vitrinasi.
+                    </p>
+                </div>
+                <div class="pt-4 flex items-center justify-between text-xs font-bold text-purple-500">
+                    <span>Portfolio</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+
+            <!-- 5. Dasturchi Yo'li -->
+            <a href="{% url 'student_roadmap' %}" class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-emerald-500 shadow-sm transition-all group flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-route"></i>
+                    </div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors">
+                        Dasturchi Yo'li
+                    </h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                        Yo'nalishingiz bo'yicha bosqichma-bosqich chiroyli vizual metro xaritasi.
+                    </p>
+                </div>
+                <div class="pt-4 flex items-center justify-between text-xs font-bold text-emerald-500">
+                    <span>Xaritani ko'rish</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- IKKI USTUNLI BLOK: JORIY KURS PROGRESSI VA OXIRGI TOPSHIRIQLAR -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- CHAP USTUN (7 Cols): Faol kurslar va davom ettirish -->
+        <div class="lg:col-span-7 space-y-6">
+            <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                            Mening Faol Kurslarim
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">To'xtagan joyingizdan darslarni davom ettiring</p>
+                    </div>
+                    <a href="{% url 'course_list' %}" class="text-xs font-bold text-blue-500 hover:underline">
+                        Katalog &rarr;
+                    </a>
+                </div>
+
+                {% if stats.enrollments %}
+                <div class="space-y-4">
+                    {% for enr in stats.enrollments|slice:":3" %}
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 hover:border-blue-500/40 transition-colors">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                {% if enr.course.category %}
+                                <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-500/10 text-blue-500">
+                                    {{ enr.course.category.name }}
+                                </span>
+                                {% endif %}
+                                <h4 class="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                                    {{ enr.course.title }}
+                                </h4>
+                            </div>
+                            <span class="text-xs font-black {% if enr.progress_percent == 100 %}text-emerald-500{% else %}text-blue-500{% endif %}">
+                                {{ enr.progress_percent }}%
+                            </span>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                            <div class="h-2 rounded-full {% if enr.progress_percent == 100 %}bg-emerald-500{% else %}bg-blue-600{% endif %} transition-all duration-500" style="width: {{ enr.progress_percent }}%"></div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
+                            <span>
+                                {% if enr.last_lesson %}
+                                    Oxirgi dars: <strong class="text-slate-800 dark:text-slate-200">{{ enr.last_lesson.title|truncatechars:28 }}</strong>
+                                {% else %}
+                                    Dars hali boshlanmagan
+                                {% endif %}
+                            </span>
+                            <a href="{% url 'course_learn' enr.course.slug %}" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors shadow-sm">
+                                {% if enr.progress_percent == 100 %}Qayta ko'rish{% else %}Davom etish &rarr;{% endif %}
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="py-8 text-center text-xs text-slate-400 space-y-2">
+                    <i class="fa-solid fa-graduation-cap text-3xl opacity-40"></i>
+                    <p>Siz hali birorta kursga yozilmadingiz.</p>
+                    <a href="{% url 'course_list' %}" class="inline-block px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs">
+                        Kurslarni ko'rish
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- ROADMAP PREVIEW CARD -->
+            {% if main_track %}
+            <div class="p-6 rounded-3xl bg-gradient-to-br from-emerald-950/40 via-slate-900 to-[#111827] border border-emerald-500/30 p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+                            <i class="{{ main_track.icon }}"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Dasturchi Yo'li Progressi</span>
+                            <h4 class="text-sm sm:text-base font-bold text-white">{{ main_track.title }}</h4>
+                        </div>
+                    </div>
+                    <span class="text-base font-black text-emerald-400">{{ roadmap_percent }}%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full transition-all duration-500" style="width: {{ roadmap_percent }}%"></div>
+                </div>
+                <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+                    <span>O'rtacha muddat: {{ main_track.estimated_months }} oy</span>
+                    <a href="{% url 'student_roadmap_track' main_track.slug %}" class="text-emerald-400 hover:underline font-bold flex items-center gap-1">
+                        <span>Xaritaga o'tish</span>
+                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- O'NG USTUN (5 Cols): Oxirgi vazifalar holati va Musobaqa xabarnomasi -->
+        <div class="lg:col-span-5 space-y-6">
+
+            <!-- VAZIFALAR TAQRIZLARI -->
+            <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white">Oxirgi Topshiriqlar</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Ustoz tekshiruvi va baholar</p>
+                    </div>
+                    <a href="{% url 'student_assignments_hub' %}" class="text-xs font-bold text-indigo-500 hover:underline">
+                        Barchasi &rarr;
+                    </a>
+                </div>
+
+                {% if recent_submissions %}
+                <div class="space-y-3">
+                    {% for sub in recent_submissions %}
+                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <h5 class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                    {{ sub.assignment.lesson.title }}: {{ sub.assignment.title }}
+                                </h5>
+                                <span class="text-[10px] text-slate-400">{{ sub.assignment.lesson.module.course.title }}</span>
+                            </div>
+                            <div class="shrink-0">
+                                {% if sub.status == 'approved' %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                        Qabul ({{ sub.score }}b)
+                                    </span>
+                                {% elif sub.status == 'pending' %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                        Kutilmoqda
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                                        Qaytarilgan
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if sub.instructor_feedback %}
+                        <p class="text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <strong>Ustoz:</strong> {{ sub.instructor_feedback|truncatechars:80 }}
+                        </p>
+                        {% endif %}
+
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800">
+                            <span>{{ sub.created_at|date:"d.m.Y H:i" }}</span>
+                            <a href="{% url 'student_assignment_solve' sub.assignment.id %}" class="text-blue-500 font-bold hover:underline">
+                                Ish maydoniga o'tish &rarr;
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="py-6 text-center text-xs text-slate-400 space-y-1">
+                    <i class="fa-solid fa-code text-2xl opacity-40"></i>
+                    <p>Hozircha topshirilgan vazifalar yo'q.</p>
+                    <a href="{% url 'student_assignments_hub' %}" class="text-indigo-500 hover:underline font-bold text-[11px]">
+                        Vazifalarni ochish &rarr;
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- YAQINLASHAYOTGAN MUSOBAQALAR -->
+            {% if featured_contests %}
+            <div class="p-6 rounded-3xl bg-gradient-to-br from-rose-950/30 via-slate-900 to-[#111827] border border-rose-500/30 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-fire text-rose-500"></i>
+                        <h4 class="text-sm font-black text-white">Yaqinlashayotgan Musobaqa</h4>
+                    </div>
+                    <a href="{% url 'student_contests' %}" class="text-xs font-bold text-rose-400 hover:underline">Barchasi</a>
+                </div>
+
+                {% with contest=featured_contests.0 %}
+                <div class="space-y-2">
+                    <h5 class="text-sm font-bold text-white">{{ contest.title }}</h5>
+                    <p class="text-xs text-slate-300 line-clamp-2">{{ contest.description|truncatewords:18 }}</p>
+                    <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
+                        <span class="text-amber-400 font-bold flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">monetization_on</span>
+                            {{ contest.coin_prize_pool }} tanga fondi
+                        </span>
+                        <a href="{% url 'student_contest_detail' contest.slug %}" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] transition-colors">
+                            Qatnashish &rarr;
+                        </a>
+                    </div>
+                </div>
+                {% endwith %}
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

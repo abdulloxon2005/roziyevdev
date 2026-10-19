@@ -2,6 +2,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.conf import settings
+import time
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -181,7 +185,7 @@ class ChangePasswordAPIView(APIView):
 
 def web_login_view(request):
     if request.user.is_authenticated:
-        return redirect('profile')
+        return redirect('student_dashboard')
 
     if request.method == 'POST':
         identifier = request.POST.get('email', '').strip()
@@ -199,7 +203,7 @@ def web_login_view(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Xush kelibsiz, {user.display_name}!")
-                next_url = request.GET.get('next', 'profile')
+                next_url = request.GET.get('next') or request.POST.get('next') or 'student_dashboard'
                 return redirect(next_url)
 
         messages.error(request, "Email yoki parol xato kiritildi!")
@@ -209,7 +213,7 @@ def web_login_view(request):
 
 def web_register_view(request):
     if request.user.is_authenticated:
-        return redirect('profile')
+        return redirect('student_dashboard')
 
     if request.method == 'POST':
         email = request.POST.get('email', '').strip().lower()
@@ -242,7 +246,7 @@ def web_register_view(request):
             )
             login(request, user)
             messages.success(request, "Hisobingiz muvaffaqiyatli yaratildi!")
-            return redirect('profile')
+            return redirect('student_dashboard')
 
     return render(request, 'auth/register.html')
 
@@ -255,7 +259,30 @@ def web_logout_view(request):
 
 @login_required
 def web_profile_view(request):
-    return render(request, 'profile/detail.html', {'user': request.user})
+    from apps.learning.models import Enrollment, LessonProgress, CoinTransaction, AssignmentSubmission
+    from apps.certificates.models import Certificate
+
+    enrollments = Enrollment.objects.filter(user=request.user).select_related('course__category', 'last_lesson').order_by('-updated_at')
+    certificates = Certificate.objects.filter(user=request.user).select_related('course').order_by('-issued_at')
+    completed_lessons_count = LessonProgress.objects.filter(enrollment__user=request.user).count()
+
+    coin_transactions = CoinTransaction.objects.filter(student=request.user).order_by('-created_at')[:10]
+    my_submissions = AssignmentSubmission.objects.filter(student=request.user).select_related('assignment__lesson__module__course').order_by('-created_at')[:10]
+    approved_submissions_count = AssignmentSubmission.objects.filter(student=request.user, status='approved').count()
+
+    context = {
+        'user': request.user,
+        'enrollments': enrollments,
+        'certificates': certificates,
+        'enrollments_count': enrollments.count(),
+        'completed_lessons_count': completed_lessons_count,
+        'certificates_count': certificates.count(),
+        'coin_transactions': coin_transactions,
+        'my_submissions': my_submissions,
+        'approved_submissions_count': approved_submissions_count,
+        'active_menu': 'profile',
+    }
+    return render(request, 'profile/detail.html', context)
 
 
 @login_required
@@ -267,17 +294,26 @@ def web_profile_settings_view(request):
 
         if action == 'update_profile':
             user = request.user
-            user.first_name = request.POST.get('first_name', user.first_name).strip()
-            user.last_name = request.POST.get('last_name', user.last_name).strip()
-            user.phone = request.POST.get('phone', user.phone).strip()
+            if 'first_name' in request.POST:
+                user.first_name = (request.POST.get('first_name') or '').strip()
+            if 'last_name' in request.POST:
+                user.last_name = (request.POST.get('last_name') or '').strip()
+            if 'phone' in request.POST:
+                user.phone = (request.POST.get('phone') or '').strip()
             user.save()
 
-            profile.headline = request.POST.get('headline', profile.headline).strip()
-            profile.bio = request.POST.get('bio', profile.bio).strip()
-            profile.github = request.POST.get('github', profile.github).strip()
-            profile.linkedin = request.POST.get('linkedin', profile.linkedin).strip()
-            profile.telegram = request.POST.get('telegram', profile.telegram).strip()
-            profile.website = request.POST.get('website', profile.website).strip()
+            if 'headline' in request.POST:
+                profile.headline = (request.POST.get('headline') or '').strip()
+            if 'bio' in request.POST:
+                profile.bio = (request.POST.get('bio') or '').strip()
+            if 'github' in request.POST:
+                profile.github = (request.POST.get('github') or '').strip() or None
+            if 'linkedin' in request.POST:
+                profile.linkedin = (request.POST.get('linkedin') or '').strip() or None
+            if 'telegram' in request.POST:
+                profile.telegram = (request.POST.get('telegram') or '').strip() or None
+            if 'website' in request.POST:
+                profile.website = (request.POST.get('website') or '').strip() or None
 
             if 'avatar' in request.FILES:
                 profile.avatar = request.FILES['avatar']
@@ -305,4 +341,38 @@ def web_profile_settings_view(request):
                 messages.success(request, "Parolingiz muvaffaqiyatli yangilandi!")
                 return redirect('profile_settings')
 
-    return render(request, 'profile/settings.html', {'user': request.user, 'profile': profile})
+    return render(request, 'profile/settings.html', {'user': request.user, 'profile': profile, 'active_menu': 'profile_settings'})
+
+
+@require_POST
+def web_quick_unlock_view(request):
+    """
+    Ekran qulflanganda parolni tezkor tekshirib, sahifani yangilamasdan
+    seansni davom ettirish (Unlock) endpointi.
+    """
+    if not request.user.is_authenticated:
+        next_url = request.POST.get('next', '/')
+        return JsonResponse({
+            'success': False,
+            'expired': True,
+            'error': "Seans vaqti tugagan. Qaytadan tizimga kiring.",
+            'redirect': f"{settings.LOGIN_URL}?next={next_url}"
+        }, status=401)
+
+    password = request.POST.get('password', '')
+    if not password:
+        return JsonResponse({'success': False, 'error': "Parolni kiriting!"}, status=400)
+
+    # Parolni tekshirish
+    if request.user.check_password(password):
+        # Faollik vaqtini yangilash
+        request.session['last_activity'] = time.time()
+        return JsonResponse({
+            'success': True,
+            'message': "Xush kelibsiz! Qulf muvaffaqiyatli ochildi."
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': "Kiritilgan parol noto'g'ri!"
+        }, status=400)

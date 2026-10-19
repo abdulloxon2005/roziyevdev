@@ -14,11 +14,6 @@
             
             <!-- Left Text Content -->
             <div class="lg:col-span-7 space-y-8 text-center lg:text-left">
-                <!-- Badge -->
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-semibold uppercase tracking-wider">
-                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-                    <span>Zamonaviy Dasturlash Akademiyasi</span>
-                </div>
 
                 <!-- Main Headline -->
                 <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15] text-slate-900 dark:text-white">
@@ -88,7 +83,7 @@
                     <div class="p-6 font-mono text-xs sm:text-sm leading-relaxed text-slate-300 space-y-3 bg-[#0b0f19] rounded-b-xl overflow-x-auto">
                         <p><span class="text-purple-400">class</span> <span class="text-amber-300">SoftwareEngineer</span> {</p>
                         <p class="pl-4"><span class="text-blue-400">final</span> <span class="text-emerald-400">String</span> skills = <span class="text-emerald-300">"Flutter + Algorithms + SQL"</span>;</p>
-                        <p class="pl-4"><span class="text-blue-400">final</span> <span class="text-emerald-400">String</span> mentor = <span class="text-emerald-300">"Abdulloh Roziyev"</span>;</p>
+                        <p class="pl-4"><span class="text-blue-400">final</span> <span class="text-emerald-400">String</span> mentor = <span class="text-emerald-300">"Abdulloxon Roziyev"</span>;</p>
                         <p class="pl-4 pt-2"><span class="text-purple-400">Future</span>&lt;<span class="text-amber-300">Success</span>&gt; <span class="text-blue-400">learnAndBuild</span>() <span class="text-purple-400">async</span> {</p>
                         <p class="pl-8 text-slate-400">// 1. Noldan algoritmlarni o'rganamiz</p>
                         <p class="pl-8"><span class="text-purple-400">await</span> masterBigOAndDataStructures();</p>
@@ -313,10 +308,10 @@
                 
                 <div class="lg:col-span-4 flex flex-col items-center text-center">
                     <div class="relative">
-                        <img src="https://ui-avatars.com/api/?name=Abdulloh+Roziyev&background=2563eb&color=fff&size=200" alt="Abdulloh Roziyev" class="w-40 h-40 sm:w-48 sm:h-48 rounded-full object-cover border-4 border-blue-500/30 shadow-2xl">
+                        <img src="https://ui-avatars.com/api/?name=Abdulloxon+Roziyev&background=2563eb&color=fff&size=200" alt="Abdulloxon Roziyev" class="w-40 h-40 sm:w-48 sm:h-48 rounded-full object-cover border-4 border-blue-500/30 shadow-2xl">
                         <span class="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-emerald-500 border-4 border-white dark:border-slate-900 flex items-center justify-center" title="Faol instruktor"></span>
                     </div>
-                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-5">Abdulloh Roziyev</h3>
+                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white mt-5">Abdulloxon Roziyev</h3>
                     <p class="text-sm font-semibold text-blue-600 dark:text-blue-400 mt-1">Senior Software Engineer & Mentor</p>
                     <div class="flex items-center gap-3 mt-4">
                         <a href="https://github.com/roziyevdev" target="_blank" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white transition-colors">
@@ -361,6 +356,65 @@
         </div>
     </div>
 </section>
+
+<!-- LATEST BLOG POSTS SECTION -->
+{% if latest_posts %}
+<section class="py-20 bg-slate-50 dark:bg-[#0b0f19] border-t border-slate-200 dark:border-slate-800 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+                <span class="text-xs uppercase font-extrabold text-blue-600 dark:text-blue-400 tracking-wider">
+                    Texnik Maqolalar
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-1">
+                    So'nggi Blog Maqolalari
+                </h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-xl">
+                    Mobil dasturlash, backend arxitekturasi va algoritmlar bo'yicha amaliy tajribalar bilan tanishing.
+                </p>
+            </div>
+            <a href="{% url 'blog_list' %}" class="inline-flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                Barcha maqolalar <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {% for post in latest_posts %}
+            <article class="flex flex-col rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800/80 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
+                <a href="{{ post.get_absolute_url }}" class="block relative h-48 overflow-hidden bg-slate-800">
+                    <img src="{{ post.cover_url }}" alt="{{ post.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    {% if post.category %}
+                    <span class="absolute top-3 left-3 px-2.5 py-0.5 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-blue-600/90 backdrop-blur-md text-white shadow-md">
+                        {{ post.category.name }}
+                    </span>
+                    {% endif %}
+                </a>
+
+                <div class="p-6 flex flex-col flex-grow space-y-3">
+                    <div class="flex items-center justify-between text-xs text-slate-400">
+                        <span><i class="fa-regular fa-calendar mr-1"></i> {{ post.published_at|date:"d M, Y" }}</span>
+                        <span><i class="fa-regular fa-clock mr-1"></i> {{ post.reading_time }} daq</span>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                        <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+                    </h3>
+
+                    <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-clamp-2 flex-grow">
+                        {{ post.summary }}
+                    </p>
+
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                        <span class="font-semibold text-slate-800 dark:text-slate-300">{{ post.author.display_name }}</span>
+                        <span><i class="fa-regular fa-eye mr-1"></i> {{ post.views_count }}</span>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <!-- CALL TO ACTION BANNER -->
 <section class="py-20 relative">

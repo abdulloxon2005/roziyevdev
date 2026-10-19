@@ -1,0 +1,170 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Vazifalar Studiyasi — O'quvchi Kabineti — roziyevdev{% endblock %}
+{% block page_title %}Vazifalar Studiyasi{% endblock %}
+{% block page_subtitle %}Barcha kurslaringiz bo'yicha amaliy topshiriqlar, kod muharriri va o'qituvchi taqrizlari.{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-7xl mx-auto">
+
+    <!-- METRIKALAR TIZMASI -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+        <a href="?status=all{% if course_filter %}&course={{ course_filter }}{% endif %}" class="p-4 rounded-2xl bg-white dark:bg-[#111827] border {% if status_filter == 'all' %}border-blue-500 ring-2 ring-blue-500/20{% else %}border-slate-200 dark:border-slate-800{% endif %} shadow-sm transition-all text-center">
+            <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{{ all_assign_count }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-1">Barcha Vazifalar</div>
+        </a>
+        <a href="?status=unsubmitted{% if course_filter %}&course={{ course_filter }}{% endif %}" class="p-4 rounded-2xl bg-white dark:bg-[#111827] border {% if status_filter == 'unsubmitted' %}border-indigo-500 ring-2 ring-indigo-500/20{% else %}border-slate-200 dark:border-slate-800{% endif %} shadow-sm transition-all text-center">
+            <div class="text-xl sm:text-2xl font-black text-indigo-500">{{ unsubmitted_count }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-1">Topshirilmagan</div>
+        </a>
+        <a href="?status=pending{% if course_filter %}&course={{ course_filter }}{% endif %}" class="p-4 rounded-2xl bg-white dark:bg-[#111827] border {% if status_filter == 'pending' %}border-amber-500 ring-2 ring-amber-500/20{% else %}border-slate-200 dark:border-slate-800{% endif %} shadow-sm transition-all text-center">
+            <div class="text-xl sm:text-2xl font-black text-amber-500">{{ pending_count }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-1">Tekshirilmoqda</div>
+        </a>
+        <a href="?status=rejected{% if course_filter %}&course={{ course_filter }}{% endif %}" class="p-4 rounded-2xl bg-white dark:bg-[#111827] border {% if status_filter == 'rejected' %}border-rose-500 ring-2 ring-rose-500/20{% else %}border-slate-200 dark:border-slate-800{% endif %} shadow-sm transition-all text-center">
+            <div class="text-xl sm:text-2xl font-black text-rose-500">{{ rejected_count }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-1">Qayta Ishlash</div>
+        </a>
+        <a href="?status=approved{% if course_filter %}&course={{ course_filter }}{% endif %}" class="p-4 rounded-2xl bg-white dark:bg-[#111827] border {% if status_filter == 'approved' %}border-emerald-500 ring-2 ring-emerald-500/20{% else %}border-slate-200 dark:border-slate-800{% endif %} shadow-sm transition-all text-center">
+            <div class="text-xl sm:text-2xl font-black text-emerald-500">{{ approved_count }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-1">Qabul Qilingan</div>
+        </a>
+    </div>
+
+    <!-- KURS FILTRI VA SARALASH -->
+    <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Holat:</span>
+            <a href="?status=all{% if course_filter %}&course={{ course_filter }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 {% if status_filter == 'all' %}bg-blue-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200{% endif %}">
+                Barchasi
+            </a>
+            <a href="?status=unsubmitted{% if course_filter %}&course={{ course_filter }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 {% if status_filter == 'unsubmitted' %}bg-indigo-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200{% endif %}">
+                Bajarish kerak
+            </a>
+            <a href="?status=rejected{% if course_filter %}&course={{ course_filter }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 {% if status_filter == 'rejected' %}bg-rose-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200{% endif %}">
+                Qaytarilganlar
+            </a>
+            <a href="?status=pending{% if course_filter %}&course={{ course_filter }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 {% if status_filter == 'pending' %}bg-amber-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200{% endif %}">
+                Tekshirilmoqda
+            </a>
+            <a href="?status=approved{% if course_filter %}&course={{ course_filter }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 {% if status_filter == 'approved' %}bg-emerald-600 text-white{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200{% endif %}">
+                Qabul qilingan
+            </a>
+        </div>
+
+        <!-- Kurs bo'yicha filter -->
+        <form method="GET" class="w-full sm:w-auto">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <select name="course" onchange="this.form.submit()" class="w-full sm:w-64 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Barcha kurslar bo'yicha</option>
+                {% for c in user_courses %}
+                    <option value="{{ c.id }}" {% if course_filter == c.id|stringformat:"s" %}selected{% endif %}>
+                        {{ c.title|truncatechars:35 }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- VAZIFALAR RO'YXATI -->
+    {% if items %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {% for item in items %}
+        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-blue-500/40 transition-all">
+            <div class="space-y-3">
+                <!-- Kurs nomi va Holat badge -->
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                            {{ item.assignment.lesson.module.course.title|truncatechars:30 }}
+                        </span>
+                        <div class="text-xs text-slate-400 mt-1">
+                            {{ item.assignment.lesson.title }}
+                        </div>
+                    </div>
+                    <div>
+                        {% if item.status == 'approved' %}
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-check"></i> Qabul ({{ item.submission.score }} ball)
+                            </span>
+                        {% elif item.status == 'pending' %}
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center gap-1">
+                                <i class="fa-solid fa-hourglass-half"></i> Tekshirilmoqda
+                            </span>
+                        {% elif item.status == 'rejected' %}
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-500/10 text-rose-500 border border-rose-500/30 flex items-center gap-1">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Qayta ishlash
+                            </span>
+                        {% else %}
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 flex items-center gap-1">
+                                <i class="fa-solid fa-pen-to-square"></i> Bajarilmagan
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Vazifa Sarlavhasi -->
+                <h3 class="text-base font-black text-slate-900 dark:text-white leading-snug">
+                    {{ item.assignment.title }}
+                </h3>
+
+                <!-- Mukofot va ballar -->
+                <div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                    <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 font-extrabold flex items-center gap-1 border border-amber-500/20">
+                        <span class="material-symbols-outlined text-[14px]">monetization_on</span>
+                        +{{ item.assignment.coin_reward }} tanga
+                    </span>
+                    <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
+                        Maks: {{ item.assignment.max_score }} ball
+                    </span>
+                    <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
+                        O'tish: {{ item.assignment.passing_score }} ball
+                    </span>
+                </div>
+
+                <!-- Ustoz taqrizi agar bo'lsa -->
+                {% if item.submission and item.submission.instructor_feedback %}
+                <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+                    <strong class="text-blue-500 block mb-0.5">Ustoz izohi:</strong>
+                    {{ item.submission.instructor_feedback }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Tugmalar -->
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                <a href="{% url 'course_learn_lesson' item.assignment.lesson.module.course.slug item.assignment.lesson.id %}" class="text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors">
+                    Darsni ko'rish &rarr;
+                </a>
+                <a href="{% url 'student_assignment_solve' item.assignment.id %}" class="px-4 py-2 rounded-xl {% if item.status == 'rejected' %}bg-rose-600 hover:bg-rose-500{% elif item.status == 'approved' %}bg-slate-800 hover:bg-slate-700 text-slate-300{% else %}bg-blue-600 hover:bg-blue-500 text-white{% endif %} font-bold text-xs transition-all shadow-sm flex items-center gap-1.5">
+                    {% if item.status == 'rejected' %}
+                        <i class="fa-solid fa-wrench"></i> Qayta ishlash
+                    {% elif item.status == 'approved' %}
+                        <i class="fa-solid fa-eye"></i> Yechimni ko'rish
+                    {% elif item.status == 'pending' %}
+                        <i class="fa-solid fa-pen"></i> Tahrirlash
+                    {% else %}
+                        <i class="fa-solid fa-code"></i> Kod yozish & topshirish
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="py-16 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 space-y-4">
+        <div class="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto text-3xl">
+            <i class="fa-solid fa-check-double"></i>
+        </div>
+        <h3 class="text-lg font-black text-slate-900 dark:text-white">Ushbu filtr bo'yicha vazifalar topilmadi</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            Barcha amaliy vazifalar o'zlashtirilgan yoki tanlangan status bo'yicha topshiriq mavjud emas.
+        </p>
+        <a href="?status=all" class="inline-block px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs">
+            Barcha vazifalarni ko'rsatish
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

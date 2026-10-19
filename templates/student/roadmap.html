@@ -1,0 +1,217 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Dasturchi Yo'li (Roadmap) — O'quvchi Kabineti — roziyevdev{% endblock %}
+{% block page_title %}Dasturchi Yo'li (Developer Roadmap){% endblock %}
+{% block page_subtitle %}Tanlagan mutaxassisligingiz bo'yicha bosqichma-bosqich interaktiv o'sish xaritasi.{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-7xl mx-auto">
+
+    <!-- TRACK SELECTOR TABS -->
+    <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 overflow-x-auto">
+        {% for track in all_tracks %}
+        <a href="{% url 'student_roadmap_track' track.slug %}" class="px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 flex items-center gap-2.5 {% if current_track.id == track.id %}bg-emerald-600 text-white shadow-lg shadow-emerald-600/20{% else %}bg-white dark:bg-[#111827] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800{% endif %}">
+            <i class="{{ track.icon }}"></i>
+            <span>{{ track.title }}</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if current_track %}
+    <!-- TRACK HERO OVERVIEW -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-[#111827] border border-emerald-500/30 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    O'quv Yo'nalishi
+                </span>
+                <span class="text-xs text-slate-400 font-semibold">
+                    <i class="fa-regular fa-clock mr-1"></i> Taxminiy muddat: {{ current_track.estimated_months }} oy
+                </span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                {{ current_track.title }}
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {{ current_track.short_description|default:"Ushbu yo'nalish bo'yicha noldan professional darajagacha bo'lgan barcha bilimlar xaritasi." }}
+            </p>
+        </div>
+
+        <!-- PROGRESS METRIC -->
+        <div class="p-5 rounded-2xl bg-white/5 border border-white/10 shrink-0 w-full md:w-64 space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 uppercase">O'zlashtirish</span>
+                <span class="text-2xl font-black text-emerald-400">{{ progress_info.percent }}%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2.5 rounded-full transition-all duration-500" style="width: {{ progress_info.percent }}%"></div>
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center justify-between">
+                <span>Bekatlar:</span>
+                <strong class="text-white">{{ progress_info.completed_nodes }} / {{ progress_info.total_nodes }} ta tugatildi</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIZUAL METRO XARITASI (VISUAL ROADMAP TIMELINE) -->
+    <div class="space-y-10 relative">
+
+        {% for item in stages_with_nodes %}
+        <div class="space-y-6">
+
+            <!-- BOSQICH SARLAVHASI (STAGE HEADER) -->
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-black text-sm shrink-0">
+                    {{ item.stage.order }}
+                </div>
+                <div>
+                    <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                        {{ item.stage.title }}
+                    </h2>
+                    {% if item.stage.description %}
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ item.stage.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- BEKATLAR TIZMASI (NODES GRID WITH CONNECTING METRO-LINE) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-4 sm:pl-14 border-l-2 border-emerald-500/20 ml-5 sm:ml-5 space-y-0">
+                {% for n in item.nodes %}
+                <div 
+                    onclick="openNodeModal('{{ n.node.title|escapejs }}', '{{ n.node.importance|escapejs }}', '{{ n.node.summary|escapejs }}', '{{ n.node.linked_lesson.title|default:""|escapejs }}', '{{ n.node.target_url|escapejs }}', '{{ n.node.external_docs_url|default:""|escapejs }}')"
+                    class="p-5 rounded-2xl cursor-pointer transition-all flex flex-col justify-between border relative group {% if n.status == 'completed' %}bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-500 text-emerald-300{% elif n.status == 'in_progress' %}bg-blue-950/20 border-blue-500 ring-2 ring-blue-500/20 hover:border-blue-400 text-blue-300 shadow-md{% else %}bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400{% endif %}"
+                >
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded {% if n.status == 'completed' %}bg-emerald-500/20 text-emerald-400{% elif n.status == 'in_progress' %}bg-blue-500/20 text-blue-400 animate-pulse{% else %}bg-slate-100 dark:bg-slate-800 text-slate-400{% endif %}">
+                                {% if n.status == 'completed' %}
+                                    <i class="fa-solid fa-check mr-1"></i> O'zlashtirildi
+                                {% elif n.status == 'in_progress' %}
+                                    <i class="fa-solid fa-spinner animate-spin mr-1"></i> Joriy Bekat
+                                {% else %}
+                                    <i class="fa-solid fa-lock mr-1"></i> Navbatdagi
+                                {% endif %}
+                            </span>
+
+                            <span class="text-[10px] font-semibold text-slate-500">
+                                #{{ n.node.order }}
+                            </span>
+                        </div>
+
+                        <h3 class="text-sm font-black text-slate-900 dark:text-white group-hover:text-emerald-400 transition-colors">
+                            {{ n.node.title }}
+                        </h3>
+
+                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                            {{ n.node.summary }}
+                        </p>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-bold">
+                        {% if n.node.linked_lesson %}
+                        <span class="text-blue-500 flex items-center gap-1">
+                            <i class="fa-solid fa-video text-[10px]"></i> Kurs darsi bor
+                        </span>
+                        {% else %}
+                        <span class="text-slate-500">Mustaqil mavzu</span>
+                        {% endif %}
+
+                        <span class="text-emerald-500 group-hover:translate-x-1 transition-transform">
+                            Tafsilotlar &rarr;
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+        {% endfor %}
+
+    </div>
+    {% else %}
+    <div class="py-16 text-center bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 space-y-3">
+        <i class="fa-solid fa-route text-4xl text-slate-500 opacity-40"></i>
+        <h3 class="text-lg font-black text-white">Yo'nalishlar xaritasi tayyorlanmoqda</h3>
+        <p class="text-xs text-slate-400">Tez orada ushbu bo'limga yangi o'quv rejalari yuklanadi.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- INTERAKTIV BEKAT MODALI (NODE DETAILS DRAWER) -->
+<div id="node-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl relative">
+        <button type="button" onclick="closeNodeModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white p-1">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+
+        <div class="space-y-1">
+            <span id="modal-importance" class="text-[10px] font-black uppercase px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Majburiy Poydevor
+            </span>
+            <h3 id="modal-title" class="text-xl font-black text-slate-900 dark:text-white pt-2">
+                Bekat Nomi
+            </h3>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed" id="modal-summary">
+            Mavzu haqida ma'lumot...
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800" id="modal-links-container">
+            <a id="modal-lesson-link" href="#" class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors flex items-center justify-between hidden">
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-play text-[10px]"></i>
+                    <span id="modal-lesson-text">Platformadagi darsni ochish</span>
+                </span>
+                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+
+            <a id="modal-docs-link" href="#" target="_blank" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition-colors flex items-center justify-between hidden">
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-book text-[10px] text-emerald-400"></i>
+                    <span>Rasmiy Hujjatlar & Qo'llanma</span>
+                </span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+        </div>
+
+        <div class="pt-2 text-right">
+            <button type="button" onclick="closeNodeModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors">
+                Yopish
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openNodeModal(title, importance, summary, lessonTitle, lessonUrl, docsUrl) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-summary').textContent = summary;
+
+        const lessonBtn = document.getElementById('modal-lesson-link');
+        const lessonText = document.getElementById('modal-lesson-text');
+        if (lessonUrl && lessonUrl.trim() !== '') {
+            lessonBtn.href = lessonUrl;
+            lessonText.textContent = lessonTitle ? `«${lessonTitle}» darsiga o'tish` : "Darsga o'tish";
+            lessonBtn.classList.remove('hidden');
+        } else {
+            lessonBtn.classList.add('hidden');
+        }
+
+        const docsBtn = document.getElementById('modal-docs-link');
+        if (docsUrl && docsUrl.trim() !== '') {
+            docsBtn.href = docsUrl;
+            docsBtn.classList.remove('hidden');
+        } else {
+            docsBtn.classList.add('hidden');
+        }
+
+        document.getElementById('node-modal').classList.remove('hidden');
+    }
+
+    function closeNodeModal() {
+        document.getElementById('node-modal').classList.add('hidden');
+    }
+</script>
+{% endblock %}

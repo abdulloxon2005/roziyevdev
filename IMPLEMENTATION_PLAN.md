@@ -69,3 +69,14 @@
 1. Instruktor statistikasi va boshqaruv paneli.
 2. Xavfsizlik (CORS, Rate limiting, CSRF).
 3. Docker & Production sozlamalari.
+
+---
+
+#### 🎓 6-BOSQICH: O'quvchilar Paneli (Student Portal & Gamification)
+Batafsil texnik reja: [STUDENT_PORTAL_IMPLEMENTATION_PLAN.md](file:///d:/BMI/roziyevdev/STUDENT_PORTAL_IMPLEMENTATION_PLAN.md)
+1. **Vazifalar Laboratoriyasi:** Platformaning o'zida kod/flowchart muharriri orqali amaliy topshiriqlarni bajarish va o'qituvchiga yuborish, taqriz va qayta ishlash zanjiri.
+2. **Kurs Reytingi (Leaderboard):** Talaba o'zi o'qiyotgan kurs bo'yicha jonli reyting, XP/ballar, shaxsiy o'rin ko'rsatkichi va ligalar.
+3. **Musobaqalar Bo'limi (Contests):** Haftalik bellashuvlar, algoritmik va xakaton musobaqalari, jonli turnir jadvali va sovrinli tangalar.
+4. **Loyihalar Bo'limi (Projects Showcase):** Kurs bitiruv (capstone) loyihalari, shaxsiy portfoliolarni joylash, ustoz code review va jamoatchilik ko'rgazmasi.
+5. **Dasturchi Yo'li (Developer Roadmap):** Yo'nalishlar (Flutter, Python, Algoritmlar) bo'yicha chiroyli interaktiv metro liniyasi shaklidagi vizual xarita, mavzular va darslar bilan avtomatik bog'langan progress.
+

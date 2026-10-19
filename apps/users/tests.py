@@ -86,3 +86,32 @@ class UserWebViewsTests(TestCase):
     def test_profile_requires_login(self):
         response = self.client.get(reverse('profile'))
         self.assertEqual(response.status_code, 302)  # Redirects to login
+
+    def test_student_login_redirects_to_student_dashboard(self):
+        CustomUser.objects.create_user(
+            email='oquvchi@roziyev.dev',
+            username='oquvchi',
+            password='Password123!',
+            role=UserRole.STUDENT,
+        )
+        response = self.client.post(
+            reverse('login'),
+            {'email': 'oquvchi@roziyev.dev', 'password': 'Password123!'}
+        )
+        self.assertRedirects(response, reverse('student_dashboard'))
+
+    def test_student_sidebar_persists_across_pages(self):
+        CustomUser.objects.create_user(
+            email='oquvchi2@roziyev.dev',
+            username='oquvchi2',
+            password='Password123!',
+            role=UserRole.STUDENT,
+        )
+        self.client.login(email='oquvchi2@roziyev.dev', password='Password123!')
+
+        for url_name in ('student_dashboard', 'profile', 'profile_settings', 'my_certificates', 'course_list', 'home'):
+            res = self.client.get(reverse(url_name))
+            self.assertEqual(res.status_code, 200)
+            self.assertContains(res, 'id="student-sidebar"')
+            self.assertContains(res, 'id="sidebar-logo-toggle"')
+            self.assertContains(res, 'toggleStudentSidebar()')

@@ -1,0 +1,162 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load humanize %}
+
+{% block title %}Buyurtmalar & Savdo — roziyevdev Ustoz Studiyasi{% endblock %}
+{% block page_title %}Buyurtmalar & Moliyaviy Savdo{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- KPI STATS SUMMARY -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+            <span class="text-xs font-bold text-slate-400">Jami Tushum (To'langan)</span>
+            <div class="text-2xl font-black text-purple-600 dark:text-purple-400">
+                {{ total_revenue|intcomma }} so'm
+            </div>
+            <p class="text-[11px] text-slate-400">Muvaffaqiyatli xaridlar summasi</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+            <span class="text-xs font-bold text-slate-400">To'langan Buyurtmalar</span>
+            <div class="text-2xl font-black text-emerald-500">
+                {{ paid_count }} ta
+            </div>
+            <p class="text-[11px] text-slate-400">Faollashgan kurs xaridlari</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+            <span class="text-xs font-bold text-slate-400">Kutilayotgan Buyurtmalar</span>
+            <div class="text-2xl font-black text-amber-500">
+                {{ pending_count }} ta
+            </div>
+            <p class="text-[11px] text-slate-400">To'lov jarayonidagi arizalar</p>
+        </div>
+    </div>
+
+    <!-- SEARCH & FILTER BAR -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <form method="GET" class="flex flex-wrap items-center gap-3 flex-1">
+            <div class="relative flex-1 min-w-[200px]">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ search_query }}" 
+                    placeholder="Buyurtma ID, email yoki kurs bo'yicha..." 
+                    class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+            </div>
+
+            <!-- STATUS FILTER -->
+            <select name="status" onchange="this.form.submit()" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Barcha Holatlar</option>
+                <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>To'langan</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Kutilmoqda</option>
+                <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Xatolik</option>
+                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Bekor qilingan</option>
+            </select>
+
+            {% if search_query or status_filter %}
+                <a href="{% url 'dashboard_orders_list' %}" class="text-xs text-rose-500 hover:underline px-2 py-1 font-semibold">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Tozalash
+                </a>
+            {% endif %}
+        </form>
+
+        <div class="text-xs font-bold text-slate-500 dark:text-slate-400 flex-shrink-0">
+            Jami: <span class="text-slate-900 dark:text-white font-black">{{ orders|length }}</span> ta buyurtma
+        </div>
+    </div>
+
+    <!-- ORDERS TABLE -->
+    <div class="rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        {% if orders %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 uppercase text-[10px] font-black tracking-wider">
+                        <th class="py-4 px-5">Buyurtma №</th>
+                        <th class="py-4 px-4">Xaridor</th>
+                        <th class="py-4 px-4">Kurs</th>
+                        <th class="py-4 px-4">Summa</th>
+                        <th class="py-4 px-4">To'lov Turi</th>
+                        <th class="py-4 px-4">Holati</th>
+                        <th class="py-4 px-5">Sana</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for order in orders %}
+                    <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                        <!-- ORDER NUMBER -->
+                        <td class="py-4 px-5 font-mono font-bold text-slate-900 dark:text-white text-xs">
+                            {{ order.order_number }}
+                        </td>
+
+                        <!-- USER -->
+                        <td class="py-4 px-4">
+                            <div class="space-y-0.5">
+                                <p class="font-bold text-slate-900 dark:text-white">{{ order.user.display_name }}</p>
+                                <p class="text-[11px] text-slate-400">{{ order.user.email }}</p>
+                            </div>
+                        </td>
+
+                        <!-- COURSE -->
+                        <td class="py-4 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                            {{ order.course.title }}
+                        </td>
+
+                        <!-- AMOUNT -->
+                        <td class="py-4 px-4 font-black text-slate-900 dark:text-white">
+                            {{ order.amount|intcomma }} so'm
+                        </td>
+
+                        <!-- PAYMENT METHOD -->
+                        <td class="py-4 px-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                <i class="fa-solid fa-credit-card text-blue-500 text-[10px]"></i>
+                                {{ order.get_payment_method_display }}
+                            </span>
+                        </td>
+
+                        <!-- STATUS -->
+                        <td class="py-4 px-4">
+                            {% if order.status == 'paid' %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-check text-[10px]"></i> To'langan
+                                </span>
+                            {% elif order.status == 'pending' %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-clock text-[10px]"></i> Kutilmoqda
+                                </span>
+                            {% else %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 inline-flex items-center gap-1">
+                                    {{ order.get_status_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- DATE -->
+                        <td class="py-4 px-5 text-slate-400 text-xs">
+                            {{ order.created_at|date:"d.m.Y H:i" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-16 text-center space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-receipt"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Buyurtmalar topilmadi</h3>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                Qidiruv so'zini o'zgartiring yoki filtrlarni tozalang.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Yangi Loyiha Yaratish — roziyevdev{% endblock %}
+{% block page_title %}Yangi Loyiha Yaratish{% endblock %}
+{% block page_subtitle %}Loyihangizga nom bering, dasturlash tili va formatini tanlang hamda darhol brauzer IDE-da ishlashni boshlang.{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+    <!-- Orqaga qaytish -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'student_projects' %}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-purple-500 transition-colors">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Loyihalar ro'yxatiga qaytish</span>
+        </a>
+    </div>
+
+    <!-- YARATISH FORMASI -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+        
+        <div class="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-purple-500/20">
+                <i class="fa-solid fa-code"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-black text-slate-900 dark:text-white">Loyiha Parametrlari</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Kerakli parametrlarni tanlang, platforma avtomatik muhit tayyorlaydi</p>
+            </div>
+        </div>
+
+        <form method="POST" class="space-y-5">
+            {% csrf_token %}
+
+            <!-- 1. Loyiha nomi -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Loyiha nomi <span class="text-rose-500">*</span>
+                </label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                <p class="text-xs text-rose-500 mt-1">{{ form.title.errors.0 }}</p>
+                {% endif %}
+                <p class="text-[11px] text-slate-400">Masalan: <em>Bank boshqaruv tizimi</em>, <em>Kalkulyator</em>, yoki <em>Telegram Bot</em></p>
+            </div>
+
+            <!-- 2. Dasturlash tili -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Dasturlash tili <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                    {{ form.language }}
+                </div>
+                {% if form.language.errors %}
+                <p class="text-xs text-rose-500 mt-1">{{ form.language.errors.0 }}</p>
+                {% endif %}
+                <p class="text-[11px] text-slate-400">Python, C#, Java, C++, JavaScript, Dart, Go, PHP tillaridan birini tanlang</p>
+            </div>
+
+            <!-- 3. Loyiha formati / tuzilishi -->
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Loyiha formati / tuzilishi <span class="text-rose-500">*</span>
+                </label>
+                {{ form.project_mode }}
+                {% if form.project_mode.errors %}
+                <p class="text-xs text-rose-500 mt-1">{{ form.project_mode.errors.0 }}</p>
+                {% endif %}
+                
+                <!-- Formatlar tavsifi kartochkalari -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                        <div class="font-bold text-purple-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-folder-tree"></i>
+                            <span>Ko'p faylli loyiha</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">
+                            Chapda fayllar va papkalar daraxti, o'ngda to'liq kod muharriri, pastda esa terminal joylashadi.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                        <div class="font-bold text-amber-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-diagram-project"></i>
+                            <span>Konsol dastur</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">
+                            O'rtada yozilgan kod asosida avtomatik chiziladigan blok-sxema va o'ngda kod muharriri bo'ladi.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Bog'langan kurs (ixtiyoriy) -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Bog'langan kurs (ixtiyoriy)
+                </label>
+                {{ form.course }}
+                <p class="text-[11px] text-slate-400">Agar ushbu loyiha muayyan kurs amaliyoti bo'lsa, uni belgilang</p>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
+                <a href="{% url 'student_projects' %}" class="text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors">
+                    Bekor qilish
+                </a>
+
+                <button type="submit" class="px-6 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs sm:text-sm transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Loyiha yaratish & IDE-ni ochish</span>
+                </button>
+            </div>
+        </form>
+
+    </div>
+
+</div>
+{% endblock %}

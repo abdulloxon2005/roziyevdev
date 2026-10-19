@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: roziyevdev_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-roziyev_db}
+      POSTGRES_USER: ${POSTGRES_USER:-roziyev_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-roziyev_secret_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-roziyev_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: roziyevdev_redis
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  web:
+    build: .
+    container_name: roziyevdev_web
+    restart: always
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 300 config.wsgi:application"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-roziyev_user}:${POSTGRES_PASSWORD:-roziyev_secret_pass}@db:5432/${POSTGRES_DB:-roziyev_db}
+      - REDIS_URL=redis://redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="uz" class="h-full dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}O'quvchi Kabineti — roziyevdev{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/static/images/logo_icon.png">
+    <link rel="shortcut icon" href="/static/images/favicon.ico">
+
+    <!-- Anti-flicker Theme & Sidebar State Script -->
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+        if (localStorage.getItem('sidebar_collapsed') === 'true') {
+            document.documentElement.classList.add('sidebar-collapsed');
+        }
+    </script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#0f172a',
+                        },
+                        darkBg: '#0b0f19',
+                        darkCard: '#111827',
+                        darkBorder: '#1f2937'
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        #student-sidebar {
+            width: 18rem;
+            min-width: 18rem;
+            transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        html.sidebar-collapsed #student-sidebar {
+            width: 5rem;
+            min-width: 5rem;
+        }
+        html.sidebar-collapsed #student-sidebar .sidebar-text,
+        html.sidebar-collapsed #student-sidebar .sidebar-badge,
+        html.sidebar-collapsed #student-sidebar .sidebar-section-title,
+        html.sidebar-collapsed #student-sidebar .sidebar-collapse-hint {
+            display: none !important;
+        }
+        html.sidebar-collapsed #student-sidebar .sidebar-header-wrap {
+            justify-content: center;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        html.sidebar-collapsed #student-sidebar .sidebar-nav-item {
+            justify-content: center;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        html.sidebar-collapsed #student-sidebar .sidebar-footer-inner {
+            flex-direction: column;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full bg-slate-50 dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-blue-600 selection:text-white transition-colors duration-200">
+
+    <div class="min-h-screen flex flex-row">
+        <!-- STUDENT SIDEBAR (Doimiy ko'rinadigan, faqat logoni bosganda qisqaradigan/ochiladigan) -->
+        <aside id="student-sidebar" class="sticky top-0 left-0 h-screen shrink-0 bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-slate-800 z-50 flex flex-col justify-between overflow-y-auto overflow-x-hidden select-none">
+            <div>
+                <!-- BRAND HEADER (LOGONI BOSGANDA SIDEBAR QISQARADI / OCHILADI) -->
+                <div class="sidebar-header-wrap p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <button type="button" id="sidebar-logo-toggle" onclick="toggleStudentSidebar()" class="w-full flex items-center justify-between gap-3 group text-left focus:outline-none" title="Logoni bosib sidebarni qisqartirish / kengaytirish">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+                                <img src="/static/images/logo_emblem.png" alt="Logo" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                                <i class="fa-solid fa-code text-lg hidden"></i>
+                            </div>
+                            <div class="sidebar-text min-w-0">
+                                <span class="text-base font-black tracking-tight text-slate-900 dark:text-white block leading-tight truncate">
+                                    roziyev<span class="text-blue-600 dark:text-blue-500">dev</span>
+                                </span>
+                                <span class="text-[10px] font-bold tracking-wider uppercase text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full inline-block mt-0.5">
+                                    O'quvchi Kabineti
+                                </span>
+                            </div>
+                        </div>
+                        <span class="sidebar-collapse-hint text-slate-400 group-hover:text-blue-500 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0">
+                            <i class="fa-solid fa-angles-left text-xs"></i>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- NAVIGATION LINKS -->
+                <nav class="p-3 sm:p-4 space-y-1.5">
+                    <div class="sidebar-section-title px-3 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        O'quv Bo'limlari
+                    </div>
+
+                    <!-- 1. Boshqaruv / Overview -->
+                    <a href="{% url 'student_dashboard' %}" title="Bosh sahifa (O'quvchi Kabineti)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'overview' or request.path == '/student/' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-gauge-high w-5 text-center shrink-0 {% if active_menu == 'overview' or request.path == '/student/' %}text-white{% else %}text-blue-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Bosh sahifa</span>
+                        </div>
+                    </a>
+
+                    <!-- 2. Vazifalar Studiyasi -->
+                    <a href="{% url 'student_assignments_hub' %}" title="Vazifalar Studiyasi (IDE)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'assignments' or '/student/assignments/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-laptop-code w-5 text-center shrink-0 {% if active_menu == 'assignments' or '/student/assignments/' in request.path %}text-white{% else %}text-indigo-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Vazifalar Studiyasi</span>
+                        </div>
+                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'assignments' or '/student/assignments/' in request.path %}bg-white/20 text-white{% else %}bg-indigo-500/10 text-indigo-400{% endif %}">
+                            IDE
+                        </span>
+                    </a>
+
+                    <!-- 3. Kurs Reytingi -->
+                    <a href="{% url 'student_leaderboard' %}" title="Kurs Reytingi (XP)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'leaderboard' or '/student/leaderboard/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-trophy w-5 text-center shrink-0 {% if active_menu == 'leaderboard' or '/student/leaderboard/' in request.path %}text-white{% else %}text-amber-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Kurs Reytingi</span>
+                        </div>
+                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'leaderboard' or '/student/leaderboard/' in request.path %}bg-white/20 text-white{% else %}bg-amber-500/10 text-amber-500{% endif %}">
+                            XP
+                        </span>
+                    </a>
+
+                    <!-- 4. Musobaqalar -->
+                    <a href="{% url 'student_contests' %}" title="Musobaqalar" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'contests' or '/student/contests/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-fire w-5 text-center shrink-0 {% if active_menu == 'contests' or '/student/contests/' in request.path %}text-white{% else %}text-rose-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Musobaqalar</span>
+                        </div>
+                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'contests' or '/student/contests/' in request.path %}bg-white/20 text-white{% else %}bg-rose-500/10 text-rose-500{% endif %}">
+                            Sovrinli
+                        </span>
+                    </a>
+
+                    <!-- 5. Loyihalar & Showcase -->
+                    <a href="{% url 'student_projects' %}" title="Loyihalar & Ko'rgazma" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'projects' or '/student/projects/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-rocket w-5 text-center shrink-0 {% if active_menu == 'projects' or '/student/projects/' in request.path %}text-white{% else %}text-purple-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Loyihalar & Ko'rgazma</span>
+                        </div>
+                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'projects' or '/student/projects/' in request.path %}bg-white/20 text-white{% else %}bg-purple-500/10 text-purple-400{% endif %}">
+                            Portfolio
+                        </span>
+                    </a>
+
+                    <!-- 6. Dasturchi Yo'li -->
+                    <a href="{% url 'student_roadmap' %}" title="Dasturchi Yo'li (Roadmap)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'roadmap' or '/student/roadmap/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-route w-5 text-center shrink-0 {% if active_menu == 'roadmap' or '/student/roadmap/' in request.path %}text-white{% else %}text-emerald-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Dasturchi Yo'li</span>
+                        </div>
+                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'roadmap' or '/student/roadmap/' in request.path %}bg-white/20 text-white{% else %}bg-emerald-500/10 text-emerald-400{% endif %}">
+                            Roadmap
+                        </span>
+                    </a>
+
+                    <!-- 7. Barcha Kurslar -->
+                    <a href="{% url 'course_list' %}" title="Kurslar Katalogi" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'courses' or '/courses/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-book-open w-5 text-center shrink-0 {% if active_menu == 'courses' or '/courses/' in request.path %}text-white{% else %}text-cyan-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Kurslar Katalogi</span>
+                        </div>
+                    </a>
+
+                    <div class="sidebar-section-title px-3 pt-4 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Shaxsiy & Havolalar
+                    </div>
+
+                    <!-- Profil & Kurslarim -->
+                    <a href="{% url 'profile' %}" title="Shaxsiy Profil" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'profile' or request.path == '/profile/' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-user w-5 text-center shrink-0 {% if active_menu == 'profile' or request.path == '/profile/' %}text-white{% else %}text-blue-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Shaxsiy Profil</span>
+                    </a>
+
+                    <a href="{% url 'my_certificates' %}" title="Sertifikatlarim" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'certificates' or '/certificates/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-award w-5 text-center shrink-0 {% if active_menu == 'certificates' or '/certificates/' in request.path %}text-white{% else %}text-amber-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Sertifikatlarim</span>
+                    </a>
+
+                    <a href="{% url 'profile_settings' %}" title="Profil Sozlamalari" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'profile_settings' or '/profile/settings/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-gear w-5 text-center shrink-0 {% if active_menu == 'profile_settings' or '/profile/settings/' in request.path %}text-white{% else %}text-slate-400{% endif %}"></i>
+                        <span class="sidebar-text truncate">Sozlamalar</span>
+                    </a>
+
+                    <a href="{% url 'blog_list' %}" title="IT Blog" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/blog/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-newspaper w-5 text-center shrink-0 {% if '/blog/' in request.path %}text-white{% else %}text-sky-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">IT Blog</span>
+                    </a>
+
+                    <a href="{% url 'home' %}" title="Asosiy saytga o'tish" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if request.path == '/' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-globe w-5 text-center shrink-0 {% if request.path == '/' %}text-white{% else %}text-teal-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Asosiy saytga o'tish</span>
+                    </a>
+
+                    {% if user.is_staff or user.role == 'instructor' or user.role == 'admin' %}
+                    <a href="{% url 'dashboard_index' %}" title="Ustoz Studiyasi" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors">
+                        <i class="fa-solid fa-graduation-cap w-5 text-center shrink-0 text-blue-500"></i>
+                        <span class="sidebar-text truncate">Ustoz Studiyasi &rarr;</span>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+
+            <!-- USER PROFILE & LOGOUT -->
+            <div class="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                <div class="sidebar-footer-inner flex items-center justify-between">
+                    <a href="{% url 'profile' %}" class="flex items-center gap-3 min-w-0" title="{{ user.display_name }}">
+                        <img src="{{ user.profile.avatar_url }}" alt="{{ user.display_name }}" class="w-10 h-10 shrink-0 rounded-xl object-cover border border-blue-500/40">
+                        <div class="sidebar-text min-w-0">
+                            <p class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ user.display_name }}</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">{{ user.email }}</p>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <span class="text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded">
+                                    {{ user.get_role_display }}
+                                </span>
+                                <span class="text-[10px] font-bold text-amber-500 flex items-center">
+                                    <span class="material-symbols-outlined text-[12px]">monetization_on</span>{{ user.coins }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="{% url 'logout' %}" class="text-slate-400 hover:text-rose-500 transition-colors p-2 shrink-0" title="Chiqish">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <!-- TOP NAVBAR -->
+            <header class="sticky top-0 z-30 bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                            {% block page_title %}O'quvchi Kabineti{% endblock %}
+                        </h2>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
+                            {% block page_subtitle %}Amaliyot, reyting va shaxsiy o'sish maydoni{% endblock %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <!-- COINS BADGE WITH SOUND -->
+                    <button type="button" onclick="celebrateCoins({{ user.coins|default:25 }}, 'Sizning tangalaringiz!')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 font-extrabold text-xs hover:bg-amber-500/20 transition-all shadow-sm" title="Tangalarni tinglash">
+                        <span class="material-symbols-outlined text-[16px] animate-bounce">monetization_on</span>
+                        <span id="nav-user-coins">{{ user.coins }}</span>
+                        <span class="hidden sm:inline text-[10px] uppercase font-semibold text-amber-500/80">tanga</span>
+                    </button>
+
+                    <!-- THEME TOGGLE BUTTON -->
+                    <button id="theme-toggle-dashboard" type="button" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <i class="fa-solid fa-moon dark:hidden text-xs"></i>
+                        <i class="fa-solid fa-sun hidden dark:block text-xs"></i>
+                    </button>
+
+                    <!-- BACK TO SITE -->
+                    <a href="{% url 'home' %}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors border border-slate-200 dark:border-slate-700">
+                        <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                        <span>Saytga</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- FLASH MESSAGES -->
+            {% if messages %}
+            <div class="px-4 sm:px-6 pt-4">
+                {% for message in messages %}
+                <div class="p-4 mb-3 rounded-2xl flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold {% if message.tags == 'error' %}bg-rose-500/10 text-rose-500 border border-rose-500/20{% elif message.tags == 'success' %}bg-emerald-500/10 text-emerald-500 border border-emerald-500/20{% else %}bg-blue-500/10 text-blue-500 border border-blue-500/20{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid {% if message.tags == 'error' %}fa-circle-xmark{% elif message.tags == 'success' %}fa-circle-check{% else %}fa-circle-info{% endif %} text-base"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    <button type="button" onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- MAIN BODY CONTENT -->
+            <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- SOUND, SIDEBAR & THEME SCRIPTS -->
+    <script>
+        // Logoni bosganda sidebarni qisqartirish / kengaytirish va holatni saqlab qolish
+        function toggleStudentSidebar() {
+            const root = document.documentElement;
+            const isCollapsed = root.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        // Theme Toggle
+        const themeBtn = document.getElementById('theme-toggle-dashboard');
+        if (themeBtn) {
+            themeBtn.addEventListener('click', () => {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
+
+        // Web Audio API: Coin Celebration Sound
+        function celebrateCoins(coins = 50, title = 'Tangalar mukofoti!') {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const now = ctx.currentTime;
+                
+                // 3 harmonic coin chime frequencies (C6, E6, G6)
+                const freqs = [1046.5, 1318.5, 1567.98, 2093.0];
+                freqs.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    
+                    gain.gain.setValueAtTime(0, now + idx * 0.08);
+                    gain.gain.linearRampToValueAtTime(0.3, now + idx * 0.08 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.5);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.6);
+                });
+            } catch (e) {
+                console.log('Audio FX error:', e);
+            }
+        }
+    </script>
+    <script src="/static/js/gamification.js"></script>
+    <script src="/static/js/main.js"></script>
+    {% block extra_scripts %}{% endblock %}
+
+    <!-- Seans Xavfsizlik Qulfi (Inactivity Lock) -->
+    {% include 'includes/lock_screen.html' %}
+</body>
+</html>

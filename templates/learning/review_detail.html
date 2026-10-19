@@ -1,0 +1,255 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load core_extras %}
+
+{% block title %}Vazifani Tekshirish: {{ submission.student.display_name }} — Ustoz Studiyasi{% endblock %}
+{% block page_title %}Vazifani Tekshirish & Baholash{% endblock %}
+
+{% block extra_head %}
+<!-- Mermaid.js for rendering Flowgorithm diagrams -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+        <!-- TOP BREADCRUMB -->
+        <div class="flex items-center justify-between gap-4">
+            <a href="{% url 'submissions_review_list' %}" class="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 transition-colors">
+                <i class="fa-solid fa-arrow-left"></i> Vazifalar ro'yxatiga qaytish
+            </a>
+            <div class="flex items-center gap-2">
+                {% if submission.status == 'pending' %}
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Kutilmoqda
+                    </span>
+                {% elif submission.status == 'approved' %}
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-check"></i> Qabul qilingan ({{ submission.score }}/{{ assignment.max_score }} ball)
+                    </span>
+                {% else %}
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-left"></i> Qaytarilgan
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- LEFT COLUMN: SUBMISSION CONTENT (8 Cols) -->
+            <div class="lg:col-span-8 space-y-6">
+
+                <!-- ASSIGNMENT HEADER CARD -->
+                <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold">
+                            {{ course.title }} &bull; {{ lesson.title }}
+                        </div>
+                        <div class="flex items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                            <span>Max ball: <strong class="text-slate-900 dark:text-white">{{ assignment.max_score }}</strong></span>
+                            <span>O'tish: <strong class="text-emerald-500">{{ assignment.passing_score }}</strong></span>
+                            <span class="text-amber-500 font-bold inline-flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">monetization_on</span> +{{ assignment.coin_reward }} tanga</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                            {{ assignment.title }}
+                        </h1>
+                        <div class="prose prose-slate dark:prose-invert max-w-none text-xs sm:text-sm mt-3 text-slate-600 dark:text-slate-300 leading-relaxed">
+                            {{ assignment.description|markdownify }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. SUBMITTED CODE SECTION -->
+                {% if submission.submitted_code %}
+                    <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-code text-blue-500"></i>
+                                <span>Talaba yozgan kod</span>
+                            </h3>
+                            <button onclick="navigator.clipboard.writeText(document.getElementById('submitted-code-block').innerText); alert('Kod nusxalandi!');" class="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white font-semibold flex items-center gap-1 transition-colors">
+                                <i class="fa-regular fa-copy"></i> Nusxalash
+                            </button>
+                        </div>
+                        <div class="relative bg-slate-950 text-slate-100 rounded-2xl p-4 overflow-x-auto border border-slate-800 font-mono text-xs leading-relaxed">
+                            <pre id="submitted-code-block"><code>{{ submission.submitted_code }}</code></pre>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- 2. SUBMITTED FLOWCHART (FLOWGORITHM / MERMAID) -->
+                {% if submission.flowchart_data %}
+                    <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-diagram-project text-purple-500"></i>
+                                <span>Flowgorithm Blok-Sxemasi</span>
+                            </h3>
+                            <span class="px-2.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                                Live Interactive Render
+                            </span>
+                        </div>
+                        
+                        <!-- Mermaid Live Diagram -->
+                        <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 overflow-x-auto flex justify-center">
+                            <div class="mermaid text-center">
+{{ submission.flowchart_data }}
+                            </div>
+                        </div>
+
+                        <!-- Raw diagram toggle -->
+                        <details class="text-xs text-slate-500 dark:text-slate-400">
+                            <summary class="cursor-pointer font-semibold hover:text-indigo-500">Sxema manba kodi (Mermaid / Flow data)</summary>
+                            <pre class="mt-2 p-3 bg-slate-100 dark:bg-slate-900 rounded-xl text-[11px] font-mono overflow-x-auto text-slate-700 dark:text-slate-300">{{ submission.flowchart_data }}</pre>
+                        </details>
+                    </div>
+                {% endif %}
+
+                <!-- 3. ATTACHED FILE -->
+                {% if submission.attached_file %}
+                    <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4 min-w-0">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl shrink-0">
+                                <i class="fa-solid fa-file-arrow-down"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-xs text-slate-400">Biriktirilgan amaliy fayl:</div>
+                                <div class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                    {{ submission.attached_file.name }}
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{{ submission.attached_file.url }}" download class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs inline-flex items-center gap-2 shadow-md transition-all shrink-0">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Faylni yuklab olish</span>
+                        </a>
+                    </div>
+                {% endif %}
+
+            </div>
+
+            <!-- RIGHT COLUMN: STUDENT & EVALUATION DESK (4 Cols) -->
+            <div class="lg:col-span-4 space-y-6">
+
+                <!-- STUDENT PROFILE CARD -->
+                <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Topshirgan talaba</h3>
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center text-xl font-bold shrink-0">
+                            {{ submission.student.first_name|default:submission.student.username|slice:":1"|upper }}
+                        </div>
+                        <div class="min-w-0">
+                            <h4 class="text-base font-bold text-slate-900 dark:text-white truncate">
+                                {{ submission.student.display_name }}
+                            </h4>
+                            <p class="text-xs text-slate-400 truncate">{{ submission.student.email }}</p>
+                            <div class="flex items-center gap-1.5 mt-1 text-xs font-bold text-amber-500">
+                                <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">monetization_on</span> {{ submission.student.coins }} tanga</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
+                        <div>Topshirilgan vaqt: <strong class="text-slate-700 dark:text-slate-300">{{ submission.created_at|date:"d.m.Y H:i" }}</strong></div>
+                        {% if submission.reviewed_at %}
+                            <div>Oxirgi tekshiruv: <strong class="text-slate-700 dark:text-slate-300">{{ submission.reviewed_at|date:"d.m.Y H:i" }}</strong> ({{ submission.reviewed_by.display_name }})</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- EVALUATION FORM (ADMIN REVIEW DESK) -->
+                <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border-2 border-indigo-500/40 shadow-xl space-y-5">
+                    <div class="border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-square-check text-indigo-500"></i>
+                            <span>Baholash & Taqriz</span>
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Ustoz sifatida baho qo'ying va izoh yozing.</p>
+                    </div>
+
+                    <form method="POST" class="space-y-4">
+                        {% csrf_token %}
+
+                        <!-- Action Choice: Approve / Reject -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Qaroringiz:</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-500/10 cursor-pointer flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all">
+                                    <input type="radio" name="action" value="approve" {% if submission.status != 'rejected' %}checked{% endif %} class="accent-emerald-500">
+                                    <span>Qabul qilish</span>
+                                </label>
+                                <label class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-500/10 cursor-pointer flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all">
+                                    <input type="radio" name="action" value="reject" {% if submission.status == 'rejected' %}checked{% endif %} class="accent-rose-500">
+                                    <span>Qaytarish</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Score Input -->
+                        <div class="space-y-1.5">
+                            <label for="score-input" class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                                <span>Ball (0 - {{ assignment.max_score }}):</span>
+                                <span class="text-[11px] text-emerald-500 font-bold">O'tish bali: {{ assignment.passing_score }}</span>
+                            </label>
+                            <div class="relative">
+                                <input 
+                                    type="number" 
+                                    id="score-input" 
+                                    name="score" 
+                                    min="0" 
+                                    max="{{ assignment.max_score }}" 
+                                    value="{{ submission.score|default:assignment.max_score }}" 
+                                    required 
+                                    class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                >
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">ball</span>
+                            </div>
+                        </div>
+
+                        <!-- Coin Reward Info -->
+                        <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 flex items-center gap-2 font-semibold">
+                            <span class="material-symbols-outlined text-[16px]">monetization_on</span>
+                            <span>Ball o'tish balidan yuqori bo'lsa, talabaga <strong>{{ assignment.coin_reward }} tanga</strong> avtomatik beriladi.</span>
+                        </div>
+
+                        <!-- Instructor Feedback / Izoh -->
+                        <div class="space-y-1.5">
+                            <label for="feedback-input" class="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                                Ustoz Izohi va Tavsiyalari:
+                            </label>
+                            <textarea 
+                                id="feedback-input" 
+                                name="feedback" 
+                                rows="4" 
+                                placeholder="Talabaga tavsiyalar, kod tahlili va ko'rsatmalar..."
+                                class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            >{{ submission.instructor_feedback }}</textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Bahoni saqlash va yuborish</span>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}

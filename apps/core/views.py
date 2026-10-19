@@ -19,9 +19,13 @@ def web_home_view(request):
 
     instructor = CustomUser.objects.filter(is_staff=True).first()
 
+    from apps.blog.models import Post
+    latest_posts = Post.objects.filter(is_published=True).select_related('category', 'author__profile')[:3]
+
     context = {
         'categories': categories,
         'featured_courses': featured_courses,
+        'latest_posts': latest_posts,
         'instructor': instructor,
         'stats': {
             'courses_count': Course.objects.filter(is_published=True).count(),

@@ -1,0 +1,977 @@
+{% extends 'student/base_student.html' %}
+{% load core_extras %}
+
+{% block title %}{{ project.title }} — Brauzer IDE — roziyevdev{% endblock %}
+{% block page_title %}{{ project.title }}{% endblock %}
+{% block page_subtitle %}{{ project.get_language_display }} &bull; {{ project.get_project_mode_display }}{% endblock %}
+
+{% block extra_head %}
+<!-- Ace Editor CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-python.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-csharp.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-java.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-c_cpp.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-javascript.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-dart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-golang.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-php.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-markdown.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-one_dark.js"></script>
+<!-- Mermaid for Flowchart / Block-schema -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        themeVariables: {
+            darkMode: true,
+            background: '#0f172a',
+            primaryColor: '#8b5cf6',
+            primaryTextColor: '#f8fafc',
+            primaryBorderColor: '#a78bfa',
+            lineColor: '#38bdf8',
+            secondaryColor: '#3b82f6',
+            tertiaryColor: '#1e293b'
+        }
+    });
+</script>
+<style>
+    .ide-ace-editor {
+        font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
+        font-size: 13px !important;
+        line-height: 1.6 !important;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-4 max-w-[1700px] mx-auto pb-10">
+
+    <!-- IDE TOP NAVIGATION & ACTION BAR -->
+    <div class="p-4 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-md flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Left: Project breadcrumb & info -->
+        <div class="flex items-center gap-3">
+            <a href="{% url 'student_projects' %}" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-purple-600 hover:text-white text-slate-500 transition-colors" title="Loyihalarga qaytish">
+                <i class="fa-solid fa-arrow-left text-xs"></i>
+            </a>
+
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>{{ project.title }}</span>
+                    </h2>
+
+                    <!-- Language badge -->
+                    <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        {{ project.get_language_display }}
+                    </span>
+
+                    <!-- Mode badge -->
+                    <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider {% if project.project_mode == 'console' %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% else %}bg-blue-500/10 text-blue-400 border border-blue-500/20{% endif %}">
+                        {{ project.get_project_mode_display }}
+                    </span>
+
+                    <!-- Status badge -->
+                    <span id="projectStatusBadge">
+                        {% if project.status == 'approved' or project.status == 'featured' %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>Ustoz qabul qildi ({{ project.score|default:100 }} ball)</span>
+                            </span>
+                        {% elif project.is_submitted or project.status == 'under_review' %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                                <i class="fa-solid fa-clock"></i>
+                                <span>Ustoz tekshiruvida</span>
+                            </span>
+                        {% else %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                <i class="fa-solid fa-pen-ruler"></i>
+                                <span>Qoralama (Loyiha ustida ishlanmoqda)</span>
+                            </span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Control buttons -->
+        <div class="flex items-center gap-2 flex-wrap">
+
+            <!-- Save Status indicator -->
+            <div id="saveStatusIndicator" class="text-xs font-semibold text-slate-400 px-3 py-1.5 flex items-center gap-1.5 hidden sm:flex">
+                <i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i>
+                <span id="saveStatusText">Barcha o'zgarishlar saqlangan</span>
+            </div>
+
+            <!-- Run code button -->
+            <button type="button" id="btnRunCode" onclick="runProjectCode()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5">
+                <i class="fa-solid fa-play text-[11px]"></i>
+                <span>Ishga tushirish</span>
+                <span class="text-[10px] opacity-70 hidden md:inline">(Ctrl+Enter)</span>
+            </button>
+
+            <!-- Save file button -->
+            <button type="button" id="btnSaveFile" onclick="saveActiveFile(true)" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold text-xs transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-floppy-disk text-purple-400"></i>
+                <span>Saqlash</span>
+                <span class="text-[10px] opacity-70 hidden md:inline">(Ctrl+S)</span>
+            </button>
+
+            <!-- Download ZIP button -->
+            <a href="{% url 'student_project_download_zip' project.id %}" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-800 dark:text-white font-bold text-xs transition-all flex items-center gap-1.5" title="Barcha loyiha fayllarini ZIP arxiv qilib yuklash">
+                <i class="fa-solid fa-file-zipper text-blue-400 group-hover:text-white"></i>
+                <span>ZIP yuklash</span>
+            </a>
+
+            <!-- Submit to instructor button -->
+            <button type="button" onclick="openSubmitModal()" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black text-xs transition-all shadow-md shadow-purple-600/20 flex items-center gap-1.5">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+                <span>Ustozga jo'natish</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    {% if project.project_mode == 'multi_file' %}
+    <!-- ========================================================================= -->
+    <!-- 1. KO'P FAYLLI LOYIHA WORKSPACE (Chapda Fayllar, O'ngda Kod, Pastda Terminal) -->
+    <!-- ========================================================================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[750px] min-h-[600px]">
+
+        <!-- LEFT PANEL: FAYLLAR DARAXTI (col-span-3) -->
+        <div class="lg:col-span-3 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden shadow-sm">
+            
+            <!-- File tree header & actions -->
+            <div class="p-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-folder-tree text-purple-400 text-xs"></i>
+                    <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">Fayllar</span>
+                </div>
+                
+                <div class="flex items-center gap-1">
+                    <!-- Yangi fayl tugmasi -->
+                    <button type="button" onclick="openCreateItemModal(false)" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-purple-400 transition-colors" title="Yangi fayl yaratish">
+                        <i class="fa-solid fa-file-circle-plus text-xs"></i>
+                    </button>
+                    <!-- Yangi papka tugmasi -->
+                    <button type="button" onclick="openCreateItemModal(true)" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-amber-400 transition-colors" title="Yangi papka yaratish">
+                        <i class="fa-solid fa-folder-plus text-xs"></i>
+                    </button>
+                    <!-- Yangilash -->
+                    <button type="button" onclick="location.reload()" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors" title="Fayllar ro'yxatini yangilash">
+                        <i class="fa-solid fa-rotate-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- File tree list -->
+            <div class="flex-1 p-3 overflow-y-auto custom-scrollbar space-y-1 text-xs" id="fileTreeContainer">
+                {% for f in files %}
+                    {% if not f.parent %}
+                    <div class="file-item-row group flex items-center justify-between px-2.5 py-1.5 rounded-xl cursor-pointer transition-all {% if active_file.id == f.id %}bg-purple-600/15 text-purple-400 font-bold border border-purple-500/30{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}"
+                         data-file-id="{{ f.id }}"
+                         data-is-folder="{{ f.is_folder|lower }}"
+                         onclick="onFileTreeItemClick({{ f.id }}, {{ f.is_folder|lower }})">
+                        
+                        <div class="flex items-center gap-2 truncate">
+                            {% if f.is_folder %}
+                                <i class="fa-solid fa-folder text-amber-400 text-sm"></i>
+                            {% elif f.extension == 'py' %}
+                                <i class="fa-brands fa-python text-blue-400 text-sm"></i>
+                            {% elif f.extension == 'cs' %}
+                                <i class="fa-solid fa-hashtag text-purple-400 text-sm"></i>
+                            {% elif f.extension == 'java' %}
+                                <i class="fa-brands fa-java text-orange-400 text-sm"></i>
+                            {% elif f.extension == 'cpp' or f.extension == 'c' %}
+                                <i class="fa-solid fa-c text-sky-400 text-sm"></i>
+                            {% elif f.extension == 'js' %}
+                                <i class="fa-brands fa-js text-yellow-400 text-sm"></i>
+                            {% elif f.extension == 'md' %}
+                                <i class="fa-solid fa-file-lines text-slate-400 text-sm"></i>
+                            {% else %}
+                                <i class="fa-solid fa-file-code text-slate-400 text-sm"></i>
+                            {% endif %}
+                            <span class="truncate">{{ f.name }}</span>
+                        </div>
+
+                        <!-- Actions on hover -->
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                            <button type="button" onclick="event.stopPropagation(); deleteFileItem({{ f.id }}, '{{ f.name|escapejs }}')" class="text-slate-400 hover:text-rose-500 p-1" title="O'chirish">
+                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bolalari (Nested items) -->
+                    {% if f.is_folder %}
+                        {% for child in files %}
+                            {% if child.parent_id == f.id %}
+                            <div class="file-item-row group flex items-center justify-between pl-6 pr-2.5 py-1.5 rounded-xl cursor-pointer transition-all {% if active_file.id == child.id %}bg-purple-600/15 text-purple-400 font-bold border border-purple-500/30{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}"
+                                 data-file-id="{{ child.id }}"
+                                 data-is-folder="{{ child.is_folder|lower }}"
+                                 onclick="onFileTreeItemClick({{ child.id }}, {{ child.is_folder|lower }})">
+                                <div class="flex items-center gap-2 truncate">
+                                    {% if child.is_folder %}
+                                        <i class="fa-solid fa-folder text-amber-400 text-xs"></i>
+                                    {% elif child.extension == 'py' %}
+                                        <i class="fa-brands fa-python text-blue-400 text-xs"></i>
+                                    {% elif child.extension == 'cs' %}
+                                        <i class="fa-solid fa-hashtag text-purple-400 text-xs"></i>
+                                    {% elif child.extension == 'java' %}
+                                        <i class="fa-brands fa-java text-orange-400 text-xs"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-file-code text-slate-400 text-xs"></i>
+                                    {% endif %}
+                                    <span class="truncate">{{ child.name }}</span>
+                                </div>
+                                <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                                    <button type="button" onclick="event.stopPropagation(); deleteFileItem({{ child.id }}, '{{ child.name|escapejs }}')" class="text-slate-400 hover:text-rose-500 p-1" title="O'chirish">
+                                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Footer: Loyiha statistikasi -->
+            <div class="p-3 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
+                <span>Jami fayllar: <strong class="text-slate-700 dark:text-slate-300">{{ files|length }}</strong></span>
+                <span class="text-purple-400 font-semibold">{{ project.get_language_display }}</span>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: KOD MUHARRIRI VA TERMINAL (col-span-9) -->
+        <div class="lg:col-span-9 flex flex-col gap-4">
+            
+            <!-- CODE EDITOR CONTAINER (Height ~ 60%) -->
+            <div class="h-[480px] bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden shadow-sm">
+                <!-- Tab bar -->
+                <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                        
+                        <div class="ml-3 px-3 py-1 rounded-lg bg-slate-200 dark:bg-[#1e293b] text-slate-800 dark:text-white text-xs font-bold flex items-center gap-2 border border-slate-300 dark:border-slate-700">
+                            <i class="fa-solid fa-file-code text-purple-400"></i>
+                            <span id="activeFileName">{{ active_file.name|default:"main.py" }}</span>
+                            <span id="dirtyStateDot" class="w-2 h-2 rounded-full bg-amber-400 hidden" title="Saqlanmagan o'zgarish"></span>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 flex items-center gap-3">
+                        <span id="cursorPosition">Qator: 1, Ustun: 1</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-400 font-mono">{{ project.language }}</span>
+                    </div>
+                </div>
+
+                <!-- Ace Editor Container -->
+                <div id="codeEditor" class="flex-1 w-full ide-ace-editor"></div>
+            </div>
+
+            <!-- TERMINAL CONTAINER (Height ~ 40%) -->
+            <div class="flex-1 min-h-[220px] bg-slate-950 rounded-3xl border border-slate-800 flex flex-col overflow-hidden shadow-lg">
+                <!-- Terminal header -->
+                <div class="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-terminal text-emerald-400 text-xs"></i>
+                        <span class="text-xs font-bold text-slate-200 tracking-wide font-mono">Terminal & Chiqish</span>
+                        <span id="terminalStatusBadge" class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-800 text-slate-400">
+                            Tayyor
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="clearTerminal()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-mono transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-eraser text-[10px]"></i>
+                            <span>Tozalash</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Terminal output area -->
+                <div id="terminalOutput" class="flex-1 p-4 font-mono text-xs text-emerald-400 overflow-y-auto custom-scrollbar leading-relaxed whitespace-pre-wrap select-text">
+$ roziyevdev runner initialized.
+$ Loyiha: {{ project.title }} ({{ project.get_language_display }})
+$ Kodni ishga tushirish uchun yuqoridagi "Ishga tushirish" tugmasini bosing yoki Ctrl+Enter tugmalarini bosing.
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    {% else %}
+    <!-- ========================================================================= -->
+    <!-- 2. KONSOL DASTUR WORKSPACE (O'rtada Blok-sxema, O'ngda Kod Muharriri) -->
+    <!-- ========================================================================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[750px] min-h-[650px]">
+
+        <!-- CENTER PANEL: AVTOMATIK BLOK-SXEMA MAYDONI (col-span-6) -->
+        <div class="lg:col-span-6 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden shadow-sm">
+            
+            <!-- Flowchart Header -->
+            <div class="p-3.5 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">Dastur Blok Sxemasi</h4>
+                        <span class="text-[10px] text-slate-400">Kod asosida avtomatik chiziladi</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="generateFlowchartFromCode()" class="px-2.5 py-1.5 rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 text-xs font-bold transition-colors flex items-center gap-1" title="Blok sxemani qayta chizish">
+                        <i class="fa-solid fa-rotate text-[11px]"></i>
+                        <span>Sxemani yangilash</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Flowchart Canvas / Mermaid container -->
+            <div class="flex-1 p-6 overflow-auto custom-scrollbar bg-slate-950 flex items-center justify-center relative" id="flowchartCanvasWrapper">
+                <div id="flowchartRenderArea" class="w-full flex items-center justify-center">
+                    <!-- Mermaid diagram will be rendered here dynamically -->
+                </div>
+            </div>
+
+            <!-- Flowchart Legend -->
+            <div class="p-3 bg-slate-900 border-t border-slate-800 text-[10px] font-mono text-slate-400 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-500"></span> Boshlanish/Tamom</span>
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span> Kiritish/Chiqarish</span>
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Shart (if)</span>
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Takrorlash (Loop)</span>
+                </div>
+                <span class="text-purple-400">Avto-sinxronizatsiya: Faol</span>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: KOD MUHARRIRI VA KONSOL (col-span-6) -->
+        <div class="lg:col-span-6 flex flex-col gap-4">
+
+            <!-- CODE EDITOR CONTAINER (Height ~ 60%) -->
+            <div class="h-[460px] bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden shadow-sm">
+                <!-- Tab bar -->
+                <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                        
+                        <div class="ml-3 px-3 py-1 rounded-lg bg-slate-200 dark:bg-[#1e293b] text-slate-800 dark:text-white text-xs font-bold flex items-center gap-2 border border-slate-300 dark:border-slate-700">
+                            <i class="fa-solid fa-code text-amber-400"></i>
+                            <span id="activeFileName">{{ active_file.name|default:"main.py" }}</span>
+                            <span id="dirtyStateDot" class="w-2 h-2 rounded-full bg-amber-400 hidden"></span>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 flex items-center gap-3">
+                        <span id="cursorPosition">Qator: 1, Ustun: 1</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-400 font-mono">{{ project.language }}</span>
+                    </div>
+                </div>
+
+                <!-- Ace Editor Container -->
+                <div id="codeEditor" class="flex-1 w-full ide-ace-editor"></div>
+            </div>
+
+            <!-- TERMINAL CONTAINER (Height ~ 40%) -->
+            <div class="flex-1 min-h-[220px] bg-slate-950 rounded-3xl border border-slate-800 flex flex-col overflow-hidden shadow-lg">
+                <!-- Terminal header -->
+                <div class="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-terminal text-amber-400 text-xs"></i>
+                        <span class="text-xs font-bold text-slate-200 tracking-wide font-mono">Konsol Chiqishi</span>
+                        <span id="terminalStatusBadge" class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-800 text-slate-400">
+                            Tayyor
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="clearTerminal()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-mono transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-eraser text-[10px]"></i>
+                            <span>Tozalash</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Terminal output area -->
+                <div id="terminalOutput" class="flex-1 p-4 font-mono text-xs text-amber-400 overflow-y-auto custom-scrollbar leading-relaxed whitespace-pre-wrap select-text">
+=== {{ project.title }} Konsol Dasturi ===
+Dasturlash tili: {{ project.get_language_display }}
+Kodni tahrirlaganingizda chap tarafdagi blok sxema avtomatik yangilanadi.
+Natijani ko'rish uchun "Ishga tushirish" tugmasini bosing!
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODALLAR: YANGI FAYL / PAPKA & USTOZGA TOPSHIRISH -->
+<!-- ========================================================================= -->
+
+<!-- 1. Yangi Fayl / Papka Yaratish Modali -->
+<div id="createItemModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-md bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+        <div class="flex items-center justify-between">
+            <h3 id="createModalTitle" class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-file-circle-plus text-purple-400"></i>
+                <span>Yangi Fayl Yaratish</span>
+            </h3>
+            <button type="button" onclick="closeCreateItemModal()" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <input type="hidden" id="modalIsFolder" value="false">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" id="modalNameLabel">
+                    Fayl nomi (kengaytmasi bilan)
+                </label>
+                <input type="text" id="modalItemName" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500 font-mono" placeholder="masalan: helpers.py yoki models/">
+            </div>
+
+            {% if files %}
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Joylashadigan papka (ixtiyoriy)
+                </label>
+                <select id="modalParentSelect" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500 font-mono">
+                    <option value="">(Asosiy ildiz papka)</option>
+                    {% for f in files %}
+                        {% if f.is_folder %}
+                        <option value="{{ f.id }}">{{ f.get_full_path }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="button" onclick="closeCreateItemModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white">
+                Bekor qilish
+            </button>
+            <button type="button" onclick="submitCreateItem()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black transition-all shadow-md shadow-purple-600/30">
+                Yaratish
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Ustozga Topsirish Modali -->
+<div id="submitModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-md bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-paper-plane"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-black text-slate-900 dark:text-white">Loyihani ustozga jo'natish</h3>
+                <p class="text-xs text-slate-500">Tekshirish va baholash uchun</p>
+            </div>
+        </div>
+
+        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            Haqiqatan ham «<strong>{{ project.title }}</strong>» loyihangizni ustozga ko'rib chiqish (Code Review) uchun yubormoqchimisiz? Ustoz tekshirib, izoh va ball qo'yadi.
+        </p>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="button" onclick="closeSubmitModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white">
+                Bekor qilish
+            </button>
+            <button type="button" onclick="confirmSubmitProject()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black transition-all shadow-md shadow-purple-600/30 flex items-center gap-2">
+                <i class="fa-solid fa-check"></i>
+                <span>Ha, ustozga jo'natish</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- JAVASCRIPT IDE LOGIKASI & MERMAID GENERATORI -->
+<!-- ========================================================================= -->
+<script>
+    // Global o'zgaruvchilar
+    const PROJECT_ID = {{ project.id }};
+    const PROJECT_LANGUAGE = '{{ project.language }}';
+    const PROJECT_MODE = '{{ project.project_mode }}';
+    const CSRF_TOKEN = '{{ csrf_token }}';
+
+    let currentFileId = {{ active_file.id|default:"null" }};
+    let currentFileName = "{{ active_file.name|default:'main.py'|escapejs }}";
+    let isDirty = false;
+    let editor = null;
+    let flowchartTimer = null;
+
+    // Sahifa yuklanganda Ace Editor va konfiguratsiyani ishga tushirish
+    document.addEventListener('DOMContentLoaded', () => {
+        initAceEditor();
+
+        // Agar konsol rejimi bo'lsa dastlabki blok-sxemani chizamiz
+        if (PROJECT_MODE === 'console') {
+            setTimeout(generateFlowchartFromCode, 400);
+        }
+
+        // Klaviatura yorliqlari (Hotkeys)
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveActiveFile(true);
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                runProjectCode();
+            }
+        });
+    });
+
+    // 1. Ace Editorni initsializatsiya qilish
+    function initAceEditor() {
+        editor = ace.edit("codeEditor");
+        editor.setTheme("ace/theme/one_dark");
+        editor.session.setMode(getAceModeForLanguage(PROJECT_LANGUAGE, currentFileName));
+        editor.setOptions({
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true,
+            showPrintMargin: false,
+            wrap: true,
+            tabSize: 4,
+            useSoftTabs: true
+        });
+
+        // Boshlang'ich kodni yuklash
+        {% if active_file %}
+        editor.setValue(`{{ active_file.content|escapejs }}`, -1);
+        {% endif %}
+
+        // Kursor harakati
+        editor.selection.on('changeCursor', () => {
+            const pos = editor.getCursorPosition();
+            const el = document.getElementById('cursorPosition');
+            if (el) el.textContent = `Qator: ${pos.row + 1}, Ustun: ${pos.column + 1}`;
+        });
+
+        // Kod o'zgarganda dirty holatini belgilash
+        editor.session.on('change', () => {
+            setDirty(true);
+            if (PROJECT_MODE === 'console') {
+                clearTimeout(flowchartTimer);
+                flowchartTimer = setTimeout(generateFlowchartFromCode, 800);
+            }
+        });
+    }
+
+    function getAceModeForLanguage(lang, fileName) {
+        if (fileName) {
+            if (fileName.endsWith('.py')) return 'ace/mode/python';
+            if (fileName.endsWith('.cs')) return 'ace/mode/csharp';
+            if (fileName.endsWith('.java')) return 'ace/mode/java';
+            if (fileName.endsWith('.cpp') || fileName.endsWith('.c') || fileName.endsWith('.h')) return 'ace/mode/c_cpp';
+            if (fileName.endsWith('.js') || fileName.endsWith('.json')) return 'ace/mode/javascript';
+            if (fileName.endsWith('.dart')) return 'ace/mode/dart';
+            if (fileName.endsWith('.go')) return 'ace/mode/golang';
+            if (fileName.endsWith('.php')) return 'ace/mode/php';
+            if (fileName.endsWith('.md')) return 'ace/mode/markdown';
+        }
+        const mapping = {
+            'python': 'ace/mode/python',
+            'csharp': 'ace/mode/csharp',
+            'java': 'ace/mode/java',
+            'cpp': 'ace/mode/c_cpp',
+            'javascript': 'ace/mode/javascript',
+            'dart': 'ace/mode/dart',
+            'go': 'ace/mode/golang',
+            'php': 'ace/mode/php'
+        };
+        return mapping[lang] || 'ace/mode/python';
+    }
+
+    function setDirty(dirty) {
+        isDirty = dirty;
+        const dot = document.getElementById('dirtyStateDot');
+        const saveText = document.getElementById('saveStatusText');
+        if (dot) {
+            if (dirty) dot.classList.remove('hidden');
+            else dot.classList.add('hidden');
+        }
+        if (saveText) {
+            saveText.textContent = dirty ? "Saqlanmagan o'zgarishlar bor..." : "Barcha o'zgarishlar saqlangan";
+        }
+    }
+
+    // 2. Fayllar daraxtidagi faylni tanlash
+    function onFileTreeItemClick(fileId, isFolder) {
+        if (isFolder) return;
+        if (currentFileId === fileId) return;
+
+        // Agar joriy faylda o'zgarish bo'lsa oldin saqlaymiz
+        if (isDirty && currentFileId) {
+            saveActiveFile(false);
+        }
+
+        fetch(`/student/projects/${PROJECT_ID}/files/${fileId}/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    currentFileId = data.id;
+                    currentFileName = data.name;
+                    document.getElementById('activeFileName').textContent = data.name;
+                    editor.session.setMode(getAceModeForLanguage(PROJECT_LANGUAGE, data.name));
+                    editor.setValue(data.content || '', -1);
+                    setDirty(false);
+
+                    // Faol fayl highlightini yangilash
+                    document.querySelectorAll('.file-item-row').forEach(el => {
+                        el.classList.remove('bg-purple-600/15', 'text-purple-400', 'font-bold', 'border', 'border-purple-500/30');
+                    });
+                    const activeRow = document.querySelector(`[data-file-id="${fileId}"]`);
+                    if (activeRow) {
+                        activeRow.classList.add('bg-purple-600/15', 'text-purple-400', 'font-bold', 'border', 'border-purple-500/30');
+                    }
+                }
+            })
+            .catch(err => console.error("Faylni yuklashda xatolik:", err));
+    }
+
+    // 3. Faol faylni saqlash
+    function saveActiveFile(showToast = false) {
+        if (!currentFileId) return;
+
+        const content = editor.getValue();
+        const formData = new FormData();
+        formData.append('content', content);
+
+        fetch(`/student/projects/${PROJECT_ID}/files/${currentFileId}/save/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                setDirty(false);
+                const saveText = document.getElementById('saveStatusText');
+                if (saveText) saveText.textContent = `Saqlandi (${data.updated_at})`;
+                if (showToast) {
+                    appendTerminal(`[Tizim]: «${currentFileName}» muvaffaqiyatli saqlandi.`);
+                }
+            }
+        })
+        .catch(err => console.error("Saqlashda xatolik:", err));
+    }
+
+    // 4. Yangi fayl / papka yaratish
+    function openCreateItemModal(isFolder) {
+        document.getElementById('modalIsFolder').value = isFolder ? 'true' : 'false';
+        document.getElementById('createModalTitle').innerHTML = isFolder ?
+            '<i class="fa-solid fa-folder-plus text-amber-400"></i> Yangi Papka Yaratish' :
+            '<i class="fa-solid fa-file-circle-plus text-purple-400"></i> Yangi Fayl Yaratish';
+        document.getElementById('modalNameLabel').textContent = isFolder ? 'Papka nomi' : 'Fayl nomi (masalan: helpers.py)';
+        document.getElementById('modalItemName').value = '';
+        document.getElementById('createItemModal').classList.remove('hidden');
+        document.getElementById('modalItemName').focus();
+    }
+
+    function closeCreateItemModal() {
+        document.getElementById('createItemModal').classList.add('hidden');
+    }
+
+    function submitCreateItem() {
+        const name = document.getElementById('modalItemName').value.trim();
+        const isFolder = document.getElementById('modalIsFolder').value === 'true';
+        const parentId = document.getElementById('modalParentSelect') ? document.getElementById('modalParentSelect').value : '';
+
+        if (!name) {
+            alert("Iltimos, nom kiriting!");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('is_folder', isFolder ? 'true' : 'false');
+        if (parentId) formData.append('parent_id', parentId);
+
+        fetch(`/student/projects/${PROJECT_ID}/files/create/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                closeCreateItemModal();
+                location.reload(); // Fayllar daraxtini to'liq yangilash
+            } else {
+                alert(data.error || "Xatolik yuz berdi");
+            }
+        })
+        .catch(err => console.error("Fayl yaratish xatosi:", err));
+    }
+
+    // 5. Fayl / papkani o'chirish
+    function deleteFileItem(fileId, fileName) {
+        if (!confirm(`Haqiqatan ham «${fileName}» fayl/papkani o'chirmoqchimisiz?`)) return;
+
+        fetch(`/student/projects/${PROJECT_ID}/files/${fileId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || "O'chirishda xatolik");
+            }
+        })
+        .catch(err => console.error("O'chirish xatosi:", err));
+    }
+
+    // 6. Kodni ishga tushirish (Run)
+    function runProjectCode() {
+        saveActiveFile(false);
+
+        const btn = document.getElementById('btnRunCode');
+        const statusBadge = document.getElementById('terminalStatusBadge');
+        if (btn) btn.disabled = true;
+        if (statusBadge) {
+            statusBadge.textContent = "Bajarilmoqda...";
+            statusBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-400";
+        }
+
+        appendTerminal(`\n$ Ishga tushirilmoqda: ${currentFileName}...`);
+
+        const formData = new FormData();
+        formData.append('code', editor.getValue());
+        formData.append('file_id', currentFileId);
+
+        fetch(`/student/projects/${PROJECT_ID}/run/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (btn) btn.disabled = false;
+            if (statusBadge) {
+                if (data.success) {
+                    statusBadge.textContent = `Muvaffaqiyatli (${data.elapsed_ms}ms)`;
+                    statusBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-400";
+                } else {
+                    statusBadge.textContent = "Xatolik bilan tugadi";
+                    statusBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-mono bg-rose-500/20 text-rose-400";
+                }
+            }
+            appendTerminal(data.output);
+        })
+        .catch(err => {
+            if (btn) btn.disabled = false;
+            if (statusBadge) statusBadge.textContent = "Ulanish xatosi";
+            appendTerminal(`[Xatolik]: Serverga ulanishda nosozlik yuz berdi: ${err}`);
+        });
+    }
+
+    function appendTerminal(text) {
+        const out = document.getElementById('terminalOutput');
+        if (out) {
+            out.textContent += "\n" + text;
+            out.scrollTop = out.scrollHeight;
+        }
+    }
+
+    function clearTerminal() {
+        const out = document.getElementById('terminalOutput');
+        if (out) out.textContent = `$ Terminal tozalandi.`;
+    }
+
+    // 7. Ustozga jo'natish
+    function openSubmitModal() {
+        document.getElementById('submitModal').classList.remove('hidden');
+    }
+
+    function closeSubmitModal() {
+        document.getElementById('submitModal').classList.add('hidden');
+    }
+
+    function confirmSubmitProject() {
+        saveActiveFile(false);
+        fetch(`/student/projects/${PROJECT_ID}/submit/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            closeSubmitModal();
+            if (data.success) {
+                const badge = document.getElementById('projectStatusBadge');
+                if (badge) {
+                    badge.innerHTML = `
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Ustoz tekshiruvida</span>
+                        </span>
+                    `;
+                }
+                alert(data.message);
+            }
+        })
+        .catch(err => console.error("Submit error:", err));
+    }
+
+    // 8. KONSOL DASTURI UCHUN AVTOMATIK BLOK-SXEMA (FLOWCHART) GENERATORI
+    function generateFlowchartFromCode() {
+        if (!editor) return;
+        const code = editor.getValue();
+        const renderArea = document.getElementById('flowchartRenderArea');
+        if (!renderArea) return;
+
+        const lines = code.split('\n');
+        let nodes = [];
+        let edges = [];
+        let nodeCount = 0;
+
+        function addNode(shape, label) {
+            nodeCount++;
+            const id = `node_${nodeCount}`;
+            // Maxsus belgilarni tozalash
+            const cleanLabel = label.replace(/["'<>]/g, '').trim().substring(0, 45);
+            nodes.push({ id, shape, label: cleanLabel });
+            return id;
+        }
+
+        // 1. Boshlanish
+        const startId = addNode('circle', 'Boshlanishi');
+        let prevId = startId;
+
+        // Qatorlarni intellektual tahlil qilish
+        for (let i = 0; i < lines.length; i++) {
+            const rawLine = lines[i];
+            const line = rawLine.trim();
+            if (!line || line.startsWith('#') || line.startsWith('//')) continue;
+
+            // Kiritish operatsiyasi (input, ReadLine, Scanner, cin)
+            if (line.includes('input(') || line.includes('ReadLine()') || line.includes('.nextLine()') || line.includes('cin >>')) {
+                const id = addNode('input', `Kiritish: ${line.split('=')[0] || line}`);
+                edges.push(`${prevId} --> ${id}`);
+                prevId = id;
+            }
+            // Chiqarish operatsiyasi (print, Console.WriteLine, println, cout)
+            else if (line.startsWith('print(') || line.includes('Console.WriteLine') || line.includes('System.out.print') || line.includes('cout <<')) {
+                let msg = line;
+                const m = line.match(/\((.*?)\)/);
+                if (m) msg = m[1];
+                const id = addNode('output', `Chiqarish: ${msg}`);
+                edges.push(`${prevId} --> ${id}`);
+                prevId = id;
+            }
+            // Shart operatori (if)
+            else if (line.startsWith('if ') || line.startsWith('if(')) {
+                let cond = line.replace(/^(if\s*\(?|\)?:\s*|\)\s*\{?)$/g, '').replace(':', '').replace('{', '');
+                const id = addNode('rhombus', `Shart: ${cond}`);
+                edges.push(`${prevId} --> ${id}`);
+                prevId = id;
+            }
+            // Takrorlash operatori (for, while)
+            else if (line.startsWith('for ') || line.startsWith('while ') || line.startsWith('for(') || line.startsWith('while(')) {
+                let loopCond = line.replace(':', '').replace('{', '');
+                const id = addNode('loop', `Takrorlash: ${loopCond}`);
+                edges.push(`${prevId} --> ${id}`);
+                prevId = id;
+            }
+            // Arifmetik hisob-kitob yoki o'zgaruvchi berish
+            else if (line.includes('=') && !line.startsWith('def ') && !line.startsWith('class ')) {
+                const id = addNode('rect', `Amal: ${line}`);
+                edges.push(`${prevId} --> ${id}`);
+                prevId = id;
+            }
+
+            if (nodeCount >= 14) break; // Vizual toza bo'lishi uchun cheklaymiz
+        }
+
+        // Tamom
+        const endId = addNode('circle', 'Tamom / Yakun');
+        edges.push(`${prevId} --> ${endId}`);
+
+        // Mermaid sintaksisini yig'ish
+        let mermaidCode = "flowchart TD\n";
+        nodes.forEach(n => {
+            if (n.shape === 'circle') {
+                mermaidCode += `    ${n.id}(["${n.label}"])\n`;
+            } else if (n.shape === 'input') {
+                mermaidCode += `    ${n.id}[/"${n.label}"/]\n`;
+            } else if (n.shape === 'output') {
+                mermaidCode += `    ${n.id}[\\"${n.label}"\\]\n`;
+            } else if (n.shape === 'rhombus') {
+                mermaidCode += `    ${n.id}{"${n.label}"}\n`;
+            } else if (n.shape === 'loop') {
+                mermaidCode += `    ${n.id}{{"${n.label}"}}\n`;
+            } else {
+                mermaidCode += `    ${n.id}["${n.label}"]\n`;
+            }
+        });
+
+        edges.forEach(e => {
+            mermaidCode += `    ${e}\n`;
+        });
+
+        // Mermaid orqali SVG hosil qilish
+        const uniqueRenderId = 'mermaidSvg_' + Date.now();
+        mermaid.render(uniqueRenderId, mermaidCode)
+            .then(result => {
+                renderArea.innerHTML = result.svg;
+            })
+            .catch(err => {
+                console.warn("Mermaid chizishda xatolik, sodda ko'rinish:", err);
+                const fallbackCode = `flowchart TD\n    A(["Boshlanishi"]) --> B[/"Kiritish"/] --> C{"Shart tekshiruvi"} --> D[\\"Natija Chiqarish"\\] --> E(["Tamom"])`;
+                mermaid.render(uniqueRenderId + '_fb', fallbackCode).then(fbRes => {
+                    renderArea.innerHTML = fbRes.svg;
+                });
+            });
+    }
+</script>
+{% endblock %}

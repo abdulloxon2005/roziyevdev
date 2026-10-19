@@ -1,0 +1,22 @@
+[Unit]
+Description=Gunicorn daemon for roziyevdev LMS platform
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/roziyevdev
+Environment="PATH=/var/www/roziyevdev/venv/bin"
+ExecStart=/var/www/roziyevdev/venv/bin/gunicorn \
+          --access-logfile /var/log/gunicorn/roziyevdev_access.log \
+          --error-logfile /var/log/gunicorn/roziyevdev_error.log \
+          --workers 3 \
+          --timeout 300 \
+          --bind unix:/run/gunicorn_roziyevdev.sock \
+          config.wsgi:application
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

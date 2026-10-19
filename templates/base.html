@@ -8,12 +8,15 @@
     <link rel="icon" type="image/png" href="/static/images/logo_icon.png">
     <link rel="shortcut icon" href="/static/images/favicon.ico">
 
-    <!-- Anti-flicker Theme Script -->
+    <!-- Anti-flicker Theme & Sidebar Script -->
     <script>
         if (localStorage.getItem('theme') === 'light') {
             document.documentElement.classList.remove('dark');
         } else {
             document.documentElement.classList.add('dark');
+        }
+        if (localStorage.getItem('sidebar_collapsed') === 'true') {
+            document.documentElement.classList.add('sidebar-collapsed');
         }
     </script>
 
@@ -53,15 +56,200 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        #student-sidebar {
+            width: 18rem;
+            min-width: 18rem;
+            transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        html.sidebar-collapsed #student-sidebar {
+            width: 5rem;
+            min-width: 5rem;
+        }
+        html.sidebar-collapsed #student-sidebar .sidebar-text,
+        html.sidebar-collapsed #student-sidebar .sidebar-badge,
+        html.sidebar-collapsed #student-sidebar .sidebar-section-title,
+        html.sidebar-collapsed #student-sidebar .sidebar-collapse-hint {
+            display: none !important;
+        }
+        html.sidebar-collapsed #student-sidebar .sidebar-header-wrap {
+            justify-content: center;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        html.sidebar-collapsed #student-sidebar .sidebar-nav-item {
+            justify-content: center;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        html.sidebar-collapsed #student-sidebar .sidebar-footer-inner {
+            flex-direction: column;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-slate-50 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 font-sans antialiased flex flex-col min-h-screen selection:bg-blue-600 selection:text-white transition-colors duration-200">
+<body class="bg-slate-50 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen selection:bg-blue-600 selection:text-white transition-colors duration-200 {% if user.is_authenticated %}flex flex-row{% else %}flex flex-col{% endif %}">
 
+    {% if user.is_authenticated %}
+    <!-- PERSISTENT STUDENT SIDEBAR (Barcha oynalarda doimiy turadi, faqat logoni bosganda qisqaradi) -->
+    <aside id="student-sidebar" class="sticky top-0 left-0 h-screen shrink-0 bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-slate-800 z-50 flex flex-col justify-between overflow-y-auto overflow-x-hidden select-none">
+        <div>
+            <!-- BRAND HEADER (LOGONI BOSGANDA SIDEBAR QISQARADI / OCHILADI) -->
+            <div class="sidebar-header-wrap p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <button type="button" id="sidebar-logo-toggle" onclick="toggleStudentSidebar()" class="w-full flex items-center justify-between gap-3 group text-left focus:outline-none" title="Logoni bosib sidebarni qisqartirish / kengaytirish">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+                            <img src="/static/images/logo_emblem.png" alt="Logo" class="w-6 h-6 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                            <i class="fa-solid fa-code text-lg hidden"></i>
+                        </div>
+                        <div class="sidebar-text min-w-0">
+                            <span class="text-base font-black tracking-tight text-slate-900 dark:text-white block leading-tight truncate">
+                                roziyev<span class="text-blue-600 dark:text-blue-500">dev</span>
+                            </span>
+                            <span class="text-[10px] font-bold tracking-wider uppercase text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full inline-block mt-0.5">
+                                O'quvchi Kabineti
+                            </span>
+                        </div>
+                    </div>
+                    <span class="sidebar-collapse-hint text-slate-400 group-hover:text-blue-500 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0">
+                        <i class="fa-solid fa-angles-left text-xs"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- NAVIGATION LINKS -->
+            <nav class="p-3 sm:p-4 space-y-1.5">
+                <div class="sidebar-section-title px-3 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    O'quv Bo'limlari
+                </div>
+
+                <a href="{% url 'student_dashboard' %}" title="Bosh sahifa (O'quvchi Kabineti)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if request.path == '/student/' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-gauge-high w-5 text-center shrink-0 {% if request.path == '/student/' %}text-white{% else %}text-blue-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Bosh sahifa</span>
+                    </div>
+                </a>
+
+                <a href="{% url 'student_assignments_hub' %}" title="Vazifalar Studiyasi (IDE)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/student/assignments/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-laptop-code w-5 text-center shrink-0 {% if '/student/assignments/' in request.path %}text-white{% else %}text-indigo-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Vazifalar Studiyasi</span>
+                    </div>
+                    <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400">IDE</span>
+                </a>
+
+                <a href="{% url 'student_leaderboard' %}" title="Kurs Reytingi (XP)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/student/leaderboard/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-trophy w-5 text-center shrink-0 {% if '/student/leaderboard/' in request.path %}text-white{% else %}text-amber-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Kurs Reytingi</span>
+                    </div>
+                    <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500">XP</span>
+                </a>
+
+                <a href="{% url 'student_contests' %}" title="Musobaqalar" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/student/contests/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-fire w-5 text-center shrink-0 {% if '/student/contests/' in request.path %}text-white{% else %}text-rose-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Musobaqalar</span>
+                    </div>
+                    <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500">Sovrinli</span>
+                </a>
+
+                <a href="{% url 'student_projects' %}" title="Loyihalar & Ko'rgazma" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/student/projects/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-rocket w-5 text-center shrink-0 {% if '/student/projects/' in request.path %}text-white{% else %}text-purple-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Loyihalar & Ko'rgazma</span>
+                    </div>
+                    <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400">Portfolio</span>
+                </a>
+
+                <a href="{% url 'student_roadmap' %}" title="Dasturchi Yo'li (Roadmap)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/student/roadmap/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-route w-5 text-center shrink-0 {% if '/student/roadmap/' in request.path %}text-white{% else %}text-emerald-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Dasturchi Yo'li</span>
+                    </div>
+                    <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">Roadmap</span>
+                </a>
+
+                <a href="{% url 'course_list' %}" title="Kurslar Katalogi" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/courses/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-book-open w-5 text-center shrink-0 {% if '/courses/' in request.path %}text-white{% else %}text-cyan-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Kurslar Katalogi</span>
+                    </div>
+                </a>
+
+                <div class="sidebar-section-title px-3 pt-4 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Shaxsiy & Havolalar
+                </div>
+
+                <a href="{% url 'profile' %}" title="Shaxsiy Profil" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if request.path == '/profile/' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <i class="fa-solid fa-user w-5 text-center shrink-0 {% if request.path == '/profile/' %}text-white{% else %}text-blue-500{% endif %}"></i>
+                    <span class="sidebar-text truncate">Shaxsiy Profil</span>
+                </a>
+
+                <a href="{% url 'my_certificates' %}" title="Sertifikatlarim" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/certificates/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <i class="fa-solid fa-award w-5 text-center shrink-0 {% if '/certificates/' in request.path %}text-white{% else %}text-amber-500{% endif %}"></i>
+                    <span class="sidebar-text truncate">Sertifikatlarim</span>
+                </a>
+
+                <a href="{% url 'profile_settings' %}" title="Profil Sozlamalari" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/profile/settings/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <i class="fa-solid fa-gear w-5 text-center shrink-0 {% if '/profile/settings/' in request.path %}text-white{% else %}text-slate-400{% endif %}"></i>
+                    <span class="sidebar-text truncate">Sozlamalar</span>
+                </a>
+
+                <a href="{% url 'blog_list' %}" title="IT Blog" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/blog/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <i class="fa-solid fa-newspaper w-5 text-center shrink-0 {% if '/blog/' in request.path %}text-white{% else %}text-sky-500{% endif %}"></i>
+                    <span class="sidebar-text truncate">IT Blog</span>
+                </a>
+
+                <a href="{% url 'home' %}" title="Asosiy saytga o'tish" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if request.path == '/' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <i class="fa-solid fa-globe w-5 text-center shrink-0 {% if request.path == '/' %}text-white{% else %}text-teal-500{% endif %}"></i>
+                    <span class="sidebar-text truncate">Asosiy saytga o'tish</span>
+                </a>
+
+                {% if user.is_staff or user.role == 'instructor' or user.role == 'admin' %}
+                <a href="{% url 'dashboard_index' %}" title="Ustoz Studiyasi" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors">
+                    <i class="fa-solid fa-graduation-cap w-5 text-center shrink-0 text-blue-500"></i>
+                    <span class="sidebar-text truncate">Ustoz Studiyasi &rarr;</span>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+
+        <!-- USER PROFILE & LOGOUT -->
+        <div class="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+            <div class="sidebar-footer-inner flex items-center justify-between">
+                <a href="{% url 'profile' %}" class="flex items-center gap-3 min-w-0" title="{{ user.display_name }}">
+                    <img src="{{ user.profile.avatar_url }}" alt="{{ user.display_name }}" class="w-10 h-10 shrink-0 rounded-xl object-cover border border-blue-500/40">
+                    <div class="sidebar-text min-w-0">
+                        <p class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ user.display_name }}</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">{{ user.email }}</p>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded">
+                                {{ user.get_role_display }}
+                            </span>
+                            <span class="text-[10px] font-bold text-amber-500 flex items-center">
+                                <span class="material-symbols-outlined text-[12px]">monetization_on</span>{{ user.coins }}
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                <a href="{% url 'logout' %}" class="text-slate-400 hover:text-rose-500 transition-colors p-2 shrink-0" title="Chiqish">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+    {% endif %}
+
+    <div class="flex-1 flex flex-col min-w-0">
     <!-- NAVBAR -->
-    <header class="sticky top-0 z-50 backdrop-blur-xl bg-white/85 dark:bg-[#0b0f19]/85 border-b border-slate-200 dark:border-slate-800/80 transition-colors duration-200">
+    <header class="sticky top-0 z-40 backdrop-blur-xl bg-white/85 dark:bg-[#0b0f19]/85 border-b border-slate-200 dark:border-slate-800/80 transition-colors duration-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 
@@ -70,7 +258,7 @@
                     <img src="/static/images/logo_emblem.png" alt="RoziyevDev Emblem" class="h-10 w-auto object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-200">
                     <div class="flex flex-col">
                         <span class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
-                            roziyev<span class="text-blue-600 dark:text-blue-400">.dev</span>
+                            roziyev<span class="text-blue-600 dark:text-blue-400">dev</span>
                         </span>
                         <span class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">
                             Online Akademiya
@@ -79,7 +267,7 @@
                 </a>
 
                 <!-- DESKTOP NAV -->
-                <nav class="hidden md:flex items-center gap-8">
+                <nav class="hidden md:flex items-center gap-7">
                     <a href="{% url 'home' %}" class="text-sm font-medium transition-colors {% if request.path == '/' %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400{% endif %}">
                         Bosh sahifa
                     </a>
@@ -92,8 +280,14 @@
                     <a href="{% url 'course_list' %}?category=algoritmlar-va-malumotlar-tuzilmasi" class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                         Algoritmlar
                     </a>
-                    <a href="{% url 'swagger-ui' %}" target="_blank" class="text-sm font-medium text-amber-600 dark:text-amber-400 hover:underline transition-colors flex items-center gap-1.5">
-                        <i class="fa-solid fa-bolt text-xs"></i> REST API
+                    <a href="{% url 'blog_list' %}" class="text-sm font-medium transition-colors {% if '/blog/' in request.path %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400{% endif %}">
+                        <i class="fa-solid fa-newspaper text-xs mr-1 text-blue-500"></i> Blog
+                    </a>
+                    <a href="{% url 'student_roadmap' %}" class="text-sm font-medium transition-colors {% if '/student/roadmap/' in request.path %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400{% endif %}">
+                        <i class="fa-solid fa-route text-xs mr-1 text-emerald-500"></i> Dasturchi Yo'li
+                    </a>
+                    <a href="{% url 'student_contests' %}" class="text-sm font-medium transition-colors {% if '/student/contests/' in request.path %}text-blue-600 dark:text-blue-400 font-semibold{% else %}text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400{% endif %}">
+                        <i class="fa-solid fa-trophy text-xs mr-1 text-amber-500"></i> Musobaqalar
                     </a>
                 </nav>
 
@@ -108,6 +302,13 @@
                     </button>
 
                     {% if user.is_authenticated %}
+                        <!-- COINS WALLET BADGE -->
+                        <a href="{% url 'profile' %}#wallet" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 font-extrabold text-xs hover:bg-amber-500/20 transition-all shadow-sm" title="Mening tangachalarim">
+                            <span class="material-symbols-outlined text-[16px] text-amber-500">monetization_on</span>
+                            <span id="nav-user-coins">{{ user.coins }}</span>
+                            <span class="hidden xl:inline text-[10px] uppercase font-semibold text-amber-500/80">tanga</span>
+                        </a>
+
                         <!-- Authenticated User Menu -->
                         <div class="relative group">
                             <button class="flex items-center gap-2.5 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors border border-slate-200 dark:border-slate-700/60">
@@ -119,7 +320,7 @@
                             </button>
 
                             <!-- Dropdown -->
-                            <div class="absolute right-0 mt-2 w-56 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 transform origin-top-right z-50">
+                            <div class="absolute right-0 mt-2 w-64 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 transform origin-top-right z-50">
                                 <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
                                     <p class="text-xs text-slate-500 dark:text-slate-400">Tizimga kirilgan:</p>
                                     <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ user.email }}</p>
@@ -127,15 +328,50 @@
                                         {{ user.get_role_display }}
                                     </span>
                                 </div>
-                                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
-                                    <i class="fa-solid fa-user text-blue-500 w-4 text-center"></i> Mening Profilim
+
+                                <!-- O'QUVCHI KABINETI LINKLARI -->
+                                <a href="{% url 'student_dashboard' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-xl mx-2 my-1 transition-colors">
+                                    <i class="fa-solid fa-gauge-high text-blue-500 w-4 text-center"></i> O'quvchi Kabineti
                                 </a>
-                                <a href="{% url 'profile_settings' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
-                                    <i class="fa-solid fa-gear text-slate-400 w-4 text-center"></i> Profilni Sozlash
+                                <a href="{% url 'student_assignments_hub' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-laptop-code text-indigo-500 w-4 text-center"></i> Vazifalar Studiyasi
                                 </a>
+                                <a href="{% url 'student_leaderboard' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-trophy text-amber-500 w-4 text-center"></i> Kurs Reytingi
+                                </a>
+                                <a href="{% url 'student_contests' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-fire text-rose-500 w-4 text-center"></i> Musobaqalar
+                                </a>
+                                <a href="{% url 'student_projects' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-rocket text-purple-500 w-4 text-center"></i> Loyihalarim & Ko'rgazma
+                                </a>
+                                <a href="{% url 'student_roadmap' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-route text-emerald-500 w-4 text-center"></i> Dasturchi Yo'li
+                                </a>
+
+                                <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+
+                                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-user text-blue-500 w-4 text-center"></i> Shaxsiy Profil
+                                </a>
+                                <a href="{% url 'my_certificates' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-award text-amber-500 w-4 text-center"></i> Sertifikatlarim
+                                </a>
+                                <a href="{% url 'profile_settings' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-gear text-slate-400 w-4 text-center"></i> Sozlamalar
+                                </a>
+                                {% if user.is_staff or user.role == 'instructor' or user.role == 'admin' %}
+                                <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                                <a href="{% url 'dashboard_index' %}" class="flex items-center gap-3 px-4 py-2 text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-xl mx-2 my-1 transition-colors">
+                                    <i class="fa-solid fa-graduation-cap text-blue-500 w-4 text-center"></i> Ustoz Studiyasi & Admin
+                                </a>
+                                <a href="{% url 'dashboard_reviews_list' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-list-check text-indigo-500 w-4 text-center"></i> Vazifalarni tekshirish
+                                </a>
+                                {% endif %}
                                 {% if user.is_staff %}
-                                <a href="/admin/" target="_blank" class="flex items-center gap-3 px-4 py-2.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
-                                    <i class="fa-solid fa-shield-halved text-purple-500 w-4 text-center"></i> Admin Paneli
+                                <a href="/admin/" target="_blank" class="flex items-center gap-3 px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                                    <i class="fa-solid fa-shield-halved text-purple-500 w-4 text-center"></i> Django Admin Paneli
                                 </a>
                                 {% endif %}
                                 <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
@@ -167,7 +403,14 @@
                 <a href="{% url 'course_list' %}" class="block text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">Barcha Kurslar</a>
                 <a href="{% url 'course_list' %}?category=mobil-dasturlash" class="block text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">Mobil Dasturlash</a>
                 <a href="{% url 'course_list' %}?category=algoritmlar-va-malumotlar-tuzilmasi" class="block text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">Algoritmlar</a>
-                <a href="{% url 'swagger-ui' %}" target="_blank" class="block text-amber-600 dark:text-amber-400 py-2">REST API Hujjatlari</a>
+                <a href="{% url 'blog_list' %}" class="block text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 py-2">Shaxsiy Blog</a>
+                {% if user.is_authenticated %}
+                    {% if user.is_staff or user.role == 'instructor' or user.role == 'admin' %}
+                    <a href="{% url 'dashboard_index' %}" class="block text-blue-600 dark:text-blue-400 font-bold py-2">
+                        <i class="fa-solid fa-graduation-cap mr-1"></i> Ustoz Studiyasi & Admin
+                    </a>
+                    {% endif %}
+                {% endif %}
             </div>
         </div>
     </header>
@@ -201,93 +444,93 @@
     </main>
 
     <!-- FOOTER -->
-    <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 mt-20 pt-16 pb-12">
+    <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 mt-20 pt-14 pb-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-slate-800">
-                <!-- Col 1: Official Emblem & Description -->
-                <div class="space-y-4 md:col-span-1">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-slate-800/80">
+                <!-- Col 1: Branding & Socials -->
+                <div class="space-y-4 md:col-span-6">
                     <a href="{% url 'home' %}" class="inline-flex items-center gap-3 group">
-                        <img src="/static/images/logo_emblem.png" alt="RoziyevDev" class="h-11 w-auto object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-200">
+                        <img src="/static/images/logo_emblem.png" alt="RoziyevDev" class="h-10 w-auto object-contain filter drop-shadow-md group-hover:scale-105 transition-transform duration-200">
                         <div class="flex flex-col">
                             <span class="text-2xl font-extrabold text-white tracking-tight leading-none">
-                                roziyev<span class="text-blue-400">.dev</span>
+                                roziyev<span class="text-blue-400">dev</span>
                             </span>
-                            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mt-1">Online Akademiya</span>
+                            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mt-1">Online Ta'lim Akademiyasi</span>
                         </div>
                     </a>
-                    <p class="text-sm text-slate-400 leading-relaxed">
+                    <p class="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md">
                         Mobil dasturlash, algoritmlar, ma'lumotlar bazasi va zamonaviy web texnologiyalari bo'yicha professional onlayn ta'lim platformasi.
                     </p>
-                    <div class="flex items-center gap-3 pt-2">
-                        <a href="https://t.me/roziyevdev" target="_blank" class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-slate-700 transition-colors">
+                    <div class="flex items-center gap-2.5 pt-1">
+                        <a href="https://t.me/roziyevdev" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:bg-slate-700/80 transition-colors" title="Telegram">
                             <i class="fa-brands fa-telegram"></i>
                         </a>
-                        <a href="https://github.com/roziyevdev" target="_blank" class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+                        <a href="https://github.com/roziyevdev" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/80 transition-colors" title="GitHub">
                             <i class="fa-brands fa-github"></i>
                         </a>
-                        <a href="https://linkedin.com" target="_blank" class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-slate-700 transition-colors">
+                        <a href="https://linkedin.com" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-slate-700/80 transition-colors" title="LinkedIn">
                             <i class="fa-brands fa-linkedin-in"></i>
                         </a>
-                        <a href="https://youtube.com" target="_blank" class="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-slate-700 transition-colors">
+                        <a href="https://youtube.com" target="_blank" rel="noopener" class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-slate-700/80 transition-colors" title="YouTube">
                             <i class="fa-brands fa-youtube"></i>
                         </a>
                     </div>
                 </div>
 
-                <!-- Col 2 -->
-                <div>
-                    <h4 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Yo'nalishlar</h4>
-                    <ul class="space-y-2.5 text-sm text-slate-400">
-                        <li><a href="{% url 'course_list' %}?category=mobil-dasturlash" class="hover:text-white transition-colors">Mobil Dasturlash (Flutter, Android)</a></li>
-                        <li><a href="{% url 'course_list' %}?category=algoritmlar-va-malumotlar-tuzilmasi" class="hover:text-white transition-colors">Algoritmlar & Data Structures</a></li>
-                        <li><a href="{% url 'course_list' %}?category=malumotlar-bazasi-va-sql" class="hover:text-white transition-colors">Ma'lumotlar Bazasi (PostgreSQL)</a></li>
-                        <li><a href="{% url 'course_list' %}?category=backend-dasturlash" class="hover:text-white transition-colors">Backend & Django REST</a></li>
+                <!-- Col 2: Sahifalar -->
+                <div class="space-y-3 md:col-span-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-white">Platforma</h4>
+                    <ul class="space-y-2 text-xs sm:text-sm text-slate-400">
+                        <li><a href="{% url 'course_list' %}" class="hover:text-white transition-colors">Barcha Kurslar</a></li>
+                        <li><a href="{% url 'blog_list' %}" class="hover:text-white transition-colors">Shaxsiy IT Blog</a></li>
+                        <li><a href="{% url 'my_certificates' %}" class="hover:text-white transition-colors">Sertifikatlarni Tekshirish</a></li>
                     </ul>
                 </div>
 
-                <!-- Col 3 -->
-                <div>
-                    <h4 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Platforma</h4>
-                    <ul class="space-y-2.5 text-sm text-slate-400">
-                        <li><a href="{% url 'course_list' %}" class="hover:text-white transition-colors">Barcha kurslar</a></li>
-                        <li><a href="{% url 'swagger-ui' %}" target="_blank" class="hover:text-white transition-colors">REST API Hujjatlari</a></li>
-                        <li><span class="text-slate-500">Shaxsiy Blog (3-bosqich)</span></li>
-                        <li><span class="text-slate-500">Sertifikat tekshirish (4-bosqich)</span></li>
-                    </ul>
-                </div>
-
-                <!-- Col 4 -->
-                <div>
-                    <h4 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Bog'lanish</h4>
-                    <ul class="space-y-3 text-sm text-slate-400">
-                        <li class="flex items-center gap-2.5">
-                            <i class="fa-solid fa-envelope text-blue-400"></i>
+                <!-- Col 3: Bog'lanish -->
+                <div class="space-y-3 md:col-span-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-white">Bog'lanish</h4>
+                    <ul class="space-y-2 text-xs sm:text-sm text-slate-400">
+                        <li class="flex items-center gap-2">
+                            <i class="fa-solid fa-envelope text-blue-400 text-xs"></i>
                             <span>admin@roziyev.dev</span>
                         </li>
-                        <li class="flex items-center gap-2.5">
-                            <i class="fa-solid fa-paper-plane text-blue-400"></i>
+                        <li class="flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane text-blue-400 text-xs"></i>
                             <span>@roziyevdev (Telegram)</span>
                         </li>
-                        <li class="flex items-center gap-2.5">
-                            <i class="fa-solid fa-location-dot text-blue-400"></i>
+                        <li class="flex items-center gap-2">
+                            <i class="fa-solid fa-location-dot text-blue-400 text-xs"></i>
                             <span>Toshkent, O'zbekiston</span>
                         </li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Bottom Copyright -->
-            <div class="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-                <p>&copy; 2026 RoziyevDev — Barcha huquqlar himoyalangan.</p>
-                <p class="flex items-center gap-2">
-                    Ishlab chiqilgan: <span class="text-slate-300 font-semibold">Python / Django REST Framework</span>
-                </p>
+            <!-- Bottom Copyright & Roziyev Systems Attribution -->
+            <div class="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+                <p>&copy; 2026 RoziyevDev. Barcha huquqlar himoyalangan.</p>
+                <div class="flex items-center gap-2 text-xs text-slate-400">
+                    <span>Platforma</span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 shadow-sm">
+                        <img src="/static/images/roziyev_systems_logo_white.png" alt="Roziyev Systems" class="h-4 sm:h-5 w-auto object-contain">
+                    </span>
+                    <span>tomonidan yaratilgan</span>
+                </div>
             </div>
         </div>
     </footer>
+    </div>
 
-    <!-- Scripts: Mobile menu & Theme toggle -->
+    <!-- Scripts: Sidebar, Mobile menu & Theme toggle -->
     <script>
+        function toggleStudentSidebar() {
+            const root = document.documentElement;
+            const isCollapsed = root.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+            window.dispatchEvent(new Event('resize'));
+        }
+
         // 1. Mobile Menu Toggle
         const menuBtn = document.getElementById('mobile-menu-btn');
         const menu = document.getElementById('mobile-menu');
@@ -330,7 +573,11 @@
             });
         }
     </script>
+    <script src="/static/js/gamification.js"></script>
     <script src="/static/js/main.js"></script>
     {% block extra_scripts %}{% endblock %}
+
+    <!-- Seans Xavfsizlik Qulfi (Inactivity Lock) -->
+    {% include 'includes/lock_screen.html' %}
 </body>
 </html>

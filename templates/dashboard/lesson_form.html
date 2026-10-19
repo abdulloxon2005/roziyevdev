@@ -1,0 +1,343 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}
+    {% if is_create %}Yangi Dars & Video Qo'shish{% else %}Darsni Tahrirlash: {{ lesson.title }}{% endif %} — Ustoz Studiyasi
+{% endblock %}
+
+{% block page_title %}
+    {% if is_create %}Yangi Dars Yaratish{% else %}Darsni Tahrirlash{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- BREADCRUMB & HEADER -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'dashboard_course_curriculum' course.slug %}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors">
+            <i class="fa-solid fa-arrow-left"></i> «{{ course.title }}» mundarijasiga qaytish
+        </a>
+        <span class="text-xs text-slate-400 font-semibold">
+            Modul: <strong class="text-slate-700 dark:text-slate-200">{{ module.title }}</strong>
+        </span>
+    </div>
+
+    <!-- MAIN FORM CARD -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-8">
+        
+        <div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                {% if is_create %}Yangi Dars, Video va Amaliy Vazifa Qo'shish{% else %}«{{ lesson.title }}» Darsini Tahrirlash{% endif %}
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Video faylini to'g'ridan-to'g'ri yuklang yoki YouTube havolasini kiriting. Xohlasangiz ushbu darsga tangacha beriladigan amaliy vazifa ham biriktiring.
+            </p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-8">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <!-- ============================================================== -->
+            <!-- 1-BO'LIM: DARS ASOSIY MA'LUMOTLARI -->
+            <!-- ============================================================== -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <span class="w-7 h-7 rounded-lg bg-blue-600/10 text-blue-600 dark:text-blue-400 font-black text-xs flex items-center justify-center">
+                        1
+                    </span>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                        Dars Asosiy Ma'lumotlari
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="md:col-span-2 space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Dars Sarlavhasi <span class="text-rose-500">*</span>
+                        </label>
+                        {{ form.title }}
+                        {% if form.title.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Tegishli Modul / Bo'lim <span class="text-rose-500">*</span>
+                        </label>
+                        {{ form.module }}
+                        {% if form.module.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.module.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Dars Turi
+                        </label>
+                        {{ form.lesson_type }}
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Davomiyligi (daqiqa)
+                        </label>
+                        {{ form.duration_minutes }}
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Tartib Raqami
+                        </label>
+                        {{ form.order }}
+                    </div>
+
+                    <div class="flex items-center pt-5">
+                        <label class="flex items-center gap-2.5 cursor-pointer">
+                            {{ form.is_preview }}
+                            <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Ochiq dars (Preview)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- 2-BO'LIM: VIDEO VA O'QUV MATERIALLARI -->
+            <!-- ============================================================== -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <span class="w-7 h-7 rounded-lg bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 font-black text-xs flex items-center justify-center">
+                        2
+                    </span>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                        Video Darslik & Materiallar Yuklash
+                    </h3>
+                </div>
+
+                <!-- VIDEO YUKLASH TIZIMI -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 rounded-2xl bg-blue-50/30 dark:bg-blue-950/20 border border-blue-200/40 dark:border-blue-800/40">
+                    <!-- A. TO'G'RIDAN-TO'G'RI VIDEO FAYL YUKLASH -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                            <i class="fa-solid fa-cloud-arrow-up text-blue-600 dark:text-blue-400 mr-1.5"></i> Video Fayl Yuklash (.mp4, .webm)
+                        </label>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            Kompyuterdan to'g'ridan-to'g'ri dars videosini yuklash (eng tavsiya etiladigan usul).
+                        </p>
+                        {% if not is_create and lesson.video_file %}
+                            <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 mb-2">
+                                <div class="flex items-center gap-2 text-xs truncate">
+                                    <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                                    <span class="font-semibold text-slate-700 dark:text-slate-300 truncate">Video yuklangan:</span>
+                                    <a href="{{ lesson.video_file.url }}" target="_blank" class="text-blue-500 underline truncate max-w-[150px]">Ko'rish</a>
+                                </div>
+                                <span class="text-[10px] text-slate-400">Yangi fayl bilan almashtirish mumkin</span>
+                            </div>
+                        {% endif %}
+                        {{ form.video_file }}
+                        {% if form.video_file.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.video_file.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <!-- B. YOKI YOUTUBE / VIMEO URL -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                            <i class="fa-brands fa-youtube text-rose-600 mr-1.5"></i> Yoki Video Havolasi (YouTube / Vimeo)
+                        </label>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            Agar video YouTube'ga yuklangan bo'lsa (unlisted havola tavsiya etiladi).
+                        </p>
+                        {{ form.video_url }}
+                        {% if form.video_url.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.video_url.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <!-- DARS MATNI VA KONSEPKT (MARKDOWN) -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Dars Matni va Konspekti (Markdown qo'llab-quvvatlanadi)
+                    </label>
+                    {{ form.content }}
+                    {% if form.content.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.content.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- QO'SHIMCHA FAYL VA GITHUB LINK -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Qo'shimcha Biriktirilgan Fayl (Arxiv .zip, PDF, Kod)
+                        </label>
+                        {% if not is_create and lesson.attachment %}
+                            <div class="p-2 text-xs text-slate-500">
+                                Joriy fayl: <a href="{{ lesson.attachment.url }}" target="_blank" class="text-blue-500 underline font-semibold">Yuklab olish</a>
+                            </div>
+                        {% endif %}
+                        {{ form.attachment }}
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            GitHub Repozitoriy Havolasi (Source Code)
+                        </label>
+                        {{ form.source_code_url }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- 3-BO'LIM: AMALIY VAZIFA INTEGRATSIYASI -->
+            <!-- ============================================================== -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <span class="w-7 h-7 rounded-lg bg-amber-600/10 text-amber-600 dark:text-amber-400 font-black text-xs flex items-center justify-center">
+                        3
+                    </span>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                        Amaliy Vazifa & Tangachalar Sozlamasi
+                    </h3>
+                </div>
+
+                <!-- HAS ASSIGNMENT CHECKBOX BANNER -->
+                <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-amber-500 text-3xl">monetization_on</span>
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-900 dark:text-white">Ushbu darsga amaliy vazifa biriktirish</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                O'quvchi darsni o'zlashtirib, kod, blok-sxema yoki fayl yuborishi va mukofot tangalar yutishi mumkin.
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            {{ form.has_assignment }}
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ASSIGNMENT DETAILS (Toggled by has_assignment) -->
+                <div id="assignment-section" class="space-y-5 p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 {% if not form.has_assignment.value %}hidden{% endif %}">
+                    
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Vazifa Nomi <span class="text-rose-500">*</span>
+                        </label>
+                        {{ form.assignment_title }}
+                        {% if form.assignment_title.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.assignment_title.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Vazifa Sharti va Qo'llanma (Markdown) <span class="text-rose-500">*</span>
+                        </label>
+                        {{ form.assignment_description }}
+                        {% if form.assignment_description.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.assignment_description.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Boshlang'ich Kod Shabloni (Starter Code)
+                        </label>
+                        {{ form.starter_code }}
+                    </div>
+
+                    <!-- SCORES & COINS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                <span class="material-symbols-outlined text-amber-500 text-sm align-middle">monetization_on</span> Mukofot Tangalari (Coins)
+                            </label>
+                            {{ form.coin_reward }}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                Maksimal Ball
+                            </label>
+                            {{ form.max_score }}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                O'tish Bali
+                            </label>
+                            {{ form.passing_score }}
+                        </div>
+                    </div>
+
+                    <!-- SUBMISSION MODES TOGGLES -->
+                    <div class="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                        <span class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            Talabaga Ruxsat Etilgan Topshirish Usullari:
+                        </span>
+
+                        <div class="flex flex-wrap gap-5">
+                            <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200">
+                                {{ form.allow_code }}
+                                <span><i class="fa-solid fa-code text-blue-500 mr-1"></i> Kod yozish</span>
+                            </label>
+
+                            <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200">
+                                {{ form.allow_flowchart }}
+                                <span><i class="fa-solid fa-diagram-project text-purple-500 mr-1"></i> Blok-sxema (Flowgorithm)</span>
+                            </label>
+
+                            <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200">
+                                {{ form.allow_file_upload }}
+                                <span><i class="fa-solid fa-file-arrow-up text-emerald-500 mr-1"></i> Fayl yuklash</span>
+                            </label>
+                        </div>
+                        {% if form.allow_code.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.allow_code.errors.0 }}</p>{% endif %}
+                    </div>
+
+                    <div class="pt-2">
+                        <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200">
+                            {{ form.assignment_is_active }}
+                            <span>Vazifa faol holatda saqlansin</span>
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SUBMIT BUTTONS -->
+            <div class="pt-6 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                <a href="{% url 'dashboard_course_curriculum' course.slug %}" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Bekor qilish
+                </a>
+                <button type="submit" class="px-8 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>{% if is_create %}Darsni Saqlash{% else %}O'zgarishlarni Saqlash{% endif %}</span>
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Toggle assignment fields visibility
+    const hasAssignmentCheckbox = document.querySelector('input[name="has_assignment"]');
+    const assignmentSection = document.getElementById('assignment-section');
+
+    function syncAssignmentVisibility() {
+        if (hasAssignmentCheckbox && assignmentSection) {
+            if (hasAssignmentCheckbox.checked) {
+                assignmentSection.classList.remove('hidden');
+            } else {
+                assignmentSection.classList.add('hidden');
+            }
+        }
+    }
+
+    if (hasAssignmentCheckbox) {
+        hasAssignmentCheckbox.addEventListener('change', syncAssignmentVisibility);
+        syncAssignmentVisibility();
+    }
+</script>
+{% endblock %}

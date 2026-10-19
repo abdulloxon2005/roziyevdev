@@ -1,0 +1,299 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Mundarija: {{ course.title }} — Ustoz Studiyasi{% endblock %}
+{% block page_title %}Kurs Mundarijasi & Darslar{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- COURSE HEADER CARD -->
+    <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+            <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-20 h-16 sm:w-24 sm:h-18 object-cover rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 uppercase tracking-wider">
+                        {{ course.get_level_display }}
+                    </span>
+                    {% if course.is_published %}
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500">
+                            Faol kurs
+                        </span>
+                    {% else %}
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-500/10 text-slate-400">
+                            Qoralama
+                        </span>
+                    {% endif %}
+                </div>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
+                    {{ course.title }}
+                </h2>
+                <p class="text-xs text-slate-400">
+                    Jami {{ modules|length }} ta modul • {{ course.lessons_count }} ta dars
+                </p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+            <a href="{% url 'dashboard_course_edit' course.slug %}" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-gear"></i> Kurs Sozlamalari
+            </a>
+            <a href="{% url 'course_detail' course.slug %}" target="_blank" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Saytda ko'rish
+            </a>
+            <button onclick="openModuleModal()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold transition-all shadow-md shadow-blue-600/20 inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-plus"></i> Yangi Bo'lim (Modul)
+            </button>
+        </div>
+    </div>
+
+    <!-- MODULES & LESSONS LIST -->
+    <div class="space-y-6">
+        {% if modules %}
+            {% for module in modules %}
+            <div class="rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <!-- MODULE HEADER -->
+                <div class="p-5 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400 font-black text-xs flex items-center justify-center border border-blue-600/20">
+                            {{ module.order }}
+                        </span>
+                        <div>
+                            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                                {{ module.title }}
+                            </h3>
+                            <span class="text-xs text-slate-400 font-semibold">
+                                {{ module.lessons.all|length }} ta dars biriktirilgan
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- MODULE ACTIONS -->
+                    <div class="flex items-center gap-2">
+                        <!-- ADD LESSON TO THIS MODULE -->
+                        <a href="{% url 'dashboard_lesson_create' course.slug module.id %}" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold transition-all shadow-sm flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> Dars & Video Qo'shish
+                        </a>
+
+                        <!-- EDIT MODULE MODAL TRIGGER -->
+                        <button onclick="openEditModuleModal('{{ module.id }}', '{{ module.title|escapejs }}', '{{ module.order }}')" class="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-xs border border-slate-200 dark:border-slate-700" title="Bo'limni tahrirlash">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+
+                        <!-- DELETE MODULE -->
+                        <form method="POST" action="{% url 'dashboard_module_delete' course.slug module.id %}" class="inline" onsubmit="return confirm('«{{ module.title }}» bo\'limini barcha darslari bilan o\'chirmoqchimisiz?');">
+                            {% csrf_token %}
+                            <button type="submit" class="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors text-xs" title="Bo'limni o'chirish">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- LESSONS UNDER THIS MODULE -->
+                {% with lessons=module.lessons.all %}
+                {% if lessons %}
+                <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for lesson in lessons %}
+                    <div class="p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                        <div class="flex items-start sm:items-center gap-3.5 min-w-0">
+                            <!-- LESSON ORDER BADGE -->
+                            <span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0">
+                                {{ lesson.order }}
+                            </span>
+
+                            <div class="min-w-0 space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                        {{ lesson.title }}
+                                    </h4>
+
+                                    <!-- VIDEO SOURCE BADGE -->
+                                    {% if lesson.video_file %}
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20 inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-file-video"></i> Video yuklangan (.mp4)
+                                        </span>
+                                    {% elif lesson.embed_url %}
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 inline-flex items-center gap-1">
+                                            <i class="fa-brands fa-youtube"></i> Havola (Embed)
+                                        </span>
+                                    {% elif lesson.lesson_type == 'text' %}
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-500/10 text-slate-400">
+                                            <i class="fa-regular fa-file-lines"></i> Matnli
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500">
+                                            Videosiz
+                                        </span>
+                                    {% endif %}
+
+                                    {% if lesson.is_preview %}
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500">
+                                            Ochiq dars
+                                        </span>
+                                    {% endif %}
+
+                                    <!-- ASSIGNMENT BADGE -->
+                                    {% if lesson.assignment and lesson.assignment.is_active %}
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[13px] text-amber-500">monetization_on</span> {{ lesson.assignment.coin_reward }} tanga vazifasi
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="flex items-center gap-3 text-[11px] text-slate-400">
+                                    <span><i class="fa-regular fa-clock mr-1"></i>{{ lesson.duration_minutes }} daqiqa</span>
+                                    {% if lesson.attachment %}
+                                        <span><i class="fa-solid fa-paperclip mr-1 text-slate-400"></i>Biriktirilgan fayl</span>
+                                    {% endif %}
+                                    {% if lesson.source_code_url %}
+                                        <span><i class="fa-brands fa-github mr-1 text-slate-400"></i>GitHub</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LESSON ACTIONS -->
+                        <div class="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
+                            <!-- EDIT LESSON LINK -->
+                            <a href="{% url 'dashboard_lesson_edit' course.slug lesson.id %}" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition-colors text-xs font-bold inline-flex items-center gap-1.5" title="Dars, video va vazifani tahrirlash">
+                                <i class="fa-solid fa-pen-to-square"></i> Tahrirlash
+                            </a>
+
+                            <!-- OPEN IN PLAYER -->
+                            <a href="{% url 'course_learn_lesson' course.slug lesson.id %}" target="_blank" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-xs" title="Pleyerda ko'rish">
+                                <i class="fa-solid fa-circle-play"></i>
+                            </a>
+
+                            <!-- DELETE LESSON -->
+                            <form method="POST" action="{% url 'dashboard_lesson_delete' course.slug lesson.id %}" class="inline" onsubmit="return confirm('«{{ lesson.title }}» darsini o\'chirmoqchimisiz?');">
+                                {% csrf_token %}
+                                <button type="submit" class="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors text-xs" title="Darsni o'chirish">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-8 text-center space-y-2">
+                    <p class="text-xs text-slate-400">Ushbu bo'limda hali darslar mavjud emas.</p>
+                    <a href="{% url 'dashboard_lesson_create' course.slug module.id %}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Birinchi darsni qo'shish
+                    </a>
+                </div>
+                {% endif %}
+                {% endwith %}
+
+            </div>
+            {% endfor %}
+        {% else %}
+        <!-- EMPTY MODULES STATE -->
+        <div class="p-12 text-center rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div class="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Ushbu kursda hali bo'limlar yo'q</h3>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                Darslarni kiritishdan oldin kurs uchun kamida bitta bo'lim (modul) yarating.
+            </p>
+            <button onclick="openModuleModal()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-600/20">
+                <i class="fa-solid fa-plus"></i> Birinchi Bo'limni Yaratish
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- CREATE MODULE MODAL -->
+<div id="module-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-base font-black text-slate-900 dark:text-white">Yangi Bo'lim (Modul) Qo'shish</h3>
+            <button onclick="closeModuleModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form method="POST" action="{% url 'dashboard_module_create' course.slug %}" class="space-y-4">
+            {% csrf_token %}
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Bo'lim Sarlavhasi <span class="text-rose-500">*</span></label>
+                <input type="text" name="title" required placeholder="Masalan: 1-bo'lim: Dasturlashga kirish" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Tartib Raqami</label>
+                <input type="number" name="order" value="{{ modules|length|add:1 }}" min="1" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                <button type="button" onclick="closeModuleModal()" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold shadow-sm">
+                    Qo'shish
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EDIT MODULE MODAL -->
+<div id="edit-module-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-base font-black text-slate-900 dark:text-white">Bo'limni Tahrirlash</h3>
+            <button onclick="closeEditModuleModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form id="edit-module-form" method="POST" action="" class="space-y-4">
+            {% csrf_token %}
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Bo'lim Sarlavhasi <span class="text-rose-500">*</span></label>
+                <input type="text" id="edit-module-title" name="title" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Tartib Raqami</label>
+                <input type="number" id="edit-module-order" name="order" min="1" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                <button type="button" onclick="closeEditModuleModal()" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold">
+                    Bekor qilish
+                </button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold shadow-sm">
+                    Saqlash
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function openModuleModal() {
+        document.getElementById('module-modal').classList.remove('hidden');
+    }
+    function closeModuleModal() {
+        document.getElementById('module-modal').classList.add('hidden');
+    }
+
+    function openEditModuleModal(id, title, order) {
+        const form = document.getElementById('edit-module-form');
+        form.action = "/dashboard/courses/{{ course.slug }}/modules/" + id + "/edit/";
+        document.getElementById('edit-module-title').value = title;
+        document.getElementById('edit-module-order').value = order;
+        document.getElementById('edit-module-modal').classList.remove('hidden');
+    }
+    function closeEditModuleModal() {
+        document.getElementById('edit-module-modal').classList.add('hidden');
+    }
+</script>
+{% endblock %}

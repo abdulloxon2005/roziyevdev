@@ -1,0 +1,172 @@
+{% extends 'student/base_student.html' %}
+{% load core_extras %}
+
+{% block title %}{{ contest.title }} — Musobaqa Arenasi — roziyevdev{% endblock %}
+{% block page_title %}{{ contest.title }}{% endblock %}
+{% block page_subtitle %}{{ contest.get_category_display }} &bull; Mukofot: {{ contest.coin_prize_pool }} tanga{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-7xl mx-auto">
+
+    <!-- HEADER CARD WITH COUNTDOWN -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-rose-950 via-slate-900 to-[#111827] border border-rose-500/30 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    {{ contest.get_category_display }}
+                </span>
+                {% if contest.is_live %}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse">
+                    Jonli efirda
+                </span>
+                {% elif contest.is_upcoming %}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300">
+                    Kutilmoqda
+                </span>
+                {% else %}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400">
+                    Yakunlangan
+                </span>
+                {% endif %}
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black text-white">{{ contest.title }}</h1>
+            <p class="text-xs text-slate-300">{{ contest.description|truncatewords:40 }}</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/10 text-center shrink-0 w-full md:w-auto">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Musobaqa Muddatlari</span>
+            <div class="text-xs sm:text-sm font-black text-white mt-1">
+                {{ contest.start_time|date:"d.m H:i" }} &rarr; {{ contest.end_time|date:"d.m H:i" }}
+            </div>
+            <div class="text-xs font-bold text-amber-400 mt-1 flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">monetization_on</span>
+                {{ contest.coin_prize_pool }} tanga fondi
+            </div>
+        </div>
+    </div>
+
+    <!-- IKKI USTUN: MASALALAR VA JONLI REYTING -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- CHAP QISM (7 COLS): MASALALAR RO'YXATI VA TOPSHIRISH -->
+        <div class="lg:col-span-7 space-y-6">
+            <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <h3 class="text-base font-black text-slate-900 dark:text-white">Musobaqa Masalalari</h3>
+                    <span class="text-xs font-bold text-slate-400">{{ problems|length }} ta masala</span>
+                </div>
+
+                {% if problems %}
+                <div class="space-y-6">
+                    {% for problem in problems %}
+                    <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <span class="text-[10px] font-black uppercase text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded">
+                                    Masala #{{ problem.order }}
+                                </span>
+                                <h4 class="text-base font-black text-slate-900 dark:text-white mt-1">
+                                    {{ problem.title }}
+                                </h4>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-black text-amber-500 block">+{{ problem.points }} ball</span>
+                                <span class="text-[10px] text-slate-400 font-semibold">{{ problem.get_difficulty_display }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Masala sharti -->
+                        <div class="prose prose-slate dark:prose-invert prose-xs text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                            {{ problem.description|markdownify }}
+                        </div>
+
+                        <!-- Oldingi yuborilgan yechim holati -->
+                        {% with sub=user_submissions_map|get_item:problem.id %}
+                        {% if sub %}
+                        <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between">
+                            <span class="text-slate-400">Yechim holati:</span>
+                            <span class="font-bold {% if sub.status == 'accepted' %}text-emerald-500{% elif sub.status == 'pending' %}text-amber-500{% else %}text-rose-500{% endif %}">
+                                {{ sub.get_status_display }} ({{ sub.score }} ball)
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+
+                        <!-- Topshirish formasi (faqat musobaqa jonli bo'lganda) -->
+                        {% if contest.is_live %}
+                        <form method="POST" action="{% url 'student_contest_submit' contest.slug problem.id %}" enctype="multipart/form-data" class="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                            {% csrf_token %}
+                            <label class="block text-[11px] font-bold text-slate-400">Yechim kodingizni kiriting:</label>
+                            <textarea name="submitted_code" rows="4" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500" placeholder="// Yechim kodingizni shu yerga yozing..."></textarea>
+                            
+                            <div class="flex items-center justify-between gap-3">
+                                <input type="file" name="attached_file" class="text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-slate-800 file:text-slate-200">
+                                <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs transition-colors shrink-0">
+                                    Yechimni yuborish
+                                </button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="py-8 text-center text-xs text-slate-400">
+                    Ushbu musobaqa uchun masalalar tez orada joylashtiriladi.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- O'NG QISM (5 COLS): JONLI REYTING JADVALI (LIVE LEADERBOARD) -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-amber-500"></i>
+                        <span>Jonli Turnir Jadvali</span>
+                    </h3>
+                    <span class="text-xs font-bold text-slate-400">{{ leaderboard|length }} ishtirokchi</span>
+                </div>
+
+                {% if leaderboard %}
+                <div class="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {% for part in leaderboard %}
+                    <div class="py-3 flex items-center justify-between gap-3 text-xs {% if part.user.id == user.id %}bg-rose-500/10 px-2 rounded-xl font-bold{% endif %}">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-6 h-6 rounded-lg text-center flex items-center justify-center font-black text-[11px] {% if forloop.counter == 1 %}bg-amber-500 text-slate-950{% elif forloop.counter == 2 %}bg-slate-300 text-slate-950{% elif forloop.counter == 3 %}bg-orange-400 text-slate-950{% else %}text-slate-400{% endif %}">
+                                {{ forloop.counter }}
+                            </span>
+                            <img src="{{ part.user.profile.avatar_url }}" alt="{{ part.user.display_name }}" class="w-7 h-7 rounded-lg object-cover">
+                            <span class="text-slate-800 dark:text-slate-200 truncate font-semibold">
+                                {{ part.user.display_name }} {% if part.user.id == user.id %}(Siz){% endif %}
+                            </span>
+                        </div>
+                        <span class="text-xs font-black text-amber-500 shrink-0">
+                            {{ part.total_score }} ball
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="py-6 text-center text-xs text-slate-400">
+                    Hali hech kim yechim yubormadi. Birinchi bo'ling!
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- QOIDALAR VA SOVRINLAR -->
+            <div class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 text-xs">
+                <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider">Musobaqa Qoidalari:</h4>
+                <div class="space-y-1.5 text-slate-600 dark:text-slate-300 leading-relaxed">
+                    <p>&bull; Har bir masalaga to'g'ri yechim uchun maksimal ball beriladi.</p>
+                    <p>&bull; Plagiat va ko'chirmachilik qat'iyan taqiqlanadi.</p>
+                    <p>&bull; Musobaqa yakunlangach, tangalar g'oliblar hisobiga avtomatik o'tkaziladi.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

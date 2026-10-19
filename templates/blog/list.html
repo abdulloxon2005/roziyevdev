@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}IT Blog va Texnik Maqolalar — roziyevdev{% endblock %}
+
+{% block content %}
+<div class="py-12 bg-slate-50 dark:bg-[#0b0f19]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+
+        <!-- HEADER & HERO -->
+        <div class="text-center max-w-3xl mx-auto space-y-4">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold border border-blue-500/20">
+                <i class="fa-solid fa-code"></i> Shaxsiy Mualliflik Blogi
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                Dasturlash, Arxitektura va Texnologiyalar
+            </h1>
+            <p class="text-base sm:text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+                Mobil dasturlash (Flutter), Backend (Python, Django REST), Algoritmlar va Ma'lumotlar bazasi bo'yicha amaliy tajribalar, arxitektura yechimlari va tahlillar.
+            </p>
+
+            <!-- SEARCH FORM -->
+            <form method="get" action="{% url 'blog_list' %}" class="mt-6 flex items-center max-w-xl mx-auto rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-md p-1.5 focus-within:ring-2 focus-within:ring-blue-500/50 transition-all">
+                <div class="pl-4 text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <input 
+                    type="text" 
+                    name="search" 
+                    value="{{ search_query }}" 
+                    placeholder="Maqolalardan qidirish (masalan: Django, Flutter, Index)..." 
+                    class="w-full bg-transparent border-0 px-4 py-2.5 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none"
+                >
+                {% if selected_category %}
+                    <input type="hidden" name="category" value="{{ selected_category.slug }}">
+                {% endif %}
+                {% if selected_tag %}
+                    <input type="hidden" name="tag" value="{{ selected_tag.slug }}">
+                {% endif %}
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors shadow-sm">
+                    Qidirish
+                </button>
+            </form>
+        </div>
+
+        <!-- CATEGORY PILLS -->
+        <div class="flex items-center justify-center flex-wrap gap-2 pt-2">
+            <a href="{% url 'blog_list' %}" 
+               class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all {% if not selected_category and not selected_tag %}bg-blue-600 text-white shadow-md shadow-blue-600/30{% else %}bg-white dark:bg-[#111827] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-blue-500{% endif %}">
+                Barchasi
+            </a>
+            {% for cat in categories %}
+            <a href="{% url 'blog_list' %}?category={{ cat.slug }}" 
+               class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all {% if selected_category.slug == cat.slug %}bg-blue-600 text-white shadow-md shadow-blue-600/30{% else %}bg-white dark:bg-[#111827] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-blue-500{% endif %}">
+                {{ cat.name }} ({{ cat.posts.count }})
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- ACTIVE FILTER CHIPS -->
+        {% if selected_tag or selected_category or search_query %}
+        <div class="flex items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span>Filtrlar:</span>
+            {% if selected_category %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-medium">
+                    Kategoriya: {{ selected_category.name }}
+                </span>
+            {% endif %}
+            {% if selected_tag %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-medium">
+                    Teg: #{{ selected_tag.name }}
+                </span>
+            {% endif %}
+            {% if search_query %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+                    Qidiruv: "{{ search_query }}"
+                </span>
+            {% endif %}
+            <a href="{% url 'blog_list' %}" class="text-rose-500 hover:underline font-semibold ml-2">
+                <i class="fa-solid fa-xmark mr-1"></i> Tozalash
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- POSTS GRID -->
+        {% if posts %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for post in posts %}
+            <article class="flex flex-col rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800/80 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
+                <!-- Cover Image -->
+                <a href="{{ post.get_absolute_url }}" class="block relative h-52 overflow-hidden bg-slate-800">
+                    <img 
+                        src="{{ post.cover_url }}" 
+                        alt="{{ post.title }}" 
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    >
+                    {% if post.category %}
+                    <span class="absolute top-4 left-4 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-blue-600/90 backdrop-blur-md text-white shadow-md">
+                        {{ post.category.name }}
+                    </span>
+                    {% endif %}
+                </a>
+
+                <!-- Content Area -->
+                <div class="p-6 flex flex-col flex-grow space-y-4">
+                    <!-- Meta top -->
+                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-regular fa-calendar"></i>
+                            {{ post.published_at|date:"d M, Y" }}
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-regular fa-clock"></i>
+                            {{ post.reading_time }} daqiqa o'qish
+                        </span>
+                    </div>
+
+                    <!-- Title -->
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 leading-snug">
+                        <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+                    </h2>
+
+                    <!-- Summary -->
+                    <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed flex-grow">
+                        {{ post.summary }}
+                    </p>
+
+                    <!-- Tags -->
+                    {% if post.tags.all %}
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        {% for tag in post.tags.all|slice:":3" %}
+                        <a href="{% url 'blog_list' %}?tag={{ tag.slug }}" class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                            #{{ tag.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Footer: Author & Stats -->
+                    <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <img src="{{ post.author.profile.avatar_url }}" alt="{{ post.author.display_name }}" class="w-7 h-7 rounded-full object-cover">
+                            <span class="text-xs font-semibold text-slate-800 dark:text-slate-300">
+                                {{ post.author.display_name }}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs text-slate-400">
+                            <span title="Ko'rishlar soni"><i class="fa-regular fa-eye mr-1"></i>{{ post.views_count }}</span>
+                            <span title="Izohlar soni"><i class="fa-regular fa-comment mr-1"></i>{{ post.comments.count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <!-- PAGINATION -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex items-center justify-center gap-2 pt-8">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if selected_tag %}&tag={{ selected_tag.slug }}{% endif %}" 
+               class="px-4 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <i class="fa-solid fa-chevron-left mr-1"></i> Oldingi
+            </a>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <span class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold shadow-md shadow-blue-600/30">
+                    {{ num }}
+                </span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if selected_tag %}&tag={{ selected_tag.slug }}{% endif %}" 
+                   class="px-4 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    {{ num }}
+                </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if selected_tag %}&tag={{ selected_tag.slug }}{% endif %}" 
+               class="px-4 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                Keyingi <i class="fa-solid fa-chevron-right ml-1"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- EMPTY STATE -->
+        <div class="text-center py-20 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 max-w-xl mx-auto space-y-4">
+            <div class="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Maqolalar topilmadi</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                Siz qidirgan mezonlar bo'yicha hozircha hech qanday maqola mavjud emas. Filtrlarni tozalab qayta urinib ko'ring.
+            </p>
+            <a href="{% url 'blog_list' %}" class="inline-block px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors">
+                Barcha maqolalarga qaytish
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

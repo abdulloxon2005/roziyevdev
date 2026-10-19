@@ -1,0 +1,99 @@
+{% if user.is_authenticated %}
+<!-- SEANS HARAKATSIZLIK OGOHLANTIRISHI (TOAST) -->
+<div id="idle-warning-toast" class="fixed bottom-6 right-6 z-[99990] max-w-sm p-4 rounded-2xl bg-amber-500/95 text-slate-950 shadow-2xl backdrop-blur-md border border-amber-300 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-slate-950/10 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-2xl text-slate-950">timer</span>
+    </div>
+    <div class="flex-1 min-w-0">
+        <div class="text-xs font-black uppercase tracking-wider">Harakatsizlik aniqlandi</div>
+        <p class="text-xs font-semibold leading-tight mt-0.5">
+            Seans <span id="idle-warning-countdown" class="font-black text-rose-800">60</span> soniyadan so'ng avtomatik qulflanadi.
+        </p>
+    </div>
+</div>
+
+<!-- SEANS QULFI (FULLSCREEN LOCK OVERLAY) -->
+<div id="session-lock-overlay" class="fixed inset-0 z-[99999] bg-slate-950/85 backdrop-blur-2xl flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="w-full max-w-md bg-white dark:bg-[#111827] rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl p-6 sm:p-8 space-y-6 text-center transform scale-95 transition-transform duration-300">
+        
+        <!-- AVATAR & LOCK BADGE -->
+        <div class="relative inline-block mx-auto">
+            <div class="w-20 h-20 rounded-full overflow-hidden border-4 border-blue-500/30 mx-auto shadow-xl">
+                <img src="{{ user.profile.avatar_url }}" alt="{{ user.display_name }}" class="w-full h-full object-cover">
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-[#111827]">
+                <span class="material-symbols-outlined text-base">lock</span>
+            </div>
+        </div>
+
+        <!-- TITLE & INFO -->
+        <div class="space-y-1.5">
+            <h3 class="text-xl font-black text-slate-900 dark:text-white">
+                Seans Qulflangan
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                <strong class="text-slate-800 dark:text-slate-200">{{ user.display_name }}</strong>, harakatsizlik tufayli xavfsizlik maqsadida sayt qulflab qo'yildi.
+            </p>
+        </div>
+
+        <!-- UNLOCK FORM -->
+        <form id="session-unlock-form" class="space-y-4 text-left">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            
+            <div class="space-y-1.5">
+                <label for="lock-password-input" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Parolingizni kiriting
+                </label>
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="lock-password-input" 
+                        name="password" 
+                        required 
+                        placeholder="••••••••" 
+                        autocomplete="current-password"
+                        class="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all"
+                    >
+                    <button 
+                        type="button" 
+                        onclick="toggleLockPasswordVisibility()" 
+                        class="absolute right-3 top-3 text-slate-400 hover:text-slate-200 text-sm focus:outline-none"
+                    >
+                        <i id="lock-pass-eye" class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <div id="lock-error-msg" class="text-rose-500 text-xs font-semibold hidden mt-1"></div>
+            </div>
+
+            <button 
+                type="submit" 
+                id="unlock-submit-btn" 
+                class="w-full py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2"
+            >
+                <span class="material-symbols-outlined text-base">lock_open</span>
+                <span id="unlock-btn-text">Qulfni Ochish</span>
+            </button>
+        </form>
+
+        <!-- FOOTER LINKS -->
+        <div class="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+            <a href="{% url 'logout' %}" class="hover:text-rose-500 font-semibold transition-colors flex items-center gap-1">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Tizimdan chiqish</span>
+            </a>
+            <a href="{% url 'login' %}?next={{ request.path|urlencode }}" class="hover:text-blue-500 font-semibold transition-colors">
+                Boshqa hisob bilan kirish
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.SESSION_IDLE_TIMEOUT = {{ SESSION_IDLE_TIMEOUT|default:900 }};
+    window.UNLOCK_URL = "{% url 'quick_unlock' %}";
+    window.LOGIN_URL = "{% url 'login' %}";
+    window.CURRENT_PATH = "{{ request.path|escapejs }}";
+</script>
+<script src="/static/js/idle_lock.js"></script>
+{% endif %}

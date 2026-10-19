@@ -1,4 +1,7 @@
+import re
+
 from django.db import models
+from django.urls import reverse
 from django.utils.text import slugify
 from apps.core.models import TimeStampedModel
 from apps.users.models import CustomUser
@@ -115,6 +118,17 @@ class Course(TimeStampedModel):
     def __str__(self):
         return self.title
 
+    def get_absolute_url(self):
+        return reverse('course_detail', args=[self.slug])
+
+    @property
+    def is_paid(self):
+        return not self.is_free and self.price > 0
+
+    @property
+    def lessons_count(self):
+        return Lesson.objects.filter(module__course=self).count()
+
     @property
     def formatted_price(self):
         if self.is_free or self.price == 0:
@@ -157,12 +171,41 @@ class CourseModule(TimeStampedModel):
         return f"{self.course.title} - {self.title}"
 
 
+class LessonType(models.TextChoices):
+    VIDEO = 'video', 'Video dars'
+    TEXT = 'text', "Matnli qo'llanma"
+
+
+YOUTUBE_RE = re.compile(r'(?:youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})')
+VIMEO_RE = re.compile(r'vimeo\.com/(?:video/)?(\d+)')
+
+
 class Lesson(TimeStampedModel):
     """
     Alohida darslik modeli (Video, Matn).
     """
     module = models.ForeignKey(CourseModule, on_delete=models.CASCADE, related_name='lessons', verbose_name="Bo'lim")
     title = models.CharField(max_length=200, verbose_name="Dars sarlavhasi")
+    lesson_type = models.CharField(
+        max_length=10, choices=LessonType.choices, default=LessonType.VIDEO, verbose_name="Dars turi"
+    )
+    video_url = models.URLField(
+        blank=True,
+        verbose_name="Video havolasi",
+        help_text="YouTube (unlisted tavsiya etiladi) yoki Vimeo havolasi",
+    )
+    video_file = models.FileField(
+        upload_to='lessons/videos/%Y/%m/',
+        blank=True,
+        null=True,
+        verbose_name="Video fayl (.mp4, .webm)",
+        help_text="Platformaga to'g'ridan-to'g'ri yuklanadigan video fayli (.mp4, .webm)"
+    )
+    content = models.TextField(blank=True, verbose_name="Dars matni (Markdown)")
+    attachment = models.FileField(
+        upload_to='lessons/attachments/%Y/%m/', blank=True, null=True, verbose_name="Qo'shimcha fayl"
+    )
+    source_code_url = models.URLField(blank=True, verbose_name="Manba kod havolasi (GitHub)")
     duration_minutes = models.PositiveIntegerField(default=15, verbose_name="Davomiyligi (daqiqa)")
     is_preview = models.BooleanField(default=False, verbose_name="Ochiq darsmi (Preview)?")
     order = models.PositiveIntegerField(default=1, verbose_name="Tartib raqami")
@@ -174,3 +217,21 @@ class Lesson(TimeStampedModel):
 
     def __str__(self):
         return f"{self.module.title} - {self.title}"
+
+    @property
+    def embed_url(self):
+        """YouTube/Vimeo havolasini xavfsiz embed manziliga aylantiradi."""
+        if not self.video_url:
+            return ''
+        match = YOUTUBE_RE.search(self.video_url)
+        if match:
+            return f"https://www.youtube-nocookie.com/embed/{match.group(1)}?rel=0&modestbranding=1"
+        match = VIMEO_RE.search(self.video_url)
+        if match:
+            return f"https://player.vimeo.com/video/{match.group(1)}"
+        return ''
+
+    @property
+    def has_video(self):
+        """Darsda video fayl yoki video URL mavjudligini tekshiradi."""
+        return bool(self.video_file or self.video_url)

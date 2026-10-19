@@ -1,0 +1,176 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Musobaqalar va Xakatonlar — O'quvchi Kabineti — roziyevdev{% endblock %}
+{% block page_title %}Musobaqalar va Xakatonlar{% endblock %}
+{% block page_subtitle %}Algoritmik chempionatlar, xakatonlar va sovrinli bellashuvlar maydoni.{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-7xl mx-auto">
+
+    <!-- HERO BANNER -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 border border-rose-500/30 text-white shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-rose-500/20 rounded-full blur-[80px] pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="space-y-2 max-w-2xl">
+                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30 inline-flex items-center gap-1.5">
+                    <i class="fa-solid fa-trophy"></i> RoziyevDev Chempionatlari
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
+                    O'z bilimlaringizni real bellashuvlarda sinab ko'ring!
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Haftalik va oylik musobaqalarda qatnashing, topshiriqlarni tezkor yeching, qimmatli tangalar va maxsus diplomlarni qo'lga kiriting.
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-extrabold text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">monetization_on</span>
+                    <span>Qimmatbaho sovrinlar</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. JONLI DAVOM ETAYOTGAN MUSOBAQALAR (LIVE NOW) -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+                <i class="fa-solid fa-bolt text-rose-500"></i>
+                <span>Jonli Davom Etayotgan Musobaqalar</span>
+            </h2>
+            <span class="text-xs font-bold text-rose-500">{{ active_contests|length }} ta faol</span>
+        </div>
+
+        {% if active_contests %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for contest in active_contests %}
+            <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border-2 border-rose-500/40 shadow-lg space-y-4 flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                            {{ contest.get_category_display }}
+                        </span>
+                        <span class="text-xs font-extrabold text-amber-500 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[15px]">monetization_on</span>
+                            {{ contest.coin_prize_pool }} tanga
+                        </span>
+                    </div>
+
+                    <h3 class="text-lg font-black text-slate-900 dark:text-white">
+                        {{ contest.title }}
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                        {{ contest.description|truncatewords:25 }}
+                    </p>
+
+                    <!-- Mukofotlar -->
+                    <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 text-xs">
+                        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sovrinlar:</div>
+                        <div class="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                            <span>🥇 1-o'rin:</span>
+                            <strong class="text-amber-400">{{ contest.first_place_reward }}</strong>
+                        </div>
+                        <div class="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                            <span>🥈 2-o'rin:</span>
+                            <strong class="text-slate-300">{{ contest.second_place_reward }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div class="text-xs text-slate-400">
+                        <span>Tugash muddati:</span>
+                        <strong class="text-slate-200 block">{{ contest.end_time|date:"d M, H:i" }}</strong>
+                    </div>
+                    <a href="{% url 'student_contest_detail' contest.slug %}" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs transition-colors shadow-lg shadow-rose-600/30 flex items-center gap-2">
+                        <i class="fa-solid fa-play text-[10px]"></i>
+                        <span>Ishtirok etish &rarr;</span>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+            Ayni daqiqalarda faol musobaqa yo'q. Quyidagi kutilayotgan musobaqalarga ro'yxatdan o'ting!
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 2. KUTILAYOTGAN MUSOBAQALAR (UPCOMING) -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-calendar-days text-blue-500"></i>
+                <span>Yaqinlashayotgan Musobaqalar</span>
+            </h2>
+            <span class="text-xs text-slate-400">{{ upcoming_contests|length }} ta rejalashtirilgan</span>
+        </div>
+
+        {% if upcoming_contests %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for contest in upcoming_contests %}
+            <div class="p-5 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 flex flex-col justify-between hover:border-blue-500/40 transition-colors">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-500/10 text-blue-500">
+                            {{ contest.get_category_display }}
+                        </span>
+                        <span class="text-xs font-black text-amber-500">
+                            {{ contest.coin_prize_pool }} tanga
+                        </span>
+                    </div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white">{{ contest.title }}</h3>
+                    <p class="text-xs text-slate-400 line-clamp-2">{{ contest.description|truncatewords:20 }}</p>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                    <div>
+                        <span class="text-[10px] text-slate-400 block">Boshlanadi:</span>
+                        <strong class="text-slate-800 dark:text-slate-200">{{ contest.start_time|date:"d M, H:i" }}</strong>
+                    </div>
+                    <a href="{% url 'student_contest_detail' contest.slug %}" class="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs transition-colors">
+                        Tafsilotlar &rarr;
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+            Yangi musobaqalar jadvali tez orada e'lon qilinadi.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 3. YAKUNLANGAN MUSOBAQALAR (FINISHED) -->
+    {% if finished_contests %}
+    <div class="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+        <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-flag-checkered text-slate-400"></i>
+            <span>Yakunlangan Musobaqalar Arxiv</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for contest in finished_contests|slice:":6" %}
+            <div class="p-5 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 opacity-90">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">{{ contest.get_category_display }}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">Yakunlangan</span>
+                </div>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{ contest.title }}</h4>
+                <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                    <span class="text-slate-400">{{ contest.participants_count }} ishtirokchi</span>
+                    <a href="{% url 'student_contest_detail' contest.slug %}" class="text-blue-500 font-bold hover:underline">
+                        Natijalar jadvali &rarr;
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

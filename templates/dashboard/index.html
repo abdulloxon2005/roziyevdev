@@ -1,0 +1,280 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load humanize %}
+
+{% block title %}Boshqaruv Paneli — roziyevdev Ustoz Studiyasi{% endblock %}
+{% block page_title %}Umumiy Ko'rsatkichlar (Dashboard){% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- WELCOME BANNER -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl relative overflow-hidden">
+        <div class="relative z-10 max-w-2xl space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-bold uppercase tracking-wider text-white">
+                <i class="fa-solid fa-crown text-amber-300"></i> Ustoz & Admin Boshqaruv Markazi
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black">Xush kelibsiz, {{ user.display_name }}! <span class="material-symbols-outlined text-amber-300 align-middle text-2xl">waving_hand</span></h2>
+            <p class="text-xs sm:text-sm text-blue-100">
+                Bu yerdan barcha kurslar, modullar, video darslar, amaliy vazifalar va o'quvchilar progressini to'liq nazorat qilishingiz mumkin.
+            </p>
+            <div class="pt-3 flex flex-wrap gap-3">
+                <a href="{% url 'dashboard_course_create' %}" class="px-4 py-2.5 rounded-xl bg-white text-blue-600 hover:bg-blue-50 font-extrabold text-xs sm:text-sm inline-flex items-center gap-2 shadow-md transition-all">
+                    <i class="fa-solid fa-plus"></i> Yangi Kurs Yaratish
+                </a>
+                <a href="{% url 'dashboard_reviews_list' %}" class="px-4 py-2.5 rounded-xl bg-blue-500/30 hover:bg-blue-500/40 text-white border border-white/20 font-bold text-xs sm:text-sm inline-flex items-center gap-2 backdrop-blur-md transition-all">
+                    <i class="fa-solid fa-list-check"></i> Vazifalarni Tekshirish
+                    {% if pending_submissions > 0 %}
+                    <span class="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center animate-pulse">
+                        {{ pending_submissions }}
+                    </span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+    </div>
+
+    <!-- STATS CARDS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <!-- 1. Kurslar -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Jami Kurslar</span>
+                <span class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-base">
+                    <i class="fa-solid fa-book-open"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ total_courses }} ta</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                <span class="text-emerald-500 font-bold">{{ published_courses }} faol</span>
+                <span>•</span>
+                <span class="text-slate-400">{{ draft_courses }} qoralama</span>
+            </div>
+        </div>
+
+        <!-- 2. Darslar & Bo'limlar -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Jami Darslar</span>
+                <span class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base">
+                    <i class="fa-solid fa-circle-play"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ total_lessons }} ta</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+                {{ total_modules }} ta modul bo'yicha
+            </div>
+        </div>
+
+        <!-- 3. Kutilayotgan vazifalar -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Kutilayotgan Vazifalar</span>
+                <span class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-amber-500">{{ pending_submissions }} ta</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                <span class="text-emerald-500 font-bold">{{ approved_submissions }} qabul qilingan</span>
+            </div>
+        </div>
+
+        <!-- 4. Jami Daromad -->
+        <div class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Jami Savdo</span>
+                <span class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-base">
+                    <i class="fa-solid fa-coins"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400">{{ total_revenue|intcomma }} <span class="text-sm font-bold">so'm</span></div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+                {{ paid_orders_count }} ta to'langan buyurtma
+            </div>
+        </div>
+    </div>
+
+    <!-- RECENT SUBMISSIONS & RECENT ORDERS SPLIT -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- A. TEKSHIRUV KUTILAYOTGAN VAZIFALAR -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-list-check"></i>
+                    </span>
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Oxirgi Vazifalar</h3>
+                </div>
+                <a href="{% url 'dashboard_reviews_list' %}" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                    Barchasini ko'rish &rarr;
+                </a>
+            </div>
+
+            {% if recent_submissions %}
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for sub in recent_submissions %}
+                <div class="py-3.5 flex items-center justify-between gap-4 first:pt-0 last:pb-0">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <img src="{{ sub.student.profile.avatar_url }}" alt="{{ sub.student.display_name }}" class="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {{ sub.student.display_name }}
+                            </p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                {{ sub.assignment.lesson.module.course.title }} • {{ sub.assignment.lesson.title }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        {% if sub.status == 'pending' %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                Kutilmoqda
+                            </span>
+                        {% elif sub.status == 'approved' %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                {{ sub.score }} ball
+                            </span>
+                        {% else %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                                Qaytarildi
+                            </span>
+                        {% endif %}
+                        <a href="{% url 'dashboard_review_detail' sub.id %}" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-600 dark:text-slate-300 transition-colors text-xs" title="Tekshirish">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-10 text-center text-slate-400 text-xs">
+                Hozircha topshirilgan vazifalar mavjud emas.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- B. OXIRGI BUYURTMALAR & SAVDO -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-receipt"></i>
+                    </span>
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Oxirgi Buyurtmalar</h3>
+                </div>
+                <a href="{% url 'dashboard_orders_list' %}" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                    Barchasini ko'rish &rarr;
+                </a>
+            </div>
+
+            {% if recent_orders %}
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for order in recent_orders %}
+                <div class="py-3.5 flex items-center justify-between gap-4 first:pt-0 last:pb-0">
+                    <div class="min-w-0 space-y-0.5">
+                        <p class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                            {{ order.course.title }}
+                        </p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {{ order.user.display_name }} ({{ order.user.email }})
+                        </p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-sm font-black text-slate-900 dark:text-white">
+                            {{ order.amount|intcomma }} so'm
+                        </p>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {% if order.status == 'paid' %}bg-emerald-500/10 text-emerald-500{% elif order.status == 'pending' %}bg-amber-500/10 text-amber-500{% else %}bg-rose-500/10 text-rose-500{% endif %}">
+                            {{ order.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-10 text-center text-slate-400 text-xs">
+                Hozircha buyurtmalar ro'yxati bo'sh.
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- C. OXIRGI YOZILGAN TALABALAR -->
+    <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-500 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-users"></i>
+                </span>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Yangi Kursga Yozilgan O'quvchilar</h3>
+            </div>
+            <a href="{% url 'dashboard_students_list' %}" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                Barcha o'quvchilar &rarr;
+            </a>
+        </div>
+
+        {% if recent_enrollments %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase text-[10px] font-black tracking-wider">
+                        <th class="py-3 px-4">Talaba</th>
+                        <th class="py-3 px-4">Kurs</th>
+                        <th class="py-3 px-4">Progress</th>
+                        <th class="py-3 px-4">Holati</th>
+                        <th class="py-3 px-4">Sana</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for enr in recent_enrollments %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                            <div class="flex items-center gap-2.5">
+                                <img src="{{ enr.user.profile.avatar_url }}" alt="{{ enr.user.display_name }}" class="w-7 h-7 rounded-full object-cover">
+                                <div>
+                                    <p>{{ enr.user.display_name }}</p>
+                                    <p class="text-[11px] text-slate-400 font-normal">{{ enr.user.email }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                            {{ enr.course.title }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-24 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-blue-600 h-full rounded-full" style="width: {{ enr.progress_percent }}%;"></div>
+                                </div>
+                                <span class="text-xs font-bold">{{ enr.progress_percent }}%</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if enr.is_completed %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500">
+                                    <i class="fa-solid fa-check mr-1"></i> Tugatgan
+                                </span>
+                            {% else %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-500">
+                                    O'rganmoqda
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-400 text-xs">
+                            {{ enr.created_at|date:"d.m.Y H:i" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-8 text-center text-slate-400 text-xs">
+            Hali o'quvchilar yozilmagan.
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

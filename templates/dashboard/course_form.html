@@ -1,0 +1,177 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}
+    {% if is_create %}Yangi Kurs Yaratish{% else %}Kursni Tahrirlash: {{ course.title }}{% endif %} — Ustoz Studiyasi
+{% endblock %}
+
+{% block page_title %}
+    {% if is_create %}Yangi Kurs Yaratish{% else %}Kursni Tahrirlash{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- BREADCRUMB & HEADER -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'dashboard_courses_list' %}" class="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors">
+            <i class="fa-solid fa-arrow-left"></i> Kurslar ro'yxatiga qaytish
+        </a>
+        {% if not is_create %}
+            <a href="{% url 'dashboard_course_curriculum' course.slug %}" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold text-xs hover:bg-blue-600 hover:text-white transition-colors">
+                <i class="fa-solid fa-layer-group"></i> Mundarija va Darslarga o'tish
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- MAIN FORM CARD -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+        <div class="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                {% if is_create %}Yangi Kurs Qo'shish{% else %}«{{ course.title }}» Kursini Tahrirlash{% endif %}
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Kurs ma'lumotlari, narxi, darajasi va talablarini to'ldiring. Saqlangach, modullar va video darslarni biriktirishingiz mumkin.
+            </p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-semibold">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <!-- 1. SARLAVHA & KATEGORIYA -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="md:col-span-2 space-y-1.5">
+                    <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Kurs Sarlavhasi <span class="text-rose-500">*</span>
+                    </label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Yo'nalish (Kategoriya)
+                    </label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.category.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- 2. DARAJA, NARX, BEPULMI, DAVOMIYLIGI -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Kurs Darajasi
+                    </label>
+                    {{ form.level }}
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Narxi (so'mda)
+                    </label>
+                    {{ form.price }}
+                    {% if form.price.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.price.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Davomiyligi (soat)
+                    </label>
+                    {{ form.duration_hours }}
+                </div>
+
+                <div class="flex items-center pt-6">
+                    <label class="flex items-center gap-2.5 cursor-pointer">
+                        {{ form.is_free }}
+                        <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Bepul kurs</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 3. MUQOVA RASMI (THUMBNAIL) -->
+            <div class="space-y-2">
+                <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Kurs Muqovasi (Thumbnail rasmi)
+                </label>
+                {% if not is_create and course.thumbnail %}
+                    <div class="flex items-center gap-4 mb-2 p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 w-fit">
+                        <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="w-20 h-14 object-cover rounded-xl border border-slate-300 dark:border-slate-700">
+                        <div>
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 block">Joriy rasm yuklangan</span>
+                            <span class="text-[11px] text-slate-400">Yangi rasm tanlash orqali almashtirishingiz mumkin</span>
+                        </div>
+                    </div>
+                {% endif %}
+                {{ form.thumbnail }}
+                {% if form.thumbnail.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.thumbnail.errors.0 }}</p>{% endif %}
+            </div>
+
+            <!-- 4. QISQA VA TO'LIQ TAVSIF -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Qisqa Tavsif (Kartochkalar uchun) <span class="text-rose-500">*</span>
+                </label>
+                {{ form.short_description }}
+                {% if form.short_description.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.short_description.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    To'liq Tavsif (Markdown qo'llab-quvvatlanadi) <span class="text-rose-500">*</span>
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}<p class="text-rose-500 text-xs mt-1">{{ form.description.errors.0 }}</p>{% endif %}
+            </div>
+
+            <!-- 5. O'RGANILADIGAN MAHSULOTLAR VA TALABLAR -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Nimalarni o'rganasiz? (Har bir band yangi qatordan)
+                    </label>
+                    {{ form.what_you_will_learn }}
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Talablar / Boshlang'ich bilimlar (Har bir band yangi qatordan)
+                    </label>
+                    {{ form.requirements }}
+                </div>
+            </div>
+
+            <!-- 6. E'LON QILISH VA TAVSIYA ETISH TOGGLE-LARI -->
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-wrap gap-6 items-center">
+                <label class="flex items-center gap-2.5 cursor-pointer">
+                    {{ form.is_published }}
+                    <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Saytda e'lon qilinsin (Faol)</span>
+                </label>
+
+                <label class="flex items-center gap-2.5 cursor-pointer">
+                    {{ form.is_featured }}
+                    <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Bosh sahifada tavsiya etilsin (Featured)</span>
+                </label>
+            </div>
+
+            <!-- SUBMIT BUTTONS -->
+            <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                <a href="{% url 'dashboard_courses_list' %}" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Bekor qilish
+                </a>
+                <button type="submit" class="px-7 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-blue-600/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>{% if is_create %}Kursni Yaratish & Mundarijaga o'tish{% else %}O'zgarishlarni Saqlash{% endif %}</span>
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}

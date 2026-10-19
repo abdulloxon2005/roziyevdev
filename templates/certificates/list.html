@@ -1,0 +1,81 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Mening Sertifikatlarim — roziyevdev{% endblock %}
+{% block page_title %}Mening Sertifikatlarim{% endblock %}
+{% block page_subtitle %}Kurslarni muvaffaqiyatli 100% tugatganingizda beriladigan rasmiy elektron sertifikatlar{% endblock %}
+
+{% block content %}
+<div>
+    <div class="max-w-6xl mx-auto space-y-10">
+
+        <!-- HEADER -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+            <div>
+                <span class="text-xs uppercase font-extrabold text-blue-600 dark:text-blue-400">Yutuqlar</span>
+                <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white">Mening Sertifikatlarim</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Kurslarni muvaffaqiyatli 100% tugatganingizda beriladigan rasmiy elektron sertifikatlar.
+                </p>
+            </div>
+            <a href="{% url 'course_list' %}" class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-semibold transition-colors inline-flex items-center gap-2 self-start sm:self-auto">
+                <i class="fa-solid fa-graduation-cap"></i> Barcha kurslar
+            </a>
+        </div>
+
+        {% if certificates %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for cert in certificates %}
+            <div class="rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 shadow-xl flex flex-col justify-between space-y-6 hover:border-blue-500 transition-all">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-2xl border border-amber-500/20">
+                            <i class="fa-solid fa-award"></i>
+                        </span>
+                        <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                            {{ cert.certificate_code }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="text-xs text-slate-400 block">Tamomlangan kurs:</span>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white line-clamp-2 mt-1">
+                            {{ cert.course_title }}
+                        </h3>
+                    </div>
+
+                    <div class="text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                        <p><i class="fa-regular fa-calendar mr-1.5"></i> {{ cert.issued_at|date:"d M, Y" }}</p>
+                        <p><i class="fa-solid fa-circle-check text-emerald-500 mr-1.5"></i> 100% tamomlangan</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <a href="{% url 'certificate_verify' cert.certificate_code %}" class="px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 text-center transition-colors">
+                        <i class="fa-solid fa-qrcode mr-1"></i> Tekshirish
+                    </a>
+                    <a href="{% url 'certificate_download' cert.certificate_code %}" class="px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white text-center transition-colors shadow-md shadow-blue-600/30">
+                        <i class="fa-solid fa-download mr-1"></i> PDF Yuklash
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- EMPTY STATE -->
+        <div class="text-center py-20 bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 max-w-xl mx-auto space-y-4">
+            <div class="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto text-3xl">
+                <i class="fa-solid fa-award"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Sizda hali sertifikatlar yo'q</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                Kurslarni 100% muvaffaqiyatli tamomlaganingizda, sertifikatingiz bu yerda paydo bo'ladi va yuklab olishingiz mumkin bo'ladi.
+            </p>
+            <a href="{% url 'profile' %}" class="inline-block px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors">
+                Mening kurslarimga o'tish
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

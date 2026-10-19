@@ -1,0 +1,199 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load humanize %}
+
+{% block title %}Kurslar Boshqaruvi — roziyevdev Ustoz Studiyasi{% endblock %}
+{% block page_title %}Kurslar Boshqaruvi{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- ACTIONS & FILTER BAR -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <!-- SEARCH & FILTERS -->
+        <form method="GET" class="flex flex-wrap items-center gap-3 flex-1">
+            <div class="relative flex-1 min-w-[200px]">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ query }}" 
+                    placeholder="Kurs nomi bo'yicha qidirish..." 
+                    class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+            </div>
+
+            <!-- CATEGORY FILTER -->
+            <select name="category" onchange="this.form.submit()" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Barcha Yo'nalishlar</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.slug }}" {% if category_slug == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- STATUS FILTER -->
+            <select name="status" onchange="this.form.submit()" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Barcha Holatlar</option>
+                <option value="published" {% if status_filter == 'published' %}selected{% endif %}>E'lon qilingan</option>
+                <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Qoralama</option>
+            </select>
+
+            {% if query or category_slug or status_filter %}
+                <a href="{% url 'dashboard_courses_list' %}" class="text-xs text-rose-500 hover:underline px-2 py-1 font-semibold">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Filtrlarni tozalash
+                </a>
+            {% endif %}
+        </form>
+
+        <!-- ADD NEW COURSE BUTTON -->
+        <a href="{% url 'dashboard_course_create' %}" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-600/20 transition-all flex-shrink-0">
+            <i class="fa-solid fa-plus"></i> Yangi Kurs Yaratish
+        </a>
+    </div>
+
+    <!-- COURSES TABLE -->
+    <div class="rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        {% if courses %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 uppercase text-[10px] font-black tracking-wider">
+                        <th class="py-4 px-5">Kurs Ma'lumoti</th>
+                        <th class="py-4 px-4">Yo'nalish</th>
+                        <th class="py-4 px-4">Narxi</th>
+                        <th class="py-4 px-4">Modullar & Darslar</th>
+                        <th class="py-4 px-4">O'quvchilar</th>
+                        <th class="py-4 px-4">Holati</th>
+                        <th class="py-4 px-5 text-right">Amallar</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for course in courses %}
+                    <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                        <!-- 1. THUMBNAIL & TITLE -->
+                        <td class="py-4 px-5">
+                            <div class="flex items-center gap-3.5 min-w-[240px]">
+                                <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-14 h-10 object-cover rounded-xl border border-slate-200 dark:border-slate-700 flex-shrink-0">
+                                <div>
+                                    <h4 class="font-extrabold text-slate-900 dark:text-white leading-tight">
+                                        {{ course.title }}
+                                    </h4>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-500">
+                                            {{ course.get_level_display }}
+                                        </span>
+                                        <span class="text-[11px] text-slate-400">
+                                            <i class="fa-regular fa-clock mr-1"></i>{{ course.duration_hours }} soat
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- 2. CATEGORY -->
+                        <td class="py-4 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                            {% if course.category %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                    <i class="{{ course.category.icon }} text-blue-500 text-[11px]"></i>
+                                    {{ course.category.name }}
+                                </span>
+                            {% else %}
+                                <span class="text-slate-400">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 3. PRICE -->
+                        <td class="py-4 px-4">
+                            {% if course.is_free %}
+                                <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-500/10 text-emerald-500">
+                                    Bepul
+                                </span>
+                            {% else %}
+                                <span class="font-extrabold text-slate-900 dark:text-white">
+                                    {{ course.price|intcomma }} so'm
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 4. MODULES & LESSONS COUNT -->
+                        <td class="py-4 px-4">
+                            <div class="space-y-0.5">
+                                <span class="font-bold text-slate-900 dark:text-white text-xs block">
+                                    {{ course.modules_count }} ta modul
+                                </span>
+                                <span class="text-[11px] text-slate-400">
+                                    {{ course.lessons_count }} ta dars
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- 5. ENROLLED STUDENTS -->
+                        <td class="py-4 px-4">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                                <i class="fa-solid fa-user-graduate text-[10px]"></i>
+                                {{ course.enrolled_students }} nafar
+                            </span>
+                        </td>
+
+                        <!-- 6. PUBLISH STATUS -->
+                        <td class="py-4 px-4">
+                            {% if course.is_published %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-circle text-[6px]"></i> Faol
+                                </span>
+                            {% else %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-slate-500/10 text-slate-400 border border-slate-500/20 inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-circle text-[6px]"></i> Qoralama
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 7. ACTIONS -->
+                        <td class="py-4 px-5 text-right">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <!-- CURRICULUM BUILDER LINK -->
+                                <a href="{% url 'dashboard_course_curriculum' course.slug %}" class="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-sm" title="Modullar va Darslarni boshqarish">
+                                    <i class="fa-solid fa-layer-group"></i> Mundarija
+                                </a>
+
+                                <!-- EDIT COURSE DETAILS -->
+                                <a href="{% url 'dashboard_course_edit' course.slug %}" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-xs" title="Kurs sozlamalarini tahrirlash">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+
+                                <!-- PUBLIC DETAIL PREVIEW -->
+                                <a href="{% url 'course_detail' course.slug %}" target="_blank" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-xs" title="Saytda ko'rish">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+
+                                <!-- DELETE CONFIRMATION -->
+                                <form method="POST" action="{% url 'dashboard_course_delete' course.slug %}" class="inline" onsubmit="return confirm('Haqiqatdan ham «{{ course.title }}» kursini butunlay o\'chirmoqchimisiz? Barcha dars va yechimlar o\'chiriladi.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-2 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors text-xs" title="O'chirish">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-16 text-center space-y-4">
+            <div class="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Hech qanday kurs topilmadi</h3>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                Qidiruv shartlarini o'zgartiring yoki birinchi yangi kursingizni yarating.
+            </p>
+            <a href="{% url 'dashboard_course_create' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs shadow-md">
+                <i class="fa-solid fa-plus"></i> Yangi Kurs Yaratish
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

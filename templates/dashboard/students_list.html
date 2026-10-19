@@ -1,0 +1,144 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}O'quvchilar & Progress — roziyevdev Ustoz Studiyasi{% endblock %}
+{% block page_title %}O'quvchilar & O'zlashtirish Darajasi{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- SEARCH & FILTER BAR -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <form method="GET" class="flex flex-wrap items-center gap-3 flex-1">
+            <div class="relative flex-1 min-w-[200px]">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ search_query }}" 
+                    placeholder="Talaba ismi yoki email bo'yicha qidirish..." 
+                    class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+            </div>
+
+            <!-- COURSE FILTER -->
+            <select name="course" onchange="this.form.submit()" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Barcha Kurslar</option>
+                {% for c in courses %}
+                    <option value="{{ c.id }}" {% if course_filter == c.id|stringformat:"s" %}selected{% endif %}>{{ c.title }}</option>
+                {% endfor %}
+            </select>
+
+            {% if search_query or course_filter %}
+                <a href="{% url 'dashboard_students_list' %}" class="text-xs text-rose-500 hover:underline px-2 py-1 font-semibold">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Tozalash
+                </a>
+            {% endif %}
+        </form>
+
+        <div class="text-xs font-bold text-slate-500 dark:text-slate-400 flex-shrink-0">
+            Jami: <span class="text-slate-900 dark:text-white font-black">{{ total_count }}</span> ta a'zolik
+        </div>
+    </div>
+
+    <!-- STUDENTS TABLE -->
+    <div class="rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        {% if enrollments %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 uppercase text-[10px] font-black tracking-wider">
+                        <th class="py-4 px-5">Talaba</th>
+                        <th class="py-4 px-4">Kurs</th>
+                        <th class="py-4 px-4">O'zlashtirish (Progress)</th>
+                        <th class="py-4 px-4">Tangachalari</th>
+                        <th class="py-4 px-4">Holati</th>
+                        <th class="py-4 px-5">A'zo bo'lgan vaqti</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for enr in enrollments %}
+                    <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                        <!-- STUDENT -->
+                        <td class="py-4 px-5">
+                            <div class="flex items-center gap-3">
+                                <img src="{{ enr.user.profile.avatar_url }}" alt="{{ enr.user.display_name }}" class="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white">
+                                        {{ enr.user.display_name }}
+                                    </h4>
+                                    <p class="text-[11px] text-slate-400">
+                                        {{ enr.user.email }}
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- COURSE -->
+                        <td class="py-4 px-4">
+                            <a href="{% url 'course_detail' enr.course.slug %}" target="_blank" class="font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                {{ enr.course.title }}
+                            </a>
+                            <span class="block text-[10px] text-slate-400 mt-0.5">
+                                {{ enr.course.get_level_display }}
+                            </span>
+                        </td>
+
+                        <!-- PROGRESS -->
+                        <td class="py-4 px-4">
+                            <div class="space-y-1.5 w-36">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-extrabold text-blue-600 dark:text-blue-400">{{ enr.progress_percent }}%</span>
+                                    <span class="text-[10px] text-slate-400">
+                                        {% if enr.is_completed %}Tugallangan{% else %}Jarayonda{% endif %}
+                                    </span>
+                                </div>
+                                <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-gradient-to-r from-blue-600 to-emerald-500 h-full rounded-full transition-all duration-300" style="width: {{ enr.progress_percent }}%;"></div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- COINS -->
+                        <td class="py-4 px-4">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                <span class="material-symbols-outlined text-[14px] text-amber-500">monetization_on</span> {{ enr.user.coins }}
+                            </span>
+                        </td>
+
+                        <!-- STATUS -->
+                        <td class="py-4 px-4">
+                            {% if enr.is_completed %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check text-[10px]"></i> Bitirgan
+                                </span>
+                            {% else %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20 inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-spinner animate-spin text-[10px]"></i> O'rganmoqda
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- DATE -->
+                        <td class="py-4 px-5 text-slate-400 text-xs">
+                            {{ enr.created_at|date:"d.m.Y H:i" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-16 text-center space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">O'quvchilar topilmadi</h3>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                Qidiruv so'zini o'zgartiring yoki filtrlarni tozalang.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

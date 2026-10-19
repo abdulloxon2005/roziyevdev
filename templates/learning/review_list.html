@@ -1,0 +1,241 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Vazifalarni Tekshirish Paneli — roziyevdev Ustoz Studiyasi{% endblock %}
+{% block page_title %}Vazifalarni Tekshirish & Baholash{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- HEADER -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                    <i class="fa-solid fa-chalkboard-user mr-1"></i> Ustoz Paneli
+                </span>
+                <span class="text-xs text-slate-400">Faqat o'qituvchi va admin uchun</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
+                Vazifalarni Tekshirish & Baholash
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Talabalar yuborgan kodlar, Flowgorithm blok-sxemalari va fayllarni tekshiring, ball va tangachalar bering.
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'dashboard_index' %}" class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-arrow-left"></i> Studiyaga qaytish
+            </a>
+        </div>
+    </div>
+
+        <!-- STATS BAR -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Tekshirish kutilmoqda</span>
+                    <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </span>
+                </div>
+                <div class="text-2xl font-black text-amber-500">{{ pending_count }} ta</div>
+                <p class="text-[11px] text-slate-400">Yangi yuborilgan yechimlar</p>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Qabul qilingan</span>
+                    <span class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </span>
+                </div>
+                <div class="text-2xl font-black text-emerald-500">{{ approved_count }} ta</div>
+                <p class="text-[11px] text-slate-400">Muvaffaqiyatli topshirilgan</p>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Qayta ishlashga berilgan</span>
+                    <span class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </span>
+                </div>
+                <div class="text-2xl font-black text-rose-500">{{ rejected_count }} ta</div>
+                <p class="text-[11px] text-slate-400">Kamchiligi bor topshiriqlar</p>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Tarqatilgan tangalar</span>
+                    <span class="w-8 h-8 rounded-lg bg-yellow-500/10 text-yellow-500 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-lg">monetization_on</span>
+                    </span>
+                </div>
+                <div class="text-2xl font-black text-yellow-500">{{ total_coins_awarded }}</div>
+                <p class="text-[11px] text-slate-400">Mukofot tariqasida berilgan</p>
+            </div>
+        </div>
+
+        <!-- FILTER TABS & COURSE SELECTOR -->
+        <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+                <a href="?{% if course_filter %}course={{ course_filter }}{% endif %}" class="px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap {% if not status_filter %}bg-indigo-600 text-white shadow-md{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                    Barchasi ({{ submissions|length }})
+                </a>
+                <a href="?status=pending{% if course_filter %}&course={{ course_filter }}{% endif %}" class="px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap {% if status_filter == 'pending' %}bg-amber-500 text-slate-950 shadow-md{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                    Kutilayotganlar ({{ pending_count }})
+                </a>
+                <a href="?status=approved{% if course_filter %}&course={{ course_filter }}{% endif %}" class="px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap {% if status_filter == 'approved' %}bg-emerald-600 text-white shadow-md{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                    Qabul qilinganlar ({{ approved_count }})
+                </a>
+                <a href="?status=rejected{% if course_filter %}&course={{ course_filter }}{% endif %}" class="px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap {% if status_filter == 'rejected' %}bg-rose-600 text-white shadow-md{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                    Qaytarilganlar ({{ rejected_count }})
+                </a>
+            </div>
+
+            <form method="GET" class="flex items-center gap-2">
+                {% if status_filter %}
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                {% endif %}
+                <select name="course" onchange="this.form.submit()" class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="">Barcha kurslar bo'yicha</option>
+                    {% for c in courses %}
+                        <option value="{{ c.id }}" {% if course_filter == c.id|stringformat:"s" %}selected{% endif %}>{{ c.title }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        <!-- SUBMISSIONS LIST / TABLE -->
+        <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+            {% if submissions %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-900/50">
+                                <th class="py-4 px-6">Talaba</th>
+                                <th class="py-4 px-6">Kurs & Dars</th>
+                                <th class="py-4 px-6">Yuborilgan tarkib</th>
+                                <th class="py-4 px-6">Holati</th>
+                                <th class="py-4 px-6">Ball & Tanga</th>
+                                <th class="py-4 px-6">Yuborilgan vaqt</th>
+                                <th class="py-4 px-6 text-right">Amal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
+                            {% for sub in submissions %}
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                    <!-- Student -->
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-9 h-9 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center font-bold text-sm shrink-0">
+                                                {{ sub.student.first_name|default:sub.student.username|slice:":1"|upper }}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-slate-900 dark:text-white truncate">
+                                                    {{ sub.student.display_name }}
+                                                </div>
+                                                <div class="text-[11px] text-slate-400 truncate">
+                                                    {{ sub.student.email }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Course & Lesson -->
+                                    <td class="py-4 px-6">
+                                        <div class="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-xs">
+                                            {{ sub.assignment.lesson.module.course.title }}
+                                        </div>
+                                        <div class="text-[11px] text-indigo-500 dark:text-indigo-400 truncate max-w-xs">
+                                            {{ sub.assignment.lesson.title }} &bull; {{ sub.assignment.title }}
+                                        </div>
+                                    </td>
+
+                                    <!-- Content type pills -->
+                                    <td class="py-4 px-6">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            {% if sub.submitted_code %}
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" title="Kod yozilgan">
+                                                    <i class="fa-solid fa-code mr-1"></i> Kod
+                                                </span>
+                                            {% endif %}
+                                            {% if sub.flowchart_data %}
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20" title="Blok-sxema chizilgan">
+                                                    <i class="fa-solid fa-diagram-project mr-1"></i> Sxema
+                                                </span>
+                                            {% endif %}
+                                            {% if sub.attached_file %}
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title="Fayl biriktirilgan">
+                                                    <i class="fa-solid fa-paperclip mr-1"></i> Fayl
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+
+                                    <!-- Status -->
+                                    <td class="py-4 px-6">
+                                        {% if sub.status == 'pending' %}
+                                            <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-500/10 text-amber-500 border border-amber-500/20 inline-flex items-center gap-1.5">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                                                Kutilmoqda
+                                            </span>
+                                        {% elif sub.status == 'approved' %}
+                                            <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 inline-flex items-center gap-1">
+                                                <i class="fa-solid fa-check text-[10px]"></i> Qabul qilindi
+                                            </span>
+                                        {% else %}
+                                            <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-rose-500/10 text-rose-500 border border-rose-500/20 inline-flex items-center gap-1">
+                                                <i class="fa-solid fa-rotate-left text-[10px]"></i> Qaytarildi
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Score & Coins -->
+                                    <td class="py-4 px-6 font-semibold">
+                                        {% if sub.score is not None %}
+                                            <span class="text-slate-900 dark:text-white font-bold">{{ sub.score }}</span>
+                                            <span class="text-slate-400 text-[11px]">/ {{ sub.assignment.max_score }} ball</span>
+                                            {% if sub.coins_awarded %}
+                                                <div class="text-[11px] text-amber-500 font-bold inline-flex items-center gap-1">
+                                                    <span class="material-symbols-outlined text-[13px]">monetization_on</span> +{{ sub.coins_awarded }}
+                                                </div>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-slate-400">—</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Time -->
+                                    <td class="py-4 px-6 text-slate-500 dark:text-slate-400 text-[11px] whitespace-nowrap">
+                                        {{ sub.created_at|date:"d.m.Y H:i" }}
+                                    </td>
+
+                                    <!-- Action -->
+                                    <td class="py-4 px-6 text-right whitespace-nowrap">
+                                        <a href="{% url 'submission_review_detail' sub.id %}" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition-all">
+                                            <span>Tekshirish</span>
+                                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="p-12 text-center space-y-4">
+                    <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-2xl mx-auto">
+                        <i class="fa-solid fa-inbox"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Topshirilgan vazifalar mavjud emas</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                            Ushbu filtr bo'yicha hozircha hech qanday vazifa yuborilmagan.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

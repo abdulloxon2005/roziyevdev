@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Sertifikatni Tekshirish — {{ certificate.certificate_code }} — roziyevdev{% endblock %}
+
+{% block content %}
+<div class="py-16 bg-slate-50 dark:bg-[#0b0f19]">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+
+        <!-- HEADER -->
+        <div class="text-center space-y-3">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold border border-blue-500/20">
+                <i class="fa-solid fa-shield-check"></i> Rasmiy Tekshiruv Tizimi
+            </span>
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                Sertifikat Haqiqiyligini Tekshirish
+            </h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                Ushbu sahifa orqali roziyevdev platformasi tomonidan berilgan sertifikatlarning haqiqiyligi elektron tekshiriladi.
+            </p>
+        </div>
+
+        <!-- MAIN VERIFICATION CARD -->
+        <div class="rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-8 sm:p-12 shadow-2xl space-y-8 relative overflow-hidden">
+            
+            <!-- WATERMARK / EMBLEM IN BACKGROUND -->
+            <div class="absolute right-[-20px] bottom-[-20px] opacity-[0.03] pointer-events-none select-none">
+                <img src="/static/images/logo_emblem.png" alt="Emblem" class="w-96 h-96 object-contain">
+            </div>
+
+            <!-- STATUS BADGE -->
+            {% if certificate.is_valid %}
+            <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg shadow-md">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-emerald-800 dark:text-emerald-300">SERTIFIKAT HAQIQIY VA TASDIQLANGAN</h4>
+                        <p class="text-xs text-emerald-600 dark:text-emerald-400">Ushbu hujjat roziyevdev platformasida ro'yxatdan o'tgan.</p>
+                    </div>
+                </div>
+                <span class="hidden sm:inline-block px-3 py-1 rounded-full bg-emerald-600 text-white font-mono text-xs font-bold">
+                    ACTIVE
+                </span>
+            </div>
+            {% else %}
+            <div class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-rose-800 dark:text-rose-300">SERTIFIKAT BEKOR QILINGAN</h4>
+                    <p class="text-xs text-rose-600 dark:text-rose-400">Ushbu sertifikat hozirda faol emas.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- CERTIFICATE DATA GRID -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+                
+                <div class="space-y-1">
+                    <span class="text-xs font-medium text-slate-400">Talaba F.I.Sh:</span>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">
+                        {{ certificate.student_name }}
+                    </h3>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="text-xs font-medium text-slate-400">Sertifikat kodi:</span>
+                    <p class="text-lg font-mono font-bold text-blue-600 dark:text-blue-400">
+                        {{ certificate.certificate_code }}
+                    </p>
+                </div>
+
+                <div class="sm:col-span-2 space-y-1">
+                    <span class="text-xs font-medium text-slate-400">Tamomlangan kurs:</span>
+                    <h4 class="text-lg font-bold text-slate-900 dark:text-white">
+                        {{ certificate.course_title }}
+                    </h4>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="text-xs font-medium text-slate-400">Berilgan sana:</span>
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        {{ certificate.issued_at|date:"d F, Y" }}
+                    </p>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="text-xs font-medium text-slate-400">Ta'lim beruvchi tashkilot:</span>
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        RoziyevDev Online IT Academy
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- QR CODE & DOWNLOAD BUTTON -->
+            <div class="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-6">
+                
+                <div class="flex items-center gap-4">
+                    {% if certificate.qr_code_file %}
+                    <img src="{{ certificate.qr_code_file.url }}" alt="QR Code" class="w-20 h-20 rounded-xl border border-slate-200 dark:border-slate-700 p-1 bg-white">
+                    {% endif %}
+                    <div class="text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                        <span class="font-bold text-slate-700 dark:text-slate-300 block">QR-kod orqali tekshirish</span>
+                        <p>Kamerangiz orqali skanerlab asl nusxani tasdiqlang.</p>
+                    </div>
+                </div>
+
+                <div class="w-full sm:w-auto">
+                    <a href="{% url 'certificate_download' certificate.certificate_code %}" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-pdf"></i> PDF Sertifikatni Yuklab Olish
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% load core_extras %}
+
+{% block title %}{{ post.title }} — roziyevdev Blog{% endblock %}
+
+{% block extra_head %}
+<!-- Markdown Prose Styling -->
+<style>
+    .article-content {
+        line-height: 1.85;
+        font-size: 1.0625rem;
+    }
+    .article-content h1, .article-content h2, .article-content h3, .article-content h4 {
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    .article-content h1 { font-size: 2rem; }
+    .article-content h2 { font-size: 1.625rem; }
+    .article-content h3 { font-size: 1.35rem; }
+    .article-content p { margin-bottom: 1.35rem; }
+    .article-content ul, .article-content ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1.35rem;
+    }
+    .article-content ul { list-style-type: disc; }
+    .article-content ol { list-style-type: decimal; }
+    .article-content li { margin-bottom: 0.5rem; }
+    .article-content blockquote {
+        border-left: 4px solid #3b82f6;
+        padding-left: 1.25rem;
+        font-style: italic;
+        margin: 1.5rem 0;
+        color: #64748b;
+    }
+    .dark .article-content blockquote {
+        color: #94a3b8;
+    }
+    .article-content pre {
+        background-color: #0f172a;
+        color: #e2e8f0;
+        padding: 1.25rem;
+        border-radius: 1rem;
+        overflow-x: auto;
+        margin: 1.5rem 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.875rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .article-content code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.875em;
+        padding: 0.2em 0.4em;
+        border-radius: 0.375rem;
+        background-color: rgba(148, 163, 184, 0.15);
+    }
+    .article-content pre code {
+        background-color: transparent;
+        padding: 0;
+    }
+    .article-content a {
+        color: #2563eb;
+        text-decoration: underline;
+    }
+    .dark .article-content a {
+        color: #60a5fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<article class="py-10 bg-slate-50 dark:bg-[#0b0f19]">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+
+        <!-- BREADCRUMB -->
+        <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <a href="{% url 'home' %}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Bosh sahifa</a>
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            <a href="{% url 'blog_list' %}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Blog</a>
+            {% if post.category %}
+            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            <a href="{% url 'blog_list' %}?category={{ post.category.slug }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                {{ post.category.name }}
+            </a>
+            {% endif %}
+        </nav>
+
+        <!-- ARTICLE HEADER -->
+        <header class="space-y-6">
+            {% if post.category %}
+            <span class="inline-block px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                {{ post.category.name }}
+            </span>
+            {% endif %}
+
+            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+                {{ post.title }}
+            </h1>
+
+            <p class="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                {{ post.summary }}
+            </p>
+
+            <!-- AUTHOR & META INFO -->
+            <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-y border-slate-200 dark:border-slate-800 py-4">
+                <div class="flex items-center gap-3">
+                    <img src="{{ post.author.profile.avatar_url }}" alt="{{ post.author.display_name }}" class="w-12 h-12 rounded-full object-cover border-2 border-blue-500/30">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{ post.author.display_name }}</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">{{ post.author.profile.headline|default:"Muallif & Senior Engineer" }}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-regular fa-calendar"></i>
+                        {{ post.published_at|date:"d F, Y" }}
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-regular fa-clock"></i>
+                        {{ post.reading_time }} daqiqa
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-regular fa-eye"></i>
+                        {{ post.views_count }} ko'rish
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- COVER IMAGE -->
+        {% if post.cover_url %}
+        <div class="rounded-3xl overflow-hidden shadow-xl bg-slate-800 max-h-[460px]">
+            <img src="{{ post.cover_url }}" alt="{{ post.title }}" class="w-full h-full object-cover">
+        </div>
+        {% endif %}
+
+        <!-- MAIN POST CONTENT -->
+        <div class="article-content text-slate-800 dark:text-slate-200 bg-white dark:bg-[#111827] rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-slate-800/80 shadow-md">
+            {{ post.content|markdownify }}
+        </div>
+
+        <!-- TAGS & SOCIAL SHARE -->
+        <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <!-- Tags -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold text-slate-400 mr-1">Teglar:</span>
+                {% for tag in post.tags.all %}
+                <a href="{% url 'blog_list' %}?tag={{ tag.slug }}" class="text-xs font-medium px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 transition-colors">
+                    #{{ tag.name }}
+                </a>
+                {% empty %}
+                <span class="text-xs text-slate-400">Teglar yo'q</span>
+                {% endfor %}
+            </div>
+
+            <!-- Share Buttons -->
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-slate-400 mr-1">Ulashish:</span>
+                <a href="https://t.me/share/url?url={{ request.build_absolute_uri }}&text={{ post.title|urlencode }}" target="_blank" class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-colors" title="Telegramda ulashish">
+                    <i class="fa-brands fa-telegram"></i>
+                </a>
+                <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ post.title|urlencode }}" target="_blank" class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 hover:bg-sky-500 hover:text-white flex items-center justify-center transition-colors" title="X (Twitter)da ulashish">
+                    <i class="fa-brands fa-x-twitter"></i>
+                </a>
+                <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" target="_blank" class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-colors" title="LinkedIn'da ulashish">
+                    <i class="fa-brands fa-linkedin-in"></i>
+                </a>
+                <button onclick="navigator.clipboard.writeText(window.location.href); alert('Havola nusxalandi!');" class="w-8 h-8 rounded-lg bg-slate-500/10 text-slate-500 hover:bg-slate-600 hover:text-white flex items-center justify-center transition-colors" title="Havolani nusxalash">
+                    <i class="fa-solid fa-link"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- AUTHOR BIO BOX -->
+        <div class="rounded-3xl bg-gradient-to-br from-blue-900/10 to-indigo-900/10 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-500/20 p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <img src="{{ post.author.profile.avatar_url }}" alt="{{ post.author.display_name }}" class="w-20 h-20 rounded-2xl object-cover border-2 border-blue-500/40 shadow-lg">
+            <div class="space-y-2 text-center sm:text-left flex-grow">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ post.author.display_name }}</h3>
+                    <span class="text-xs font-semibold text-blue-600 dark:text-blue-400">Muallif & Mentor</span>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {{ post.author.profile.bio|default:"Dasturlash, arxitektura va zamonaviy texnologiyalar bo'yicha amaliy tajribalarni ulashuvchi dasturchi." }}
+                </p>
+                <div class="flex items-center justify-center sm:justify-start gap-3 pt-2">
+                    {% if post.author.profile.telegram %}
+                    <a href="https://t.me/{{ post.author.profile.telegram|cut:'@' }}" target="_blank" class="text-xs text-slate-500 dark:text-slate-400 hover:text-blue-500">
+                        <i class="fa-brands fa-telegram mr-1"></i> Telegram
+                    </a>
+                    {% endif %}
+                    {% if post.author.profile.github %}
+                    <a href="{{ post.author.profile.github }}" target="_blank" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                        <i class="fa-brands fa-github mr-1"></i> GitHub
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- COMMENTS SECTION -->
+        <section id="comments" class="space-y-8 pt-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                <h3 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-regular fa-comments text-blue-500"></i>
+                    Izohlar ({{ comments_count }})
+                </h3>
+            </div>
+
+            <!-- ADD COMMENT FORM -->
+            <form method="post" action="{% url 'blog_comment' post.slug %}" class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-sm">
+                {% csrf_token %}
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white">Fikr bildirish</h4>
+
+                {% if not user.is_authenticated %}
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Ismingiz *</label>
+                    <input type="text" name="author_name" required placeholder="Masalan: Jasur" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+                </div>
+                {% endif %}
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Xabaringiz *</label>
+                    <textarea name="content" rows="3" required placeholder="Maqola bo'yicha fikringiz yoki savolingizni yozing..." class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"></textarea>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-colors shadow-md shadow-blue-600/30">
+                        Izoh qoldirish
+                    </button>
+                </div>
+            </form>
+
+            <!-- COMMENTS LIST -->
+            <div class="space-y-4">
+                {% for comment in comments %}
+                <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <img src="{{ comment.avatar_url }}" alt="{{ comment.display_author }}" class="w-9 h-9 rounded-full object-cover">
+                            <div>
+                                <h5 class="text-sm font-bold text-slate-900 dark:text-white">{{ comment.display_author }}</h5>
+                                <span class="text-[11px] text-slate-400">{{ comment.created_at|date:"d M, Y H:i" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed pl-12">
+                        {{ comment.content }}
+                    </p>
+
+                    <!-- Replies -->
+                    {% for reply in comment.replies.all %}
+                    <div class="ml-12 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-start gap-3">
+                        <img src="{{ reply.avatar_url }}" alt="{{ reply.display_author }}" class="w-7 h-7 rounded-full object-cover mt-0.5">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <h6 class="text-xs font-bold text-slate-900 dark:text-white">{{ reply.display_author }}</h6>
+                                <span class="text-[10px] text-slate-400">{{ reply.created_at|date:"d M, Y H:i" }}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                {{ reply.content }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-slate-400 text-sm">
+                    Hozircha izohlar mavjud emas. Birinchi bo'lib fikringizni bildiring!
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- RELATED POSTS -->
+        {% if related_posts %}
+        <section class="space-y-6 pt-10 border-t border-slate-200 dark:border-slate-800">
+            <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Mavzuga oid boshqa maqolalar</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% for rel in related_posts %}
+                <a href="{{ rel.get_absolute_url }}" class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-4 block hover:border-blue-500 transition-all group">
+                    <div class="h-32 rounded-xl overflow-hidden mb-3 bg-slate-800">
+                        <img src="{{ rel.cover_url }}" alt="{{ rel.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                        {{ rel.title }}
+                    </h4>
+                    <span class="text-xs text-slate-400 mt-2 block">{{ rel.reading_time }} daqiqa o'qish</span>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+    </div>
+</article>
+{% endblock %}

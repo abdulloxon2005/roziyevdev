@@ -138,8 +138,15 @@ def web_course_detail_view(request, slug):
         is_published=True
     ).exclude(id=course.id)[:3]
 
+    from apps.learning.services import get_enrollment, has_full_access
+    enrollment = get_enrollment(request.user, course) if request.user.is_authenticated else None
+    has_access = has_full_access(request.user, course, enrollment)
+
     context = {
         'course': course,
         'related_courses': related_courses,
+        'enrollment': enrollment,
+        'has_access': has_access,
     }
     return render(request, 'courses/detail.html', context)
+

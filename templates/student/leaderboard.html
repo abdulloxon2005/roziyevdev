@@ -1,0 +1,234 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Kurs Reytingi — O'quvchi Kabineti — roziyevdev{% endblock %}
+{% block page_title %}Kurs Reytingi (Leaderboard){% endblock %}
+{% block page_subtitle %}O'zingiz o'qiyotgan kursdagi natijalar, to'plangan XP ballar va kursdoshlar bilan o'rningiz.{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-7xl mx-auto">
+
+    <!-- KURS SELEKTORI HEADER -->
+    <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                Jonli Guruh Reytingi
+            </span>
+            <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
+                {{ selected_course.title|default:"Kurs Reytingi" }}
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Jami ishtirokchilar: <strong class="text-slate-800 dark:text-slate-200">{{ leaderboard_data.total_participants|default:0 }} nafar</strong>
+            </p>
+        </div>
+
+        <!-- Kursni tanlash dropdown -->
+        <form method="GET" class="w-full md:w-auto">
+            <label class="block text-[11px] font-bold text-slate-400 mb-1">Boshqa kursni tanlang:</label>
+            <select name="course" onchange="this.form.submit()" class="w-full md:w-72 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-amber-500">
+                {% for c in user_courses %}
+                    <option value="{{ c.id }}" {% if selected_course.id == c.id %}selected{% endif %}>
+                        {{ c.title|truncatechars:35 }}
+                    </option>
+                {% empty %}
+                    <option value="">Kurslar topilmadi</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- SHAXSIY NATIJA BANNERI (MY RANK CARD) -->
+    {% if leaderboard_data.current_user_rank_data %}
+    {% with my_rank=leaderboard_data.current_user_rank_data %}
+    <div class="p-6 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 border border-blue-500/30 text-white shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-blue-500/20 rounded-full blur-[70px] pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex flex-col items-center justify-center font-black">
+                    <span class="text-xs uppercase tracking-wider text-amber-300">O'rningiz</span>
+                    <span class="text-2xl leading-none font-black">#{{ my_rank.rank }}</span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-lg font-black">{{ user.display_name }} (Siz)</h3>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border {{ my_rank.tier_badge }}">
+                            {{ my_rank.tier }} Liga
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-0.5">
+                        Kursdagi o'zlashtirish: <strong>{{ my_rank.progress_percent }}%</strong> &bull; Topshirilgan vazifalar: <strong>{{ my_rank.assignments_count }} ta</strong>
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6 self-stretch md:self-auto justify-between md:justify-end border-t md:border-t-0 border-white/10 pt-3 md:pt-0">
+                <div class="text-center md:text-right">
+                    <span class="text-xs text-slate-400 block">Jami XP Bali</span>
+                    <span class="text-2xl sm:text-3xl font-black text-amber-400">{{ my_rank.total_xp }} XP</span>
+                </div>
+                {% if my_rank.rank > 1 %}
+                <div class="text-xs bg-white/10 px-3.5 py-2 rounded-xl backdrop-blur border border-white/10">
+                    <span class="text-slate-300 block">Keyingi pog'onaga:</span>
+                    <strong class="text-emerald-400">+{{ my_rank.points_to_next }} XP kerak</strong>
+                </div>
+                {% else %}
+                <div class="text-xs bg-amber-500/20 px-3.5 py-2 rounded-xl border border-amber-500/30 text-amber-300 font-bold">
+                    🥇 Siz 1-o'rinda boryapsiz!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+    {% endif %}
+
+    <!-- TOP-3 SHOXSUPASI (PODIUM) -->
+    {% if leaderboard_data.top_three %}
+    <div class="space-y-3">
+        <h3 class="text-xs font-black uppercase tracking-wider text-slate-400">Yetakchi Talabalar Shoxsupasi</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            
+            <!-- 2-O'rin (Kumush) -->
+            {% if leaderboard_data.top_three|length >= 2 %}
+            {% with user2=leaderboard_data.top_three.1 %}
+            <div class="order-2 md:order-1 p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-300 dark:border-slate-800 text-center flex flex-col items-center justify-between shadow-sm relative overflow-hidden">
+                <div class="w-12 h-12 rounded-2xl bg-slate-300/20 text-slate-400 flex items-center justify-center text-2xl font-black mb-3">
+                    🥈 2
+                </div>
+                <img src="{{ user2.user.profile.avatar_url }}" alt="{{ user2.user.display_name }}" class="w-16 h-16 rounded-full object-cover border-2 border-slate-300 dark:border-slate-700 shadow-md">
+                <h4 class="text-sm font-black text-slate-900 dark:text-white mt-2 truncate max-w-full">
+                    {{ user2.user.display_name }}
+                </h4>
+                <span class="text-xs text-slate-400">{{ user2.progress_percent }}% progress</span>
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 w-full text-center">
+                    <span class="text-lg font-black text-slate-700 dark:text-slate-300">{{ user2.total_xp }} XP</span>
+                </div>
+            </div>
+            {% endwith %}
+            {% endif %}
+
+            <!-- 1-O'rin (Oltin Toj) -->
+            {% with user1=leaderboard_data.top_three.0 %}
+            <div class="order-1 md:order-2 p-7 rounded-3xl bg-gradient-to-b from-amber-500/10 via-white dark:via-[#111827] to-white dark:to-[#111827] border-2 border-amber-500/50 text-center flex flex-col items-center justify-between shadow-xl relative overflow-hidden transform md:-translate-y-2">
+                <div class="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center text-3xl font-black mb-2 shadow-inner">
+                    🥇
+                </div>
+                <img src="{{ user1.user.profile.avatar_url }}" alt="{{ user1.user.display_name }}" class="w-20 h-20 rounded-full object-cover border-4 border-amber-500 shadow-lg">
+                <h4 class="text-base font-black text-slate-900 dark:text-white mt-2 truncate max-w-full">
+                    {{ user1.user.display_name }}
+                </h4>
+                <span class="text-xs font-bold text-amber-500">Guruh Yetakchisi ({{ user1.progress_percent }}%)</span>
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 w-full text-center">
+                    <span class="text-2xl font-black text-amber-500">{{ user1.total_xp }} XP</span>
+                </div>
+            </div>
+            {% endwith %}
+
+            <!-- 3-O'rin (Bronza) -->
+            {% if leaderboard_data.top_three|length >= 3 %}
+            {% with user3=leaderboard_data.top_three.2 %}
+            <div class="order-3 p-6 rounded-3xl bg-white dark:bg-[#111827] border border-orange-500/20 text-center flex flex-col items-center justify-between shadow-sm relative overflow-hidden">
+                <div class="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-2xl font-black mb-3">
+                    🥉 3
+                </div>
+                <img src="{{ user3.user.profile.avatar_url }}" alt="{{ user3.user.display_name }}" class="w-16 h-16 rounded-full object-cover border-2 border-orange-400/40 shadow-md">
+                <h4 class="text-sm font-black text-slate-900 dark:text-white mt-2 truncate max-w-full">
+                    {{ user3.user.display_name }}
+                </h4>
+                <span class="text-xs text-slate-400">{{ user3.progress_percent }}% progress</span>
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 w-full text-center">
+                    <span class="text-lg font-black text-orange-400">{{ user3.total_xp }} XP</span>
+                </div>
+            </div>
+            {% endwith %}
+            {% endif %}
+
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- TO'LIQ REYTING JADVALI -->
+    <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-base font-black text-slate-900 dark:text-white">Barcha Guruhdoshlar Natijalari</h3>
+            <span class="text-xs text-slate-400">XP = Vazifalar + Darslar + Tangalar</span>
+        </div>
+
+        {% if leaderboard_data.leaderboard %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-black uppercase text-slate-400 tracking-wider">
+                        <th class="py-3 px-3">O'rin</th>
+                        <th class="py-3 px-3">Talaba</th>
+                        <th class="py-3 px-3">Liga</th>
+                        <th class="py-3 px-3">Progress</th>
+                        <th class="py-3 px-3">Vazifalar</th>
+                        <th class="py-3 px-3 text-right">Jami XP</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    {% for item in leaderboard_data.leaderboard %}
+                    <tr class="{% if item.user.id == user.id %}bg-blue-500/10 dark:bg-blue-900/30 ring-1 ring-blue-500 font-bold{% else %}hover:bg-slate-50 dark:hover:bg-slate-800/40{% endif %} transition-colors">
+                        <!-- O'rin -->
+                        <td class="py-3.5 px-3 whitespace-nowrap">
+                            <span class="w-7 h-7 rounded-lg inline-flex items-center justify-center font-black text-xs {% if item.rank == 1 %}bg-amber-500 text-slate-950{% elif item.rank == 2 %}bg-slate-300 text-slate-950{% elif item.rank == 3 %}bg-orange-400 text-slate-950{% else %}text-slate-400{% endif %}">
+                                #{{ item.rank }}
+                            </span>
+                        </td>
+
+                        <!-- Talaba -->
+                        <td class="py-3.5 px-3">
+                            <div class="flex items-center gap-3">
+                                <img src="{{ item.user.profile.avatar_url }}" alt="{{ item.user.display_name }}" class="w-9 h-9 rounded-xl object-cover border border-slate-300 dark:border-slate-700">
+                                <div>
+                                    <div class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                        <span>{{ item.user.display_name }}</span>
+                                        {% if item.user.id == user.id %}
+                                            <span class="text-[9px] uppercase px-1.5 py-0.2 rounded bg-blue-500 text-white font-black">Siz</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="text-[10px] text-slate-400">{{ item.user.profile.headline|default:"Dasturlash o'rganuvchisi" }}</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Liga -->
+                        <td class="py-3.5 px-3 whitespace-nowrap">
+                            <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full border {{ item.tier_badge }}">
+                                {{ item.tier }}
+                            </span>
+                        </td>
+
+                        <!-- Progress -->
+                        <td class="py-3.5 px-3 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <div class="w-20 bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                    <div class="h-1.5 rounded-full {% if item.progress_percent == 100 %}bg-emerald-500{% else %}bg-blue-600{% endif %}" style="width: {{ item.progress_percent }}%"></div>
+                                </div>
+                                <span class="text-xs font-bold">{{ item.progress_percent }}%</span>
+                            </div>
+                        </td>
+
+                        <!-- Vazifalar -->
+                        <td class="py-3.5 px-3 whitespace-nowrap">
+                            <span class="font-bold text-slate-700 dark:text-slate-300">{{ item.assignments_count }} ta</span>
+                        </td>
+
+                        <!-- Jami XP -->
+                        <td class="py-3.5 px-3 text-right whitespace-nowrap">
+                            <span class="text-sm font-black text-amber-500">{{ item.total_xp }} XP</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-8 text-center text-xs text-slate-400">
+            Ushbu kursda hozircha reyting ma'lumotlari mavjud emas.
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

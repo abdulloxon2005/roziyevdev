@@ -22,6 +22,11 @@ class CustomUser(AbstractUser):
         default=UserRole.STUDENT,
         verbose_name="Foydalanuvchi roli"
     )
+    coins = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Tangachalar (Coins)",
+        help_text="Vazifalarni muvaffaqiyatli topshirgani uchun to'plangan tangalar"
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -38,6 +43,10 @@ class CustomUser(AbstractUser):
     def display_name(self):
         full = f"{self.first_name} {self.last_name}".strip()
         return full if full else self.username
+
+    def add_coins(self, amount: int):
+        self.coins = max(0, self.coins + amount)
+        self.save(update_fields=['coins'])
 
 
 class Profile(TimeStampedModel):
