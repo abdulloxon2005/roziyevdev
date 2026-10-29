@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -68,9 +69,20 @@ def web_process_payment_view(request, order_number):
         return redirect('order_success', order_number=order.order_number)
 
     payment_method = request.POST.get('payment_method', PaymentMethod.TEST_DEMO)
-    order.payment_method = payment_method
 
-    # Sinov to'lovi yoki to'lov simulyatsiyasi
+    # Click/Payme/Uzum uchun haqiqiy to'lov integratsiyasi hali ulanmagan.
+    # Faqat sinov (demo) rejimida, va faqat demo usuli tanlangandagina
+    # buyurtma avtomatik "to'langan" deb belgilanadi - aks holda haqiqiy
+    # pulsiz kursga bepul kirish imkoniyati ochilib qolishi mumkin edi.
+    if payment_method != PaymentMethod.TEST_DEMO or not settings.PAYMENTS_DEMO_ENABLED:
+        messages.error(
+            request,
+            "Ushbu to'lov tizimi hali platformaga ulanmagan. Iltimos, administrator bilan bog'laning yoki "
+            "sinov (demo) to'lov usulidan foydalaning."
+        )
+        return redirect('order_checkout', slug=order.course.slug)
+
+    order.payment_method = PaymentMethod.TEST_DEMO
     order.mark_as_paid()
     messages.success(request, "To'lov muvaffaqiyatli qabul qilindi! Kurs darslariga xush kelibsiz.")
     return redirect('order_success', order_number=order.order_number)
@@ -131,13 +143,19 @@ class OrderDetailAPIView(APIView):
 
 
 class SimulatePaymentAPIView(APIView):
-    """Test rejimida buyurtmani to'langan deb tasdiqlash API'si."""
+    """Test rejimida buyurtmani to'langan deb tasdiqlash API'si (faqat PAYMENTS_DEMO_ENABLED=True bo'lsa ishlaydi)."""
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = OrderSerializer
 
     @extend_schema(request=None, responses={200: OrderSerializer})
     def post(self, request, order_number):
+        if not settings.PAYMENTS_DEMO_ENABLED:
+            return Response(
+                {"detail": "Demo to'lov rejimi o'chirilgan. Haqiqiy to'lov tizimi orqali to'lov qiling."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         order = get_object_or_404(Order, order_number=order_number, user=request.user)
+        order.payment_method = PaymentMethod.TEST_DEMO
         order.mark_as_paid()
         return Response({
             "message": "To'lov muvaffaqiyatli amalga oshirildi.",

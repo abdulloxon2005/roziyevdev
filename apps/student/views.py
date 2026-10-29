@@ -1,6 +1,9 @@
 import os
 import io
+import ast
+import sys
 import time
+import builtins as _builtins_module
 import zipfile
 import contextlib
 from django.shortcuts import render, get_object_or_404, redirect
@@ -358,12 +361,116 @@ def student_contest_submit_view(request, contest_slug, problem_id):
 # 5. LOYIHALAR BO'LIMI (PROJECTS & IN-BROWSER IDE)
 # ==============================================================================
 
+# Talaba kodini bajarishda ruxsat etilgan "xavfsiz" builtin'lar ro'yxati.
+# Fayl tizimiga, tarmoqqa, boshqa modullarga (os, sys, subprocess va h.k.)
+# kirish imkonini beradigan hech narsa shu ro'yxatga kiritilmaydi
+# (masalan: open, __import__, eval, exec, compile, globals, locals, dir).
+_SAFE_BUILTIN_NAMES = (
+    'abs', 'all', 'any', 'bin', 'bool', 'chr', 'complex', 'dict', 'divmod',
+    'enumerate', 'filter', 'float', 'format', 'frozenset', 'hex', 'int',
+    'isinstance', 'issubclass', 'len', 'list', 'map', 'max', 'min', 'next',
+    'oct', 'ord', 'pow', 'print', 'range', 'repr', 'reversed', 'round',
+    'set', 'slice', 'sorted', 'str', 'sum', 'tuple', 'type', 'zip',
+    'super', 'object', 'property', 'classmethod', 'staticmethod',
+    'True', 'False', 'None', 'NotImplemented', '__build_class__', '__name__',
+    'Exception', 'BaseException', 'ValueError', 'TypeError', 'IndexError',
+    'KeyError', 'ZeroDivisionError', 'StopIteration', 'RuntimeError',
+    'ArithmeticError', 'OverflowError', 'NameError', 'AttributeError',
+    'AssertionError', 'FloatingPointError', 'LookupError', 'UnicodeError',
+    'NotImplementedError', 'RecursionError',
+)
+
+# Bajarilish vaqti / amallar soni chegarasi (cheksiz sikllarni to'xtatish uchun)
+_EXEC_MAX_SECONDS = 3
+_EXEC_MAX_STEPS = 300_000
+_EXEC_MAX_OUTPUT_CHARS = 20_000
+
+# `object.__class__.__bases__[0].__subclasses__()` kabi "sandbox escape"
+# usullarining oldini olish uchun xavfli dunder atributlarga murojaat
+# (attribute access) qilish taqiqlanadi. Oddiy magic metodlar
+# (__init__, __str__, super().__init__() va h.k.) ta'sirlanmaydi, chunki ular
+# metod ta'rifi (FunctionDef) sifatida yoziladi, Attribute access sifatida emas.
+_BLOCKED_DUNDER_ATTRS = {
+    '__class__', '__bases__', '__base__', '__subclasses__', '__mro__',
+    '__globals__', '__builtins__', '__import__', '__getattribute__',
+    '__code__', '__closure__', '__func__', '__self__', '__dict__',
+    '__reduce__', '__reduce_ex__', '__subclasshook__', '__loader__',
+    '__spec__', '__module__',
+}
+_BLOCKED_NAMES = {
+    'exec', 'eval', 'compile', '__import__', 'globals', 'locals', 'vars',
+    'open', 'getattr', 'setattr', 'delattr', 'dir', 'help', 'breakpoint',
+}
+
+
+def _find_unsafe_construct(code):
+    """Kodni bajarishdan oldin AST orqali xavfli konstruksiyalarni aniqlaydi."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return None  # Sintaksis xatosi - buni haqiqiy exec() xato sifatida ko'rsatamiz
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr in _BLOCKED_DUNDER_ATTRS:
+            return node.attr
+        if isinstance(node, ast.Name) and node.id in _BLOCKED_NAMES:
+            return node.id
+    return None
+
+
+class _ExecutionLimitExceeded(Exception):
+    """Kod juda uzoq ishlaganda yoki juda ko'p amal bajarganda ko'tariladi."""
+
+
+def _build_safe_globals(custom_input):
+    safe_builtins = {
+        name: getattr(_builtins_module, name)
+        for name in _SAFE_BUILTIN_NAMES
+        if hasattr(_builtins_module, name)
+    }
+    safe_builtins['input'] = custom_input
+    return {
+        '__name__': '__main__',
+        '__builtins__': safe_builtins,
+    }
+
+
+def _make_step_limiter():
+    state = {'steps': 0, 'start': time.time()}
+
+    def tracer(frame, event, arg):
+        if event == 'line':
+            state['steps'] += 1
+            if state['steps'] > _EXEC_MAX_STEPS or (time.time() - state['start']) > _EXEC_MAX_SECONDS:
+                raise _ExecutionLimitExceeded(
+                    "Kod bajarilishi vaqt (3s) yoki amallar sonining chegarasidan oshib ketdi "
+                    "(cheksiz sikl yoki juda og'ir hisoblash bo'lishi mumkin)."
+                )
+        return tracer
+    return tracer
+
+
 def _execute_code_safely(language, code):
-    """Kodni xavfsiz simulyatsiya qilish yoki Python kodini bajarish."""
+    """
+    Kodni xavfsiz simulyatsiya qilish yoki Python kodini cheklangan (sandboxed) muhitda bajarish.
+
+    Eslatma: bu faqat bazaviy himoya (import/fayl/tarmoqqa kirish taqiqlangan, vaqt/amal
+    chegarasi qo'yilgan). To'liq xavfsizlik uchun productionda kodni alohida, tarmoqsiz,
+    resurslari cheklangan konteyner/subprocess ichida bajarish tavsiya etiladi.
+    """
     start_time = time.time()
     if language == 'python':
         stdout_buf = io.StringIO()
         stderr_buf = io.StringIO()
+
+        unsafe = _find_unsafe_construct(code)
+        if unsafe:
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            return (
+                f"[Xavfsizlik xatosi] Kodda ruxsat etilmagan '{unsafe}' konstruksiyasi aniqlandi. "
+                "Iltimos, standart dasturlash amallaridan foydalaning."
+            ), False, elapsed_ms
+
+        old_trace = sys.gettrace()
         try:
             # Standart avtomatik test inputlar
             mock_inputs = iter(["Foydalanuvchi", "21", "100", "50", "roziyevdev", "1"])
@@ -377,21 +484,32 @@ def _execute_code_safely(language, code):
                 except StopIteration:
                     return "0"
 
-            globs = {
-                '__name__': '__main__',
-                'input': custom_input,
-            }
-            with contextlib.redirect_stdout(stdout_buf), contextlib.redirect_stderr(stderr_buf):
-                exec(code, globs)
+            globs = _build_safe_globals(custom_input)
+
+            sys.settrace(_make_step_limiter())
+            try:
+                with contextlib.redirect_stdout(stdout_buf), contextlib.redirect_stderr(stderr_buf):
+                    exec(code, globs)
+            finally:
+                sys.settrace(old_trace)
 
             output = stdout_buf.getvalue()
             errors = stderr_buf.getvalue()
             elapsed_ms = int((time.time() - start_time) * 1000)
 
+            if len(output) > _EXEC_MAX_OUTPUT_CHARS:
+                output = output[:_EXEC_MAX_OUTPUT_CHARS] + "\n...\n[Chiqish hajm chegarasi tufayli qisqartirildi]"
+
             if errors:
                 return f"{output}\n[Xatolik]:\n{errors}", False, elapsed_ms
             return output or "[Dastur muvaffaqiyatli yakunlandi, ekranga hech narsa chiqarilmadi.]", True, elapsed_ms
+        except _ExecutionLimitExceeded as e:
+            sys.settrace(old_trace)
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            partial_output = stdout_buf.getvalue()[:_EXEC_MAX_OUTPUT_CHARS]
+            return f"{partial_output}\n[Xatolik] {str(e)}", False, elapsed_ms
         except Exception as e:
+            sys.settrace(old_trace)
             elapsed_ms = int((time.time() - start_time) * 1000)
             return f"{stdout_buf.getvalue()}\n[Dastur xatosi] {type(e).__name__}: {str(e)}", False, elapsed_ms
     elif language == 'csharp':
