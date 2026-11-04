@@ -56,3 +56,11 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
     align-items: center;
     justify-content: center;
 }
+
+/* Light-mode page background repainted warm cream (was cool slate-50) to
+   match the approved "oddiy yashil" reference palette. Dark mode is
+   untouched. Zero template edits - every bg-slate-50 in light mode picks
+   this up automatically. */
+html:not(.dark) .bg-slate-50 {
+    background-color: #FBF9F4 !important;
+}
