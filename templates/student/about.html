@@ -1,0 +1,54 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Biz haqimizda — roziyevdev{% endblock %}
+{% block page_title %}Biz haqimizda{% endblock %}
+{% block page_subtitle %}roziyevdev platformasi{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+    <div class="rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-8 space-y-4">
+        <h2 class="text-2xl font-black">roziyevdev haqida</h2>
+        <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+            roziyevdev — mobil dasturlash, algoritmlar va ma'lumotlar bazasi yo'nalishlarida amaliyotga asoslangan o'quv platformasi.
+            Bu yerda kurslarni o'qish, brauzerning o'zida kod yozish, vazifalarni yechish va kursdoshlar bilan duelda bellashish mumkin.
+        </p>
+        <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+            Platforma <b>Roziyev System</b> tomonidan ishlab chiqilgan va doimiy rivojlantirilmoqda.
+        </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+        <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 space-y-2">
+            <h3 class="font-black"><i class="fa-solid fa-code text-green-600 mr-2"></i>Ishlab chiqaruvchi</h3>
+            <p class="text-sm text-slate-600 dark:text-slate-300">Roziyev System</p>
+        </div>
+        <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 space-y-2">
+            <h3 class="font-black"><i class="fa-solid fa-phone text-green-600 mr-2"></i>Aloqa</h3>
+            <p class="text-sm text-slate-600 dark:text-slate-300">Telefon: <a href="tel:+998900000000" class="font-bold hover:underline">+998 90 000 00 00</a></p>
+            <p class="text-sm text-slate-600 dark:text-slate-300">Telegram: <span class="font-bold">@roziyevdev</span></p>
+            <p class="text-sm text-slate-600 dark:text-slate-300">Email: <a href="mailto:admin@roziyev.dev" class="font-bold hover:underline">admin@roziyev.dev</a></p>
+        </div>
+    </div>
+
+    <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800">
+        <details class="p-5" id="privacy">
+            <summary class="font-black cursor-pointer">Maxfiylik siyosati</summary>
+            <div class="mt-3 text-sm text-slate-600 dark:text-slate-300 space-y-2 leading-relaxed">
+                <p>Biz faqat xizmatni ko'rsatish uchun zarur ma'lumotlarni (ism, email, telefon, o'quv natijalari) saqlaymiz.</p>
+                <p>Shaxsiy ma'lumotlaringiz uchinchi shaxslarga sotilmaydi va faqat qonunda belgilangan hollarda oshkor qilinadi.</p>
+                <p>Parolingiz shifrlangan holda saqlanadi. Ma'lumotlaringizni profil sozlamalarida tahrirlashingiz yoki o'chirishni so'rashingiz mumkin.</p>
+            </div>
+        </details>
+        <details class="p-5" id="terms">
+            <summary class="font-black cursor-pointer">Foydalanish shartlari</summary>
+            <div class="mt-3 text-sm text-slate-600 dark:text-slate-300 space-y-2 leading-relaxed">
+                <p>Akkauntingiz xavfsizligi uchun o'zingiz mas'ulsiz, parolingizni boshqalarga bermang.</p>
+                <p>Duel va vazifalarda boshqaning yechimini ko'chirish, tizimni aldash yoki zararli kod yuborish taqiqlanadi.</p>
+                <p>Kurs materiallari faqat shaxsiy o'quv maqsadida ishlatiladi va ruxsatsiz tarqatilmaydi.</p>
+                <p>Qoidalarni buzgan akkaunt ogohlantirishsiz cheklanishi mumkin.</p>
+            </div>
+        </details>
+    </div>
+</div>
+{% endblock %}

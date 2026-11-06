@@ -1,0 +1,101 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Duel — {{ challenge.title }}{% endblock %}
+{% block page_title %}Duel: {{ challenge.title }}{% endblock %}
+{% block page_subtitle %}{{ user.display_name }} vs {{ rival.display_name }} · {{ duel.get_difficulty_display }} · g'olibga +{{ points }} ochko{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-python.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-chrome.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-4">
+    <div id="banner" class="hidden p-4 rounded-2xl font-black text-center"></div>
+
+    <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800">
+        <h3 class="font-black">{{ challenge.title }}</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">{{ challenge.description }}</p>
+        <p class="text-xs text-slate-500 mt-2">Python tilida <code>solve</code> funksiyasini yozing. Birinchi bo'lib barcha testlardan o'tgan g'olib bo'ladi.</p>
+    </div>
+
+    <div id="waiting" class="{% if duel.status != 'pending' %}hidden{% endif %} p-6 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-center font-bold">
+        Raqib so'rovni tasdiqlashini kutyapmiz...
+    </div>
+
+    <div id="arena" class="{% if duel.status != 'active' %}hidden{% endif %} space-y-3">
+        <div id="editor" class="rounded-2xl border border-slate-300 dark:border-slate-700" style="height:380px;"></div>
+        <div class="flex items-center gap-3">
+            <button id="submitBtn" class="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-black">Yuborish</button>
+            <span id="result" class="text-sm font-bold"></span>
+        </div>
+    </div>
+
+    <a href="{% url 'duel_home' %}" class="inline-block text-xs font-bold text-slate-500 hover:text-green-600">&larr; Duellar ro'yxati</a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+    #editor .ace_scroller, #editor .ace_gutter { background-color: transparent !important; }
+    #editor {
+        background-color: #fdfdf6;
+        background-image: linear-gradient(#cfe3f3 1px, transparent 1px), linear-gradient(90deg, #cfe3f3 1px, transparent 1px);
+        background-size: 22px 22px;
+    }
+    #editor .ace_gutter { color: #7a8794; }
+</style>
+<script>
+    const DUEL_ID = {{ duel.id }};
+    const ME = {{ user.id }};
+    let finished = {% if duel.status == 'finished' or duel.status == 'cancelled' or duel.status == 'declined' %}true{% else %}false{% endif %};
+    const editor = ace.edit('editor');
+    editor.setTheme('ace/theme/chrome');
+    editor.session.setMode('ace/mode/python');
+    editor.setOptions({fontSize: '14px', tabSize: 4, useSoftTabs: true, showPrintMargin: false, enableBasicAutocompletion: false, enableLiveAutocompletion: false});
+    editor.setValue('{{ challenge.starter_code|escapejs }}', -1);
+
+    function csrf() { return document.cookie.split('; ').find(c => c.startsWith('csrftoken='))?.split('=')[1] || ''; }
+    function show(state) {
+        const b = document.getElementById('banner');
+        if (state.status === 'finished') {
+            b.classList.remove('hidden');
+            const won = state.winner_id === ME;
+            b.className = 'p-4 rounded-2xl font-black text-center ' + (won ? 'bg-green-500/15 text-green-600' : 'bg-rose-500/15 text-rose-500');
+            b.textContent = won ? "Tabriklaymiz, siz yutdingiz! +{{ points }} ochko" : "Raqibingiz birinchi bo'ldi. Keyingi safar omad!";
+            finished = true;
+            document.getElementById('submitBtn').disabled = true;
+        } else if (state.status === 'declined' || state.status === 'cancelled') {
+            b.classList.remove('hidden');
+            b.className = 'p-4 rounded-2xl font-black text-center bg-slate-500/15';
+            b.textContent = "Duel bekor qilindi.";
+            document.getElementById('waiting').classList.add('hidden');
+            finished = true;
+        } else if (state.status === 'active') {
+            document.getElementById('waiting').classList.add('hidden');
+            document.getElementById('arena').classList.remove('hidden');
+            editor.resize();
+        }
+    }
+    async function poll(force) {
+        if (finished && force !== true) return;
+        try { show(await (await fetch('{% url "duel_state" duel.id %}')).json()); } catch (e) {}
+    }
+    setInterval(poll, 2000);
+    poll(true);
+
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+        if (finished) return;
+        const res = document.getElementById('result');
+        res.textContent = 'Tekshirilmoqda...';
+        const body = new URLSearchParams({code: editor.getValue()});
+        const r = await fetch('{% url "duel_submit" duel.id %}', {method: 'POST', headers: {'X-CSRFToken': csrf()}, body});
+        const d = await r.json();
+        if (d.won) { show({status: 'finished', winner_id: ME}); res.textContent = ''; return; }
+        if (d.status === 'finished') { poll(); res.textContent = ''; return; }
+        res.textContent = d.passed + '/' + d.total + " test o'tdi" + (d.error ? ' — ' + d.error : '');
+        res.className = 'text-sm font-bold ' + (d.passed === d.total ? 'text-green-600' : 'text-rose-500');
+    });
+</script>
+{% endblock %}

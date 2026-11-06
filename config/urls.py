@@ -75,7 +75,8 @@ urlpatterns = [
     # Ustoz Studiyasi / Admin Paneli (Dashboard)
     path('dashboard/', include('apps.dashboard.urls')),
 
-    # O'quvchi Paneli (Student Portal: Vazifalar, Reyting, Musobaqalar, Loyihalar, Roadmap)
+    # O'quvchi Paneli (Student Portal: Vazifalar, Duel, Loyihalar)
+    path('student/duel/', include('apps.duels.urls')),
     path('student/', include('apps.student.urls')),
 
     # O'quv jarayoni (Learning)

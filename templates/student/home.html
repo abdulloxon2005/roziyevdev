@@ -1,0 +1,83 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Bosh sahifa — roziyevdev{% endblock %}
+{% block page_title %}Bosh sahifa{% endblock %}
+{% block page_subtitle %}Platformaga xush kelibsiz{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-10">
+
+    <!-- Hero -->
+    <div class="rounded-3xl bg-gradient-to-br from-green-700 to-emerald-900 text-white p-8 sm:p-10 shadow-xl">
+        <p class="text-xs font-bold uppercase tracking-wider text-green-200">roziyevdev</p>
+        <h1 class="mt-2 text-2xl sm:text-4xl font-black">Salom, {{ user.first_name|default:user.display_name }}!</h1>
+        <p class="mt-3 text-green-100 max-w-2xl text-sm sm:text-base">Mobil dasturlash, algoritmlar va ma'lumotlar bazasini amaliyot orqali o'rganing: kurs o'qing, kod yozing, kursdoshlaringiz bilan duelda bellashing.</p>
+        <div class="mt-6 flex flex-wrap gap-3">
+            <a href="{% url 'student_dashboard' %}" class="px-5 py-2.5 rounded-xl bg-white text-green-800 font-bold text-sm hover:bg-green-50 transition">Dashboardga o'tish</a>
+            <a href="{% url 'course_list' %}" class="px-5 py-2.5 rounded-xl bg-green-600/40 border border-white/30 font-bold text-sm hover:bg-green-600/60 transition">Kurslarni ko'rish</a>
+        </div>
+    </div>
+
+    <!-- Tezkor havolalar -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{% url 'student_assignments_hub' %}" class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-green-500 transition">
+            <i class="fa-solid fa-laptop-code text-sky-500 text-xl"></i>
+            <h3 class="mt-3 font-extrabold">Vazifalar</h3>
+            <p class="text-xs text-slate-500 mt-1">Amaliy topshiriqlarni yeching</p>
+        </a>
+        <a href="{% url 'duel_home' %}" class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-green-500 transition">
+            <i class="fa-solid fa-hand-fist text-rose-500 text-xl"></i>
+            <h3 class="mt-3 font-extrabold">Duel</h3>
+            <p class="text-xs text-slate-500 mt-1">Kursdoshlar bilan bellashing</p>
+        </a>
+        <a href="{% url 'student_projects' %}" class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-green-500 transition">
+            <i class="fa-solid fa-rocket text-purple-500 text-xl"></i>
+            <h3 class="mt-3 font-extrabold">Loyihalar</h3>
+            <p class="text-xs text-slate-500 mt-1">Brauzerda kod yozing</p>
+        </a>
+        <a href="{% url 'blog_list' %}" class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-green-500 transition">
+            <i class="fa-solid fa-newspaper text-teal-500 text-xl"></i>
+            <h3 class="mt-3 font-extrabold">Blog</h3>
+            <p class="text-xs text-slate-500 mt-1">Maqolalar va maslahatlar</p>
+        </a>
+    </div>
+
+    {% if courses %}
+    <section class="space-y-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-black">Yangi kurslar</h2>
+            <a href="{% url 'course_list' %}" class="text-xs font-bold text-green-600 hover:underline">Barchasi &rarr;</a>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for course in courses %}
+            <a href="{% url 'course_detail' course.slug %}" class="rounded-2xl overflow-hidden bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-green-500 transition">
+                <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-36 object-cover">
+                <div class="p-4">
+                    <span class="text-[10px] font-bold uppercase text-green-600">{{ course.category.name }}</span>
+                    <h3 class="font-extrabold mt-1">{{ course.title }}</h3>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if posts %}
+    <section class="space-y-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-black">So'nggi maqolalar</h2>
+            <a href="{% url 'blog_list' %}" class="text-xs font-bold text-green-600 hover:underline">Barchasi &rarr;</a>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-4">
+            {% for post in posts %}
+            <a href="{% url 'blog_detail' post.slug %}" class="p-4 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 hover:border-green-500 transition">
+                <span class="text-[10px] font-bold uppercase text-green-600">{{ post.category.name }}</span>
+                <h3 class="font-extrabold mt-1">{{ post.title }}</h3>
+                <p class="text-xs text-slate-500 mt-1">{{ post.summary|truncatechars:90 }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

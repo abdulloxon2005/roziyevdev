@@ -1,0 +1,79 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Dashboard — roziyevdev{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Hozir o'qiyotgan kurslaringiz va natijalaringiz{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800">
+            <div class="text-3xl font-black">{{ stats.enrolled_courses_count }}</div>
+            <div class="text-xs text-slate-500 mt-1">Kurslarim</div>
+        </div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800">
+            <div class="text-3xl font-black">{{ stats.completed_lessons_count }}</div>
+            <div class="text-xs text-slate-500 mt-1">Tugatilgan darslar</div>
+        </div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800">
+            <div class="text-3xl font-black">{{ stats.approved_submissions_count }}</div>
+            <div class="text-xs text-slate-500 mt-1">Qabul qilingan vazifalar</div>
+        </div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800">
+            <div class="text-3xl font-black text-amber-500">{{ stats.coins }}</div>
+            <div class="text-xs text-slate-500 mt-1">Tangalar</div>
+        </div>
+    </div>
+
+    <section class="space-y-4">
+        <h2 class="text-lg font-black">Hozir o'qiyotgan kurslarim</h2>
+        {% for enr in enrollments %}
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <span class="text-[10px] font-bold uppercase text-green-600">{{ enr.course.category.name }}</span>
+                    <h3 class="font-extrabold truncate">{{ enr.course.title }}</h3>
+                    <p class="text-xs text-slate-500 mt-1">
+                        {% if enr.last_lesson %}Qayerga keldingiz: <b>{{ enr.last_lesson.title }}</b>{% else %}Hali boshlanmagan{% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'course_learn' enr.course.slug %}" class="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs transition">Davom etish &rarr;</a>
+            </div>
+            <div class="mt-4 flex items-center gap-3">
+                <div class="flex-1 h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                    <div class="h-full bg-green-500 rounded-full" style="width: {{ enr.progress_percent }}%"></div>
+                </div>
+                <span class="text-xs font-black">{{ enr.progress_percent }}%</span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="p-10 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-center space-y-3">
+            <i class="fa-solid fa-book-open text-3xl text-slate-400"></i>
+            <p class="font-bold">Hozircha o'qiyotgan kursingiz yo'q</p>
+            <a href="{% url 'course_list' %}" class="inline-block px-5 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-sm transition">Kurslarni toping</a>
+        </div>
+        {% endfor %}
+    </section>
+
+    <section class="space-y-4">
+        <h2 class="text-lg font-black">So'nggi natijalar</h2>
+        <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800">
+            {% for sub in recent_submissions %}
+            <a href="{% url 'student_assignment_solve' sub.assignment.id %}" class="flex items-center justify-between gap-3 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                <div class="min-w-0">
+                    <div class="font-bold text-sm truncate">{{ sub.assignment.title }}</div>
+                    <div class="text-xs text-slate-500 truncate">{{ sub.assignment.lesson.module.course.title }}</div>
+                </div>
+                <div class="text-right shrink-0">
+                    <div class="text-xs font-bold">{{ sub.get_status_display }}</div>
+                    {% if sub.score is not None %}<div class="text-xs text-green-600 font-black">{{ sub.score }} ball</div>{% endif %}
+                </div>
+            </a>
+            {% empty %}
+            <p class="p-6 text-sm text-slate-500 text-center">Hali natijalar yo'q. Vazifalar Studiyasida birinchi vazifani yeching.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -1,14 +1,10 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-from django.utils import timezone
-import datetime
 
 from apps.users.models import CustomUser
 from apps.courses.models import Course, CourseModule, Lesson, Category
 from apps.learning.models import Enrollment, Assignment, AssignmentSubmission, SubmissionStatus
-from apps.contests.models import Contest, ContestProblem, ContestCategory
 from apps.projects.models import Project, ProjectStatus, ProjectType
-from apps.roadmaps.models import RoadmapTrack, RoadmapStage, RoadmapNode
 
 
 class StudentPortalTests(TestCase):
@@ -43,40 +39,6 @@ class StudentPortalTests(TestCase):
             passing_score=70
         )
         self.enrollment = Enrollment.objects.create(user=self.user, course=self.course, progress_percent=40)
-
-        # Musobaqa
-        now = timezone.now()
-        self.contest = Contest.objects.create(
-            title='Algoritmik Test Musobaqa',
-            slug='algoritmik-test-musobaqa',
-            category=ContestCategory.ALGORITHMIC,
-            description='Test musobaqa',
-            start_time=now - datetime.timedelta(hours=1),
-            end_time=now + datetime.timedelta(hours=5),
-            is_published=True
-        )
-        self.problem = ContestProblem.objects.create(
-            contest=self.contest,
-            order=1,
-            title='A Masala',
-            description='Masala sharti',
-            points=100
-        )
-
-        # Dasturchi yo'li
-        self.track = RoadmapTrack.objects.create(
-            title='Flutter Dasturchi',
-            slug='flutter-dasturchi',
-            is_active=True
-        )
-        self.stage = RoadmapStage.objects.create(track=self.track, title='1-Bosqich', order=1)
-        self.node = RoadmapNode.objects.create(
-            stage=self.stage,
-            title='Dart Asoslari',
-            summary='Dart tilini o\'rganish',
-            linked_lesson=self.lesson,
-            order=1
-        )
 
     def test_unauthenticated_access_redirects_to_login(self):
         response = self.client.get(reverse('student_dashboard'))
@@ -114,31 +76,7 @@ class StudentPortalTests(TestCase):
         self.assertEqual(sub.status, SubmissionStatus.PENDING)
         self.assertIn('int add', sub.submitted_code)
 
-    def test_student_leaderboard_view(self):
-        self.client.login(username='talaba@roziyev.dev', password='Password123!')
-        response = self.client.get(reverse('student_leaderboard'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Flutter')
-        self.assertContains(response, 'Jonli Guruh Reytingi')
 
-    def test_student_contests_view_and_submission(self):
-        self.client.login(username='talaba@roziyev.dev', password='Password123!')
-        # List view
-        response = self.client.get(reverse('student_contests'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Algoritmik Test Musobaqa')
-
-        # Detail view
-        detail_response = self.client.get(reverse('student_contest_detail', kwargs={'slug': self.contest.slug}))
-        self.assertEqual(detail_response.status_code, 200)
-        self.assertContains(detail_response, 'A Masala')
-
-        # Submit solution to problem
-        submit_response = self.client.post(
-            reverse('student_contest_submit', kwargs={'contest_slug': self.contest.slug, 'problem_id': self.problem.id}),
-            {'submitted_code': 'def solution(): return 42'}
-        )
-        self.assertEqual(submit_response.status_code, 302)
 
     def test_student_projects_view_create_and_like(self):
         self.client.login(username='talaba@roziyev.dev', password='Password123!')
@@ -216,9 +154,7 @@ class StudentPortalTests(TestCase):
         self.assertTrue(like_response.json()['is_liked'])
         self.assertEqual(like_response.json()['likes_count'], 1)
 
-    def test_student_roadmap_view(self):
+    def test_home_dashboard_about_pages(self):
         self.client.login(username='talaba@roziyev.dev', password='Password123!')
-        response = self.client.get(reverse('student_roadmap_track', kwargs={'track_slug': self.track.slug}))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Flutter Dasturchi')
-        self.assertContains(response, 'Dart Asoslari')
+        for name in ('student_home', 'student_dashboard', 'student_about', 'duel_home'):
+            self.assertEqual(self.client.get(reverse(name)).status_code, 200, name)

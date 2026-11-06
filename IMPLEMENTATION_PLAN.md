@@ -74,9 +74,8 @@
 
 #### 🎓 6-BOSQICH: O'quvchilar Paneli (Student Portal & Gamification)
 Batafsil texnik reja: [STUDENT_PORTAL_IMPLEMENTATION_PLAN.md](file:///d:/BMI/roziyevdev/STUDENT_PORTAL_IMPLEMENTATION_PLAN.md)
-1. **Vazifalar Laboratoriyasi:** Platformaning o'zida kod/flowchart muharriri orqali amaliy topshiriqlarni bajarish va o'qituvchiga yuborish, taqriz va qayta ishlash zanjiri.
-2. **Kurs Reytingi (Leaderboard):** Talaba o'zi o'qiyotgan kurs bo'yicha jonli reyting, XP/ballar, shaxsiy o'rin ko'rsatkichi va ligalar.
-3. **Musobaqalar Bo'limi (Contests):** Haftalik bellashuvlar, algoritmik va xakaton musobaqalari, jonli turnir jadvali va sovrinli tangalar.
-4. **Loyihalar Bo'limi (Projects Showcase):** Kurs bitiruv (capstone) loyihalari, shaxsiy portfoliolarni joylash, ustoz code review va jamoatchilik ko'rgazmasi.
-5. **Dasturchi Yo'li (Developer Roadmap):** Yo'nalishlar (Flutter, Python, Algoritmlar) bo'yicha chiroyli interaktiv metro liniyasi shaklidagi vizual xarita, mavzular va darslar bilan avtomatik bog'langan progress.
+1. **Vazifalar Studiyasi:** Platformaning o'zida kod muharriri orqali amaliy topshiriqlarni bajarish va o'qituvchiga yuborish, taqriz va qayta ishlash zanjiri.
+2. **Duel:** O'z kursidagi talabalar bilan 1:1 bellashuv. So'rov yuboriladi, raqib tasdiqlasa ikkalasiga bir xil topshiriq (oson/o'rta/qiyin) beriladi, birinchi bajargan g'olib bo'lib ochko oladi.
+3. **Loyihalar:** Nom va dasturlash tili tanlab loyiha yaratish, fayl daraxti va daftar kataklari fonidagi brauzer muharriri (kod taklifisiz), ustozga yuborish.
+4. **Bosh sahifa, Dashboard, Profil, Blog, Biz haqimizda:** Dashboardda o'qilayotgan kurslar va natijalar; profilda sertifikatlar va kurs tarixi.
 

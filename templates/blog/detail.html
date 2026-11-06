@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends request.user.is_authenticated|yesno:"student/base_student.html,base.html" %}
 {% load core_extras %}
 
 {% block title %}{{ post.title }} — roziyevdev Blog{% endblock %}

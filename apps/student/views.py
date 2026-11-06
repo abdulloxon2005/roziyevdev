@@ -16,66 +16,51 @@ from django.db.models import Count, Q
 
 from apps.courses.models import Course, Lesson
 from apps.learning.models import Enrollment, LessonProgress, Assignment, AssignmentSubmission, SubmissionStatus
-from apps.contests.models import Contest, ContestProblem, ContestParticipant, ContestSubmission, ContestStatus
 from apps.projects.models import (
     Project, ProjectLike, ProjectStatus, ProjectType,
     ProjectLanguage, ProjectMode, ProjectFile
 )
 from apps.projects.forms import ProjectCreateForm, ProjectSubmissionForm
-from apps.roadmaps.models import RoadmapTrack, RoadmapStage, RoadmapNode, UserRoadmapProgress
 from .services import (
     get_student_overview_stats,
-    calculate_course_leaderboard,
-    sync_roadmap_with_user_progress,
 )
 
 
 # ==============================================================================
-# 1. BOSH SAHIFA / OVERVIEW
+# 1. BOSH SAHIFA, DASHBOARD, BIZ HAQIMIZDA
 # ==============================================================================
 
 @login_required
-def student_dashboard_view(request):
-    """O'quvchi boshqaruv paneli (Asosiy sahifa)."""
-    stats = get_student_overview_stats(request.user)
+def student_home_view(request):
+    """Bosh sahifa: platformaning asosiy oynasi (sidebar saqlanadi)."""
+    from apps.blog.models import Post
+    enrolled_ids = Enrollment.objects.filter(user=request.user).values_list('course_id', flat=True)
+    courses = Course.objects.filter(is_published=True).exclude(id__in=enrolled_ids).select_related('category')[:6]
+    posts = Post.objects.filter(is_published=True).select_related('category')[:3]
+    return render(request, 'student/home.html', {
+        'courses': courses, 'posts': posts, 'active_menu': 'home',
+        'platform_courses': Course.objects.filter(is_published=True).count(),
+    })
 
-    # Oxirgi faol kurs
-    recent_enrollment = stats['enrollments'].first() if stats['enrollments'].exists() else None
-    
-    # Kutilayotgan yoki yaqinda topshirilgan vazifalar
+
+@login_required
+def student_dashboard_view(request):
+    """Dashboard: hozir o'qilayotgan kurslar va natijalar."""
+    stats = get_student_overview_stats(request.user)
+    enrollments = [e for e in stats['enrollments'] if not e.completed_at and e.progress_percent < 100]
     recent_submissions = AssignmentSubmission.objects.filter(
         student=request.user
-    ).select_related('assignment__lesson__module__course').order_by('-updated_at')[:4]
+    ).select_related('assignment__lesson__module__course').order_by('-updated_at')[:5]
+    return render(request, 'student/dashboard.html', {
+        'stats': stats, 'enrollments': enrollments,
+        'recent_submissions': recent_submissions, 'active_menu': 'dashboard',
+    })
 
-    # Yaqinlashayotgan yoki jonli musobaqalar
-    featured_contests = Contest.objects.filter(
-        is_published=True,
-        end_time__gte=timezone.now()
-    ).order_by('start_time')[:3]
 
-    # Sara o'quvchilar loyihalari
-    featured_projects = Project.objects.filter(
-        status__in=[ProjectStatus.FEATURED, ProjectStatus.APPROVED]
-    ).select_related('author__profile').order_by('-likes_count', '-created_at')[:3]
-
-    # Dasturchi yo'li (asosiy yo'nalish)
-    main_track = RoadmapTrack.objects.filter(is_active=True).first()
-    roadmap_percent = 0
-    if main_track:
-        rp = sync_roadmap_with_user_progress(request.user, main_track)
-        roadmap_percent = rp['percent']
-
-    context = {
-        'stats': stats,
-        'recent_enrollment': recent_enrollment,
-        'recent_submissions': recent_submissions,
-        'featured_contests': featured_contests,
-        'featured_projects': featured_projects,
-        'main_track': main_track,
-        'roadmap_percent': roadmap_percent,
-        'active_menu': 'overview',
-    }
-    return render(request, 'student/overview.html', context)
+@login_required
+def student_about_view(request):
+    """Biz haqimizda: platforma, aloqa, maxfiylik va foydalanish shartlari."""
+    return render(request, 'student/about.html', {'active_menu': 'about'})
 
 
 # ==============================================================================
@@ -219,146 +204,7 @@ def student_assignment_solve_view(request, assignment_id):
 
 
 # ==============================================================================
-# 3. KURS VA GURUH REYTINGI (LEADERBOARD)
-# ==============================================================================
-
-@login_required
-def student_leaderboard_view(request):
-    """Talaba o'qiydigan kurs bo'yicha jonli reyting jadvali."""
-    user_courses = Course.objects.filter(enrollments__user=request.user).order_by('title')
-    
-    selected_course_id = request.GET.get('course')
-    selected_course = None
-
-    if selected_course_id and selected_course_id.isdigit():
-        selected_course = user_courses.filter(id=int(selected_course_id)).first()
-        if not selected_course:
-            selected_course = Course.objects.filter(id=int(selected_course_id)).first()
-
-    if not selected_course and user_courses.exists():
-        selected_course = user_courses.first()
-    elif not selected_course:
-        selected_course = Course.objects.filter(is_published=True).first()
-
-    leaderboard_data = None
-    if selected_course:
-        leaderboard_data = calculate_course_leaderboard(selected_course, current_user=request.user)
-
-    context = {
-        'user_courses': user_courses,
-        'selected_course': selected_course,
-        'leaderboard_data': leaderboard_data,
-        'active_menu': 'leaderboard',
-    }
-    return render(request, 'student/leaderboard.html', context)
-
-
-# ==============================================================================
-# 4. MUSOBAQALAR BO'LIMI (CONTESTS)
-# ==============================================================================
-
-@login_required
-def student_contests_list_view(request):
-    """Musobaqalar va Xakatonlar vitrinasi."""
-    now = timezone.now()
-    contests_qs = Contest.objects.filter(is_published=True).order_by('-start_time')
-
-    active_contests = [c for c in contests_qs if c.start_time <= now <= c.end_time]
-    upcoming_contests = [c for c in contests_qs if now < c.start_time]
-    finished_contests = [c for c in contests_qs if now > c.end_time]
-
-    # O'quvchi ro'yxatdan o'tgan musobaqalar IDlari
-    user_registered_ids = set(
-        ContestParticipant.objects.filter(user=request.user).values_list('contest_id', flat=True)
-    )
-
-    context = {
-        'active_contests': active_contests,
-        'upcoming_contests': upcoming_contests,
-        'finished_contests': finished_contests,
-        'user_registered_ids': user_registered_ids,
-        'active_menu': 'contests',
-    }
-    return render(request, 'student/contests_list.html', context)
-
-
-@login_required
-def student_contest_detail_view(request, slug):
-    """Musobaqa xonasi, masalalar, topshirish formasi va jonli turnir jadvali."""
-    contest = get_object_or_404(Contest, slug=slug, is_published=True)
-    problems = contest.problems.all().order_by('order')
-
-    participant, created = ContestParticipant.objects.get_or_create(
-        contest=contest,
-        user=request.user,
-        defaults={'total_score': 0}
-    )
-
-    # Foydalanuvchi yuborgan yechimlar
-    user_submissions = ContestSubmission.objects.filter(
-        participant=participant
-    ).select_related('problem')
-    user_submissions_map = {s.problem_id: s for s in user_submissions}
-
-    # Musobaqa jonli jadvali (Leaderboard)
-    leaderboard = ContestParticipant.objects.filter(
-        contest=contest
-    ).select_related('user', 'user__profile').order_by('-total_score', 'created_at')[:25]
-
-    context = {
-        'contest': contest,
-        'problems': problems,
-        'participant': participant,
-        'user_submissions_map': user_submissions_map,
-        'leaderboard': leaderboard,
-        'active_menu': 'contests',
-    }
-    return render(request, 'student/contest_detail.html', context)
-
-
-@login_required
-@require_POST
-def student_contest_submit_view(request, contest_slug, problem_id):
-    """Musobaqa masalasiga yechim topshirish."""
-    contest = get_object_or_404(Contest, slug=contest_slug, is_published=True)
-    problem = get_object_or_404(ContestProblem, id=problem_id, contest=contest)
-
-    if not contest.is_live:
-        messages.error(request, "Musobaqa ayni paytda faol emas yoki yakunlangan.")
-        return redirect('student_contest_detail', slug=contest.slug)
-
-    participant, _ = ContestParticipant.objects.get_or_create(contest=contest, user=request.user)
-
-    submitted_code = request.POST.get('submitted_code', '').strip()
-    attached_file = request.FILES.get('attached_file')
-
-    if not submitted_code and not attached_file:
-        messages.error(request, "Iltimos, yechim kodingizni kiriting yoki fayl biriktiring.")
-        return redirect('student_contest_detail', slug=contest.slug)
-
-    submission, created = ContestSubmission.objects.get_or_create(
-        participant=participant,
-        problem=problem,
-        defaults={
-            'submitted_code': submitted_code,
-            'attached_file': attached_file,
-            'status': 'pending',
-            'score': 0,
-        }
-    )
-    if not created:
-        submission.submitted_code = submitted_code
-        if attached_file:
-            submission.attached_file = attached_file
-        submission.status = 'pending'
-        submission.save()
-
-    messages.success(request, f"«{problem.title}» masalasi uchun yechimingiz qabul qilindi!")
-    return redirect('student_contest_detail', slug=contest.slug)
-
-
-# ==============================================================================
-# 5. LOYIHALAR BO'LIMI (PROJECTS & IN-BROWSER IDE)
+# 3. LOYIHALAR BO'LIMI (PROJECTS & IN-BROWSER IDE)
 # ==============================================================================
 
 # Talaba kodini bajarishda ruxsat etilgan "xavfsiz" builtin'lar ro'yxati.
@@ -885,58 +731,3 @@ def student_project_like_view(request, project_id):
         'is_liked': is_liked,
         'likes_count': project.likes_count,
     })
-
-
-# ==============================================================================
-# 6. DASTURCHI YO'LI (DEVELOPER ROADMAP)
-# ==============================================================================
-
-@login_required
-def student_roadmap_view(request, track_slug=None):
-    """
-    «Dasturchi Yo'li» — Interaktiv vizual metro xaritasi.
-    O'quvchi o'rganayotgan yo'nalish bo'yicha bosqichlar va avtomatik sinxronlashgan progress.
-    """
-    all_tracks = RoadmapTrack.objects.filter(is_active=True).order_by('order')
-
-    current_track = None
-    if track_slug:
-        current_track = all_tracks.filter(slug=track_slug).first()
-    if not current_track and all_tracks.exists():
-        current_track = all_tracks.first()
-
-    stages_with_nodes = []
-    progress_info = {'percent': 0, 'completed_nodes': 0, 'total_nodes': 0}
-
-    if current_track:
-        sync_data = sync_roadmap_with_user_progress(request.user, current_track)
-        nodes_map = sync_data['nodes_progress_map']
-        progress_info = {
-            'percent': sync_data['percent'],
-            'completed_nodes': sync_data['completed_nodes'],
-            'total_nodes': sync_data['total_nodes'],
-        }
-
-        stages = current_track.stages.prefetch_related('nodes__linked_course', 'nodes__linked_lesson').order_by('order')
-        for stage in stages:
-            stage_nodes = []
-            for node in stage.nodes.all().order_by('order'):
-                node_prog = nodes_map.get(node.id)
-                node_status = node_prog.status if node_prog else 'locked'
-                stage_nodes.append({
-                    'node': node,
-                    'status': node_status,
-                })
-            stages_with_nodes.append({
-                'stage': stage,
-                'nodes': stage_nodes,
-            })
-
-    context = {
-        'all_tracks': all_tracks,
-        'current_track': current_track,
-        'stages_with_nodes': stages_with_nodes,
-        'progress_info': progress_info,
-        'active_menu': 'roadmap',
-    }
-    return render(request, 'student/roadmap.html', context)

@@ -1,0 +1,114 @@
+{% extends 'student/base_student.html' %}
+
+{% block title %}Duel — roziyevdev{% endblock %}
+{% block page_title %}Duel{% endblock %}
+{% block page_subtitle %}O'z yo'nalishingizdagi talabalar bilan bellashing{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+
+    {% if active %}
+    <div class="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex flex-wrap items-center justify-between gap-3">
+        <div class="font-bold">Davom etayotgan duel: {{ active.challenger.display_name }} vs {{ active.opponent.display_name }}</div>
+        <a href="{% url 'duel_room' active.id %}" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm">Duelga qaytish</a>
+    </div>
+    {% endif %}
+
+    <!-- Mening natijam -->
+    <div class="grid grid-cols-3 gap-4">
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800"><div class="text-3xl font-black text-green-600">{{ my_stats.points }}</div><div class="text-xs text-slate-500">Duel ochkolari</div></div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800"><div class="text-3xl font-black">{{ my_stats.wins }}</div><div class="text-xs text-slate-500">G'alabalar</div></div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800"><div class="text-3xl font-black">{{ my_stats.losses }}</div><div class="text-xs text-slate-500">Mag'lubiyatlar</div></div>
+    </div>
+
+    <!-- Kelgan so'rovlar -->
+    {% if incoming %}
+    <section class="space-y-3">
+        <h2 class="text-lg font-black">Sizga kelgan so'rovlar</h2>
+        {% for d in incoming %}
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#111827] border border-amber-500/40 flex flex-wrap items-center justify-between gap-3">
+            <div><b>{{ d.challenger.display_name }}</b> sizni duelga chaqirdi
+                <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-bold">{{ d.get_difficulty_display }}</span></div>
+            <form method="post" action="{% url 'duel_respond' d.id %}" class="flex gap-2">{% csrf_token %}
+                <button name="action" value="accept" class="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-sm">Qabul qilish</button>
+                <button name="action" value="decline" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 font-bold text-sm">Rad etish</button>
+            </form>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if outgoing %}
+    <section class="space-y-3">
+        <h2 class="text-lg font-black">Yuborgan so'rovlaringiz</h2>
+        {% for d in outgoing %}
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div><b>{{ d.opponent.display_name }}</b> javobi kutilmoqda ({{ d.get_difficulty_display }})</div>
+            <form method="post" action="{% url 'duel_respond' d.id %}">{% csrf_token %}
+                <button name="action" value="cancel" class="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-bold text-xs">Bekor qilish</button>
+            </form>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- Raqiblar -->
+    <section class="space-y-3">
+        <h2 class="text-lg font-black">Yo'nalishingizdagi talabalar</h2>
+        {% for r in rivals %}
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="relative">
+                    <img src="{{ r.user.profile.avatar_url }}" alt="" class="w-11 h-11 rounded-full object-cover">
+                    <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#111827] {% if r.online %}bg-green-500{% else %}bg-slate-400{% endif %}"></span>
+                </div>
+                <div class="min-w-0">
+                    <div class="font-bold truncate">{{ r.user.display_name }}
+                        <span class="text-[10px] font-bold {% if r.online %}text-green-600{% else %}text-slate-400{% endif %}">{% if r.online %}ONLINE{% else %}offline{% endif %}</span></div>
+                    <div class="text-xs text-slate-500 truncate">{{ r.courses|join:", " }} · kurs progressi {{ r.progress }}%</div>
+                    <div class="text-xs text-slate-500">{{ r.points }} ochko · {{ r.wins }} g'alaba / {{ r.losses }} mag'lubiyat</div>
+                </div>
+            </div>
+            <form method="post" action="{% url 'duel_send' %}" class="flex items-center gap-2">{% csrf_token %}
+                <input type="hidden" name="opponent_id" value="{{ r.user.id }}">
+                <select name="difficulty" class="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm px-2 py-2">
+                    {% for value, label in difficulties %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                </select>
+                <button class="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-sm">So'rov yuborish</button>
+            </form>
+        </div>
+        {% empty %}
+        <div class="p-8 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-center text-sm text-slate-500">
+            {% if has_courses %}Yo'nalishingizda hozircha boshqa talaba yo'q.{% else %}Duel uchun avval kursga yoziling.
+            <a href="{% url 'course_list' %}" class="text-green-600 font-bold hover:underline">Kurslarni toping</a>{% endif %}
+        </div>
+        {% endfor %}
+    </section>
+
+    <div class="grid md:grid-cols-2 gap-6">
+        <section class="space-y-3">
+            <h2 class="text-lg font-black">Duel reytingi (Top 5)</h2>
+            <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800">
+                {% for s in top %}
+                <div class="flex justify-between p-3 text-sm"><span>{{ forloop.counter }}. {{ s.user.display_name }}</span><b class="text-green-600">{{ s.points }}</b></div>
+                {% empty %}<p class="p-4 text-sm text-slate-500">Hali duel bo'lmagan.</p>{% endfor %}
+            </div>
+        </section>
+        <section class="space-y-3">
+            <h2 class="text-lg font-black">Oxirgi duellar</h2>
+            <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800">
+                {% for d in history %}
+                <div class="flex justify-between p-3 text-sm">
+                    <span>{{ d.challenger.display_name }} vs {{ d.opponent.display_name }}</span>
+                    <b class="{% if d.winner_id == user.id %}text-green-600{% else %}text-rose-500{% endif %}">{% if d.winner_id == user.id %}Yutdingiz{% else %}Yutqazdingiz{% endif %}</b>
+                </div>
+                {% empty %}<p class="p-4 text-sm text-slate-500">Hali tugagan duel yo'q.</p>{% endfor %}
+            </div>
+        </section>
+    </div>
+</div>
+<script>
+    // Kelgan so'rovlar paydo bo'lishi uchun sahifani vaqti-vaqti bilan yangilaymiz
+    setTimeout(() => location.reload(), 15000);
+</script>
+{% endblock %}

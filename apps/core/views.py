@@ -17,8 +17,6 @@ def web_home_view(request):
     if not featured_courses.exists():
         featured_courses = Course.objects.filter(is_published=True).select_related('category', 'instructor')[:6]
 
-    instructor = CustomUser.objects.filter(is_staff=True).first()
-
     from apps.blog.models import Post
     latest_posts = Post.objects.filter(is_published=True).select_related('category', 'author__profile')[:3]
 
@@ -26,7 +24,6 @@ def web_home_view(request):
         'categories': categories,
         'featured_courses': featured_courses,
         'latest_posts': latest_posts,
-        'instructor': instructor,
         'stats': {
             'courses_count': Course.objects.filter(is_published=True).count(),
             'students_count': 1450,

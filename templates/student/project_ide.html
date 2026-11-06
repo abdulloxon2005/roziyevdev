@@ -6,6 +6,7 @@
 {% block page_subtitle %}{{ project.get_language_display }} &bull; {{ project.get_project_mode_display }}{% endblock %}
 
 {% block extra_head %}
+<script>document.documentElement.classList.add("sidebar-collapsed");</script>
 <!-- Ace Editor CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-python.js"></script>
@@ -17,7 +18,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-golang.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-php.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-markdown.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-one_dark.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-chrome.js"></script>
 <!-- Mermaid for Flowchart / Block-schema -->
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
@@ -37,6 +38,16 @@
     });
 </script>
 <style>
+    /* Daftar kataklari: kod yozish maydoni */
+    .ide-ace-editor {
+        background-color: #fdfdf6 !important;
+        background-image: linear-gradient(#cfe3f3 1px, transparent 1px), linear-gradient(90deg, #cfe3f3 1px, transparent 1px);
+        background-size: 22px 22px;
+        background-position: 0 4px;
+    }
+    .ide-ace-editor .ace_scroller, .ide-ace-editor .ace_gutter, .ide-ace-editor .ace_gutter-active-line { background-color: transparent !important; }
+    .ide-ace-editor .ace_gutter { color: #7a8794; border-right: 1px solid #f1b8b8; }
+    .ide-ace-editor .ace_marker-layer .ace_active-line { background: rgba(250, 235, 150, 0.35) !important; }
     .ide-ace-editor {
         font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
         font-size: 13px !important;
@@ -558,11 +569,12 @@ Natijani ko'rish uchun "Ishga tushirish" tugmasini bosing!
     // 1. Ace Editorni initsializatsiya qilish
     function initAceEditor() {
         editor = ace.edit("codeEditor");
-        editor.setTheme("ace/theme/one_dark");
+        editor.setTheme("ace/theme/chrome");
         editor.session.setMode(getAceModeForLanguage(PROJECT_LANGUAGE, currentFileName));
         editor.setOptions({
-            enableBasicAutocompletion: true,
-            enableLiveAutocompletion: true,
+            enableBasicAutocompletion: false,
+            enableLiveAutocompletion: false,
+            enableSnippets: false,
             showPrintMargin: false,
             wrap: true,
             tabSize: 4,

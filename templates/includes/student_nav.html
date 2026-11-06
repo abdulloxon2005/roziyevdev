@@ -1,0 +1,44 @@
+<nav class="p-3 sm:p-4 space-y-1.5">
+                    <a href="{% url 'student_home' %}" title="Bosh sahifa" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'home' or request.path == '/student/' %}bg-green-600 text-white shadow-lg shadow-green-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-house w-5 text-center shrink-0 {% if active_menu == 'home' or request.path == '/student/' %}text-white{% else %}text-blue-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Bosh sahifa</span>
+                    </a>
+                    <a href="{% url 'student_dashboard' %}" title="Dashboard" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'dashboard' or '/student/dashboard/' in request.path %}bg-green-600 text-white shadow-lg shadow-green-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-gauge-high w-5 text-center shrink-0 {% if active_menu == 'dashboard' or '/student/dashboard/' in request.path %}text-white{% else %}text-indigo-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Dashboard</span>
+                    </a>
+                    <a href="{% url 'student_assignments_hub' %}" title="Vazifalar Studiyasi" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'assignments' or '/student/assignments/' in request.path %}bg-green-600 text-white shadow-lg shadow-green-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-laptop-code w-5 text-center shrink-0 {% if active_menu == 'assignments' or '/student/assignments/' in request.path %}text-white{% else %}text-sky-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Vazifalar Studiyasi</span>
+                    </a>
+                    <a href="{% url 'course_list' %}" title="Kurslar" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'courses' or '/courses/' in request.path %}bg-green-600 text-white shadow-lg shadow-green-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-book-open w-5 text-center shrink-0 {% if active_menu == 'courses' or '/courses/' in request.path %}text-white{% else %}text-cyan-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Kurslar</span>
+                    </a>
+                    <a href="{% url 'duel_home' %}" title="Duel" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'duel' or '/student/duel/' in request.path %}bg-green-600 text-white shadow-lg shadow-green-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-hand-fist w-5 text-center shrink-0 {% if active_menu == 'duel' or '/student/duel/' in request.path %}text-white{% else %}text-rose-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Duel</span>
+                    </a>
+                    <a href="{% url 'student_projects' %}" title="Loyihalar" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'projects' or '/student/projects/' in request.path %}bg-green-600 text-white shadow-lg shadow-green-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-rocket w-5 text-center shrink-0 {% if active_menu == 'projects' or '/student/projects/' in request.path %}text-white{% else %}text-purple-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Loyihalar</span>
+                    </a>
+                    <a href="{% url 'blog_list' %}" title="Blog" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'blog' or '/blog/' in request.path %}bg-green-600 text-white shadow-lg shadow-green-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-newspaper w-5 text-center shrink-0 {% if active_menu == 'blog' or '/blog/' in request.path %}text-white{% else %}text-teal-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Blog</span>
+                    </a>
+                    <a href="{% url 'profile' %}" title="Profil" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'profile' or request.path == '/profile/' or '/profile/settings' in request.path or '/certificates/' in request.path %}bg-green-600 text-white shadow-lg shadow-green-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-user w-5 text-center shrink-0 {% if active_menu == 'profile' or request.path == '/profile/' or '/profile/settings' in request.path or '/certificates/' in request.path %}text-white{% else %}text-emerald-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Profil</span>
+                    </a>
+                    <a href="{% url 'student_about' %}" title="Biz haqimizda" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'about' or '/student/about/' in request.path %}bg-green-600 text-white shadow-lg shadow-green-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-circle-info w-5 text-center shrink-0 {% if active_menu == 'about' or '/student/about/' in request.path %}text-white{% else %}text-amber-500{% endif %}"></i>
+                        <span class="sidebar-text truncate">Biz haqimizda</span>
+                    </a>
+                    {% if user.is_staff or user.role == 'instructor' or user.role == 'admin' %}
+                    <a href="{% url 'dashboard_index' %}" title="Ustoz Studiyasi" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors">
+                        <i class="fa-solid fa-graduation-cap w-5 text-center shrink-0 text-blue-500"></i>
+                        <span class="sidebar-text truncate">Ustoz Studiyasi &rarr;</span>
+                    </a>
+                    {% endif %}
+                </nav>

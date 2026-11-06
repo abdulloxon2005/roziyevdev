@@ -156,119 +156,7 @@
                 </div>
 
                 <!-- NAVIGATION LINKS -->
-                <nav class="p-3 sm:p-4 space-y-1.5">
-                    <div class="sidebar-section-title px-3 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        O'quv Bo'limlari
-                    </div>
-
-                    <!-- 1. Boshqaruv / Overview -->
-                    <a href="{% url 'student_dashboard' %}" title="Bosh sahifa (O'quvchi Kabineti)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'overview' or request.path == '/student/' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-gauge-high w-5 text-center shrink-0 {% if active_menu == 'overview' or request.path == '/student/' %}text-white{% else %}text-blue-500{% endif %}"></i>
-                            <span class="sidebar-text truncate">Bosh sahifa</span>
-                        </div>
-                    </a>
-
-                    <!-- 2. Vazifalar Studiyasi -->
-                    <a href="{% url 'student_assignments_hub' %}" title="Vazifalar Studiyasi (IDE)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'assignments' or '/student/assignments/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-laptop-code w-5 text-center shrink-0 {% if active_menu == 'assignments' or '/student/assignments/' in request.path %}text-white{% else %}text-indigo-500{% endif %}"></i>
-                            <span class="sidebar-text truncate">Vazifalar Studiyasi</span>
-                        </div>
-                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'assignments' or '/student/assignments/' in request.path %}bg-white/20 text-white{% else %}bg-indigo-500/10 text-indigo-400{% endif %}">
-                            IDE
-                        </span>
-                    </a>
-
-                    <!-- 3. Kurs Reytingi -->
-                    <a href="{% url 'student_leaderboard' %}" title="Kurs Reytingi (XP)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'leaderboard' or '/student/leaderboard/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-trophy w-5 text-center shrink-0 {% if active_menu == 'leaderboard' or '/student/leaderboard/' in request.path %}text-white{% else %}text-amber-500{% endif %}"></i>
-                            <span class="sidebar-text truncate">Kurs Reytingi</span>
-                        </div>
-                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'leaderboard' or '/student/leaderboard/' in request.path %}bg-white/20 text-white{% else %}bg-amber-500/10 text-amber-500{% endif %}">
-                            XP
-                        </span>
-                    </a>
-
-                    <!-- 4. Musobaqalar -->
-                    <a href="{% url 'student_contests' %}" title="Musobaqalar" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'contests' or '/student/contests/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-fire w-5 text-center shrink-0 {% if active_menu == 'contests' or '/student/contests/' in request.path %}text-white{% else %}text-rose-500{% endif %}"></i>
-                            <span class="sidebar-text truncate">Musobaqalar</span>
-                        </div>
-                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'contests' or '/student/contests/' in request.path %}bg-white/20 text-white{% else %}bg-rose-500/10 text-rose-500{% endif %}">
-                            Sovrinli
-                        </span>
-                    </a>
-
-                    <!-- 5. Loyihalar & Showcase -->
-                    <a href="{% url 'student_projects' %}" title="Loyihalar & Ko'rgazma" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'projects' or '/student/projects/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-rocket w-5 text-center shrink-0 {% if active_menu == 'projects' or '/student/projects/' in request.path %}text-white{% else %}text-purple-500{% endif %}"></i>
-                            <span class="sidebar-text truncate">Loyihalar & Ko'rgazma</span>
-                        </div>
-                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'projects' or '/student/projects/' in request.path %}bg-white/20 text-white{% else %}bg-purple-500/10 text-purple-400{% endif %}">
-                            Portfolio
-                        </span>
-                    </a>
-
-                    <!-- 6. Dasturchi Yo'li -->
-                    <a href="{% url 'student_roadmap' %}" title="Dasturchi Yo'li (Roadmap)" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'roadmap' or '/student/roadmap/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-route w-5 text-center shrink-0 {% if active_menu == 'roadmap' or '/student/roadmap/' in request.path %}text-white{% else %}text-emerald-500{% endif %}"></i>
-                            <span class="sidebar-text truncate">Dasturchi Yo'li</span>
-                        </div>
-                        <span class="sidebar-badge text-[10px] font-bold px-2 py-0.5 rounded-full {% if active_menu == 'roadmap' or '/student/roadmap/' in request.path %}bg-white/20 text-white{% else %}bg-emerald-500/10 text-emerald-400{% endif %}">
-                            Roadmap
-                        </span>
-                    </a>
-
-                    <!-- 7. Barcha Kurslar -->
-                    <a href="{% url 'course_list' %}" title="Kurslar Katalogi" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'courses' or '/courses/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-book-open w-5 text-center shrink-0 {% if active_menu == 'courses' or '/courses/' in request.path %}text-white{% else %}text-cyan-500{% endif %}"></i>
-                            <span class="sidebar-text truncate">Kurslar Katalogi</span>
-                        </div>
-                    </a>
-
-                    <div class="sidebar-section-title px-3 pt-4 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        Shaxsiy & Havolalar
-                    </div>
-
-                    <!-- Profil & Kurslarim -->
-                    <a href="{% url 'profile' %}" title="Shaxsiy Profil" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'profile' or request.path == '/profile/' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <i class="fa-solid fa-user w-5 text-center shrink-0 {% if active_menu == 'profile' or request.path == '/profile/' %}text-white{% else %}text-blue-500{% endif %}"></i>
-                        <span class="sidebar-text truncate">Shaxsiy Profil</span>
-                    </a>
-
-                    <a href="{% url 'my_certificates' %}" title="Sertifikatlarim" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'certificates' or '/certificates/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <i class="fa-solid fa-award w-5 text-center shrink-0 {% if active_menu == 'certificates' or '/certificates/' in request.path %}text-white{% else %}text-amber-500{% endif %}"></i>
-                        <span class="sidebar-text truncate">Sertifikatlarim</span>
-                    </a>
-
-                    <a href="{% url 'profile_settings' %}" title="Profil Sozlamalari" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'profile_settings' or '/profile/settings/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <i class="fa-solid fa-gear w-5 text-center shrink-0 {% if active_menu == 'profile_settings' or '/profile/settings/' in request.path %}text-white{% else %}text-slate-400{% endif %}"></i>
-                        <span class="sidebar-text truncate">Sozlamalar</span>
-                    </a>
-
-                    <a href="{% url 'blog_list' %}" title="IT Blog" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if '/blog/' in request.path %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <i class="fa-solid fa-newspaper w-5 text-center shrink-0 {% if '/blog/' in request.path %}text-white{% else %}text-sky-500{% endif %}"></i>
-                        <span class="sidebar-text truncate">IT Blog</span>
-                    </a>
-
-                    <a href="{% url 'home' %}" title="Asosiy saytga o'tish" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if request.path == '/' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
-                        <i class="fa-solid fa-globe w-5 text-center shrink-0 {% if request.path == '/' %}text-white{% else %}text-teal-500{% endif %}"></i>
-                        <span class="sidebar-text truncate">Asosiy saytga o'tish</span>
-                    </a>
-
-                    {% if user.is_staff or user.role == 'instructor' or user.role == 'admin' %}
-                    <a href="{% url 'dashboard_index' %}" title="Ustoz Studiyasi" class="sidebar-nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 transition-colors">
-                        <i class="fa-solid fa-graduation-cap w-5 text-center shrink-0 text-blue-500"></i>
-                        <span class="sidebar-text truncate">Ustoz Studiyasi &rarr;</span>
-                    </a>
-                    {% endif %}
-                </nav>
+                {% include 'includes/student_nav.html' %}
             </div>
 
             <!-- USER PROFILE & LOGOUT -->
@@ -305,16 +193,13 @@
                         <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
                             {% block page_title %}O'quvchi Kabineti{% endblock %}
                         </h2>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
-                            {% block page_subtitle %}Amaliyot, reyting va shaxsiy o'sish maydoni{% endblock %}
-                        </p>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <!-- COINS BADGE WITH SOUND -->
                     <button type="button" onclick="celebrateCoins({{ user.coins|default:25 }}, 'Sizning tangalaringiz!')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 font-extrabold text-xs hover:bg-amber-500/20 transition-all shadow-sm" title="Tangalarni tinglash">
-                        <span class="material-symbols-outlined text-[16px] animate-bounce">monetization_on</span>
+                        <span class="material-symbols-outlined text-[16px]">monetization_on</span>
                         <span id="nav-user-coins">{{ user.coins }}</span>
                         <span class="hidden sm:inline text-[10px] uppercase font-semibold text-amber-500/80">tanga</span>
                     </button>
@@ -324,12 +209,6 @@
                         <i class="fa-solid fa-moon dark:hidden text-xs"></i>
                         <i class="fa-solid fa-sun hidden dark:block text-xs"></i>
                     </button>
-
-                    <!-- BACK TO SITE -->
-                    <a href="{% url 'home' %}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors border border-slate-200 dark:border-slate-700">
-                        <i class="fa-solid fa-arrow-left text-[10px]"></i>
-                        <span>Saytga</span>
-                    </a>
                 </div>
             </header>
 
@@ -412,6 +291,7 @@
             }
         }
     </script>
+    <script>fetch('/student/duel/ping/',{credentials:'same-origin'});setInterval(()=>fetch('/student/duel/ping/',{credentials:'same-origin'}),30000);</script>
     <script src="/static/js/gamification.js"></script>
     <script src="/static/js/main.js"></script>
     {% block extra_scripts %}{% endblock %}
