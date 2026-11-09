@@ -1,0 +1,152 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load core_extras %}
+
+{% block title %}Interaktiv kontent — {{ lesson.title }}{% endblock %}
+{% block page_title %}Interaktiv dars muharriri{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- HEADER -->
+  <div class="rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="min-w-0">
+      <a href="{% url 'dashboard_course_curriculum' course.slug %}" class="text-xs font-bold text-slate-500 hover:text-blue-600"><i class="fa-solid fa-arrow-left mr-1"></i>{{ course.title }} mundarijasi</a>
+      <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">{{ module.order }}-modul · {{ lesson.order }}-dars: {{ lesson.title }}</h1>
+      <div class="flex flex-wrap gap-2 mt-2 text-[11px] font-bold">
+        <span class="px-2 py-0.5 rounded {% if lesson.is_published %}bg-emerald-500/10 text-emerald-600{% else %}bg-amber-500/15 text-amber-600{% endif %}">{% if lesson.is_published %}Nashr qilingan{% else %}Qoralama{% endif %}</span>
+        <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">{{ lesson.get_lesson_type_display }}</span>
+        <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">{{ lesson.duration_minutes }} daqiqa</span>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'dashboard_lesson_edit' course.slug lesson.id %}" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fa-solid fa-sliders mr-1"></i>Dars sozlamalari (nom, maqsad, nashr)</a>
+      <a href="{% url 'course_learn_lesson' course.slug lesson.id %}" target="_blank" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-eye mr-1"></i>O'quvchi ko'rinishida oldindan ko'rish</a>
+    </div>
+  </div>
+
+  {% if lesson.lesson_type != 'interactive' %}
+    <div class="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+      <i class="fa-solid fa-triangle-exclamation mr-1"></i>Bu darsning turi «{{ lesson.get_lesson_type_display }}». Bloklar va topshiriqlar o'quvchiga ko'rinishi uchun «Dars sozlamalari»da dars turini <b>Interaktiv dars</b> qiling.
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+    <!-- ============ BLOKLAR ============ -->
+    <div class="xl:col-span-7 space-y-4">
+      <h2 class="text-sm font-black uppercase tracking-wider text-slate-500">Nazariya bloklari ({{ blocks|length }})</h2>
+      {% for b in blocks %}
+        {% with block=b.obj %}
+        <div id="block-{{ block.id }}" class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-7 h-7 rounded-lg bg-blue-600/10 text-blue-600 text-xs font-black flex items-center justify-center">{{ block.order }}</span>
+              <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">{{ block.get_block_type_display|truncatechars:28 }}</span>
+              <span class="text-sm font-bold truncate">{{ block.title|default:"" }}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <form method="POST" action="{% url 'dashboard_block_move' course.slug block.id 'up' %}">{% csrf_token %}<button class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 text-xs" title="Yuqoriga"><i class="fa-solid fa-arrow-up"></i></button></form>
+              <form method="POST" action="{% url 'dashboard_block_move' course.slug block.id 'down' %}">{% csrf_token %}<button class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 text-xs" title="Pastga"><i class="fa-solid fa-arrow-down"></i></button></form>
+              <form method="POST" action="{% url 'dashboard_block_delete' course.slug block.id %}" onsubmit="return confirm('Blokni o\'chirasizmi?')">{% csrf_token %}<button class="p-1.5 rounded-lg hover:bg-rose-500 hover:text-white text-rose-500 text-xs" title="O'chirish"><i class="fa-solid fa-trash"></i></button></form>
+            </div>
+          </div>
+          <div class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 space-y-2">
+            {% if block.block_type == 'code' %}<pre class="rounded-lg bg-slate-950 text-slate-200 text-xs font-mono p-2.5 overflow-x-auto">{{ block.code|truncatechars:400 }}</pre>{% endif %}
+            {% if block.body %}<p class="text-xs text-slate-500 line-clamp-3">{{ block.body|truncatechars:260 }}</p>{% endif %}
+            {% if block.block_type == 'task' %}<p class="text-xs"><i class="fa-solid fa-link mr-1 text-blue-500"></i>{% if block.task %}{{ block.task.title }}{% else %}<span class="text-rose-500">Mashq tanlanmagan</span>{% endif %}</p>{% endif %}
+            {% if block.image %}<img src="{{ block.image.url }}" alt="" class="max-h-32 rounded-lg">{% endif %}
+            <details>
+              <summary class="text-xs font-bold text-blue-600 dark:text-blue-400 cursor-pointer">Tahrirlash</summary>
+              <form method="POST" enctype="multipart/form-data" action="{% url 'dashboard_block_edit' course.slug block.id %}" class="mt-3 space-y-3" data-block-form>
+                {% csrf_token %}
+                {% include 'dashboard/_block_fields.html' with form=b.form %}
+                <div class="flex justify-end"><button class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">Saqlash</button></div>
+              </form>
+            </details>
+          </div>
+        </div>
+        {% endwith %}
+      {% empty %}
+        <div class="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-8 text-center text-sm text-slate-500">Hali bloklar yo'q. Quyidagi forma orqali birinchi blokni qo'shing.</div>
+      {% endfor %}
+
+      <div class="rounded-2xl bg-white dark:bg-[#111827] border-2 border-blue-500/30 p-5 space-y-3">
+        <h3 class="font-extrabold"><i class="fa-solid fa-plus text-blue-500 mr-1"></i>Yangi blok qo'shish</h3>
+        <form method="POST" enctype="multipart/form-data" class="space-y-3" data-block-form>
+          {% csrf_token %}
+          {% include 'dashboard/_block_fields.html' with form=new_block_form %}
+          <div class="flex justify-end"><button class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold">Blokni qo'shish</button></div>
+        </form>
+        <p class="text-[11px] text-slate-400">Maslahat: «Matn» blokida Markdown ishlating — <code>## Sarlavha</code>, <code>**qalin**</code>, <code>- ro'yxat</code>, jadval, <code>```python</code> kod bloki, <code>![tavsif](rasm-url)</code>. «Interaktiv kod misoli» o'quvchi muharririga bir bosishda yuklanadi.</p>
+      </div>
+    </div>
+
+    <!-- ============ TOPSHIRIQLAR ============ -->
+    <div class="xl:col-span-5 space-y-4 xl:sticky xl:top-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-black uppercase tracking-wider text-slate-500">Topshiriqlar</h2>
+        <a href="{% url 'dashboard_module_assessment' course.slug module.id %}" class="text-xs font-bold text-amber-600 hover:underline"><i class="fa-solid fa-flag-checkered mr-1"></i>Modul nazorati</a>
+      </div>
+      <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-4">
+        <div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">Yangi topshiriq qo'shish</div>
+        <div class="flex flex-wrap gap-1.5">
+          {% for value, label in section_choices %}
+            {% if value != 'assessment' %}
+              <a href="{% url 'dashboard_task_create' course.slug module.id %}?lesson={{ lesson.id }}&section={{ value }}" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-blue-600 hover:text-white">+ {{ label }}</a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% for sec in task_sections %}
+        <div class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">{{ sec.label }} ({{ sec.items|length }})</div>
+          <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for it in sec.items %}
+              <li class="px-4 py-3 flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <a href="{% url 'dashboard_task_edit' course.slug it.task.id %}" class="text-sm font-bold hover:text-blue-600">{{ it.task.title }}</a>
+                  <div class="text-[11px] text-slate-400 font-mono">{{ it.task.logical_name }}</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5">{{ it.task.get_kind_display }} · {{ it.task.get_difficulty_display }} · {{ it.task.points }} ball{% if not it.task.is_published %} · <span class="text-amber-600 font-bold">qoralama</span>{% endif %}</div>
+                  {% for p in it.problems %}<div class="text-[11px] text-rose-500 mt-0.5"><i class="fa-solid fa-triangle-exclamation mr-1"></i>{{ p }}</div>{% endfor %}
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <a href="{% url 'dashboard_task_edit' course.slug it.task.id %}" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 text-xs"><i class="fa-solid fa-pen"></i></a>
+                  <form method="POST" action="{% url 'dashboard_task_delete' course.slug it.task.id %}" onsubmit="return confirm('Topshiriqni barcha o\'quvchi urinishlari bilan o\'chirasizmi?')">{% csrf_token %}<button class="p-1.5 rounded-lg hover:bg-rose-500 hover:text-white text-rose-500 text-xs"><i class="fa-solid fa-trash"></i></button></form>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% empty %}
+        <p class="text-sm text-slate-500">Bu darsda hali topshiriqlar yo'q.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Blok turiga qarab faqat kerakli maydonlarni ko'rsatish
+  const FIELDS_BY_TYPE = {
+    text: ['title', 'body'],
+    callout: ['title', 'callout_style', 'body'],
+    code: ['title', 'code', 'is_runnable', 'body'],
+    image: ['title', 'image', 'body'],
+    video: ['title', 'video_url'],
+    task: ['task'],
+  };
+  document.querySelectorAll('[data-block-form]').forEach((form) => {
+    const select = form.querySelector('select[name$="block_type"]');
+    if (!select) return;
+    const apply = () => {
+      const visible = FIELDS_BY_TYPE[select.value] || [];
+      form.querySelectorAll('[data-field]').forEach((wrap) => {
+        const name = wrap.dataset.field;
+        if (name === 'block_type' || name === 'order') return;
+        wrap.style.display = visible.includes(name) ? '' : 'none';
+      });
+    };
+    select.addEventListener('change', apply);
+    apply();
+  });
+</script>
+{% endblock %}

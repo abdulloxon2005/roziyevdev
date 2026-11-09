@@ -1,0 +1,101 @@
+/* ==========================================================================
+   Interaktiv dars sahifasi — dars matni (Markdown), kod muharriri, natija oynasi
+   Mavjud dizayn tizimi (Tailwind + slate/blue palitra, dark mode) bilan mos.
+   ========================================================================== */
+
+.lesson-prose { color: rgb(51 65 85); font-size: 0.975rem; line-height: 1.75; }
+.dark .lesson-prose { color: rgb(203 213 225); }
+.lesson-prose > * + * { margin-top: 0.9em; }
+.lesson-prose h1, .lesson-prose h2, .lesson-prose h3, .lesson-prose h4 {
+    color: rgb(15 23 42); font-weight: 800; line-height: 1.3; letter-spacing: -0.01em;
+}
+.dark .lesson-prose h1, .dark .lesson-prose h2, .dark .lesson-prose h3, .dark .lesson-prose h4 { color: #fff; }
+.lesson-prose h2 { font-size: 1.35rem; margin-top: 1.6em; }
+.lesson-prose h3 { font-size: 1.12rem; margin-top: 1.3em; }
+.lesson-prose h4 { font-size: 1rem; margin-top: 1.1em; }
+.lesson-prose strong { color: rgb(15 23 42); font-weight: 700; }
+.dark .lesson-prose strong { color: #fff; }
+.lesson-prose a { color: rgb(22 163 74); text-decoration: underline; text-underline-offset: 2px; }
+.lesson-prose ul { list-style: disc; padding-left: 1.4em; }
+.lesson-prose ol { list-style: decimal; padding-left: 1.4em; }
+.lesson-prose li + li { margin-top: 0.3em; }
+.lesson-prose blockquote {
+    border-left: 4px solid rgb(34 197 94); padding: 0.4em 1em; background: rgb(240 253 244);
+    border-radius: 0 0.75rem 0.75rem 0; color: rgb(21 128 61);
+}
+.dark .lesson-prose blockquote { background: rgb(34 197 94 / 0.08); color: rgb(134 239 172); }
+.lesson-prose :not(pre) > code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em;
+    background: rgb(241 245 249); color: rgb(190 18 60); padding: 0.12em 0.4em; border-radius: 0.35rem;
+}
+.dark .lesson-prose :not(pre) > code { background: rgb(30 41 59); color: rgb(251 113 133); }
+.lesson-prose pre {
+    background: #1e2127; color: #abb2bf; border-radius: 0.9rem; padding: 0.9rem 1rem; overflow-x: auto;
+    font-size: 0.85rem; line-height: 1.6; border: 1px solid rgb(30 41 59);
+}
+.lesson-prose pre code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: transparent !important; padding: 0 !important; color: inherit; }
+.lesson-prose table { width: 100%; border-collapse: collapse; font-size: 0.9rem; display: block; overflow-x: auto; }
+.lesson-prose th, .lesson-prose td { border: 1px solid rgb(226 232 240); padding: 0.5em 0.75em; text-align: left; vertical-align: top; }
+.dark .lesson-prose th, .dark .lesson-prose td { border-color: rgb(51 65 85); }
+.lesson-prose th { background: rgb(248 250 252); font-weight: 700; color: rgb(15 23 42); }
+.dark .lesson-prose th { background: rgb(30 41 59); color: #fff; }
+.lesson-prose img { max-width: 100%; border-radius: 0.9rem; }
+.lesson-prose hr { border-color: rgb(226 232 240); }
+.dark .lesson-prose hr { border-color: rgb(51 65 85); }
+
+/* Statik kod bloklari (ace static_highlight) */
+.static-code, .static-code .ace_static_highlight {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 0.86rem !important; line-height: 1.6 !important;
+}
+.static-code { background: #282c34; color: #abb2bf; padding: 0.9rem 1rem; overflow-x: auto; white-space: pre; margin: 0; }
+.static-code .ace_static_highlight,
+.static-code .ace-one-dark,
+.static-code .ace_line { background: transparent !important; border: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
+.lesson-prose pre.static-code { background: #282c34; }
+.static-code .ace_static_highlight .ace_gutter { display: none; }
+
+/* Ace muharriri */
+.ilesson-editor { width: 100%; border-radius: 0 0 0.9rem 0.9rem; font-size: 14px; }
+.ilesson-editor.ace_editor { min-height: 140px; }
+.ace_editor .ace_error-line { position: absolute; background: rgba(244, 63, 94, 0.18); }
+
+/* Natija oynasi */
+.run-output pre { white-space: pre-wrap; word-break: break-word; }
+.run-output .stdout-box { max-height: 260px; overflow: auto; }
+.run-output.compact .stdout-box { max-height: 180px; }
+
+/* Bo'sh joyni to'ldirish */
+.fill-code { background: #282c34; color: #abb2bf; border-radius: 0.9rem; padding: 0.9rem 1rem; overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86rem; line-height: 2.1; white-space: pre; }
+.fill-code input {
+    background: #1e2127; color: #e5c07b; border: 1px dashed #61afef; border-radius: 0.35rem; padding: 0 0.35em;
+    font: inherit; min-width: 4ch; width: 9ch; line-height: 1.5;
+}
+.fill-code input:focus { outline: none; border-style: solid; border-color: #98c379; }
+.fill-code input.is-correct { border-color: #98c379; border-style: solid; }
+.fill-code input.is-wrong { border-color: #e06c75; border-style: solid; }
+
+/* Javob variantlari */
+.task-option { transition: border-color .15s, background-color .15s; }
+.task-option.is-correct { border-color: rgb(34 197 94) !important; background: rgb(34 197 94 / 0.08); }
+.task-option.is-wrong { border-color: rgb(244 63 94) !important; background: rgb(244 63 94 / 0.07); }
+
+/* Vazifa ish maydoni (overlay) */
+.workspace-overlay { display: none; }
+.workspace-overlay.is-open { display: flex; }
+body.workspace-open { overflow: hidden; }
+
+/* Mobil: kod muharriri pastdan ochiladigan panel */
+@media (max-width: 1023.98px) {
+    #playground-panel { display: none; }
+    #playground-panel.is-open { display: flex; position: fixed; inset: 0; z-index: 60; padding: 0.75rem; background: rgb(2 6 23 / 0.6); }
+    #playground-panel.is-open > .playground-card { height: 100%; width: 100%; }
+}
+@media (min-width: 1024px) {
+    #playground-fab { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}

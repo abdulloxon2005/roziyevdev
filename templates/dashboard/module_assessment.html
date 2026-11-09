@@ -1,0 +1,65 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Modul nazorati — {{ module.title }}{% endblock %}
+{% block page_title %}Modul yakuniy nazorati{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <a href="{% url 'dashboard_course_curriculum' course.slug %}" class="text-xs font-bold text-slate-500 hover:text-blue-600"><i class="fa-solid fa-arrow-left mr-1"></i>{{ course.title }} mundarijasi</a>
+      <h1 class="text-xl font-black mt-1">{{ module.order }}-modul: {{ module.title }} — yakuniy nazorat</h1>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'dashboard_task_create' course.slug module.id %}?section=assessment" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700">+ Nazorat uchun yangi savol</a>
+      {% if assessment %}<a href="{% url 'interactive_assessment' assessment.id %}" target="_blank" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-eye mr-1"></i>Oldindan ko'rish</a>{% endif %}
+    </div>
+  </div>
+
+  <form method="POST" class="space-y-6">
+    {% csrf_token %}
+    <section class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+      <h2 class="font-extrabold">Sozlamalar</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% include 'dashboard/_field.html' with field=form.title wrapper_class='md:col-span-2' %}
+        {% include 'dashboard/_field.html' with field=form.description wrapper_class='md:col-span-2' %}
+        {% include 'dashboard/_field.html' with field=form.pass_percent %}
+        {% include 'dashboard/_field.html' with field=form.max_attempts %}
+        {% include 'dashboard/_field.html' with field=form.require_all_lessons %}
+        {% include 'dashboard/_field.html' with field=form.is_published %}
+      </div>
+    </section>
+
+    <section class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-extrabold">Nazoratga kiritiladigan topshiriqlar</h2>
+        <span class="text-xs font-bold text-slate-500">Tanlangan: {{ total_points }} ball</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[640px]">
+          <thead class="text-[11px] uppercase tracking-wider text-slate-500 bg-slate-50 dark:bg-slate-900/50">
+            <tr><th class="px-4 py-2 text-left w-10"></th><th class="px-2 py-2 text-left w-20">Tartib</th><th class="px-2 py-2 text-left">Topshiriq</th><th class="px-2 py-2 text-left">Turi</th><th class="px-2 py-2 text-left">Manba</th><th class="px-2 py-2 text-left">Ball</th><th class="px-2 py-2"></th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for r in rows %}
+              <tr class="{% if r.selected %}bg-blue-500/5{% endif %}">
+                <td class="px-4 py-2"><input type="checkbox" name="tasks" value="{{ r.task.id }}" {% if r.selected %}checked{% endif %} class="w-4 h-4 accent-blue-600"></td>
+                <td class="px-2 py-2"><input type="number" min="1" name="order_{{ r.task.id }}" value="{{ r.order }}" class="w-16 px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"></td>
+                <td class="px-2 py-2 font-semibold">{{ r.task.title }}<div class="text-[11px] text-slate-400 font-mono">{{ r.task.logical_name }}</div></td>
+                <td class="px-2 py-2 text-xs">{{ r.task.get_kind_display }}</td>
+                <td class="px-2 py-2 text-xs">{% if r.task.lesson %}{{ r.task.lesson.order }}-dars · {{ r.task.get_section_display }}{% else %}<span class="text-amber-600 font-bold">Faqat nazorat</span>{% endif %}</td>
+                <td class="px-2 py-2 text-xs">{{ r.task.points }}</td>
+                <td class="px-2 py-2"><a href="{% url 'dashboard_task_edit' course.slug r.task.id %}" class="text-xs font-bold text-blue-600 hover:underline">Tahrirlash</a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Bu modulda hali topshiriqlar yo'q.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="flex justify-end"><button class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-extrabold">Nazoratni saqlash</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+<div class="space-y-1.5 {{ wrapper_class }}" data-field="{{ field.name }}">
+  {% if field.field.widget.input_type == 'checkbox' %}
+    <label class="flex items-center gap-2.5 cursor-pointer">{{ field }}<span class="text-xs font-bold text-slate-800 dark:text-slate-200">{{ field.label }}</span></label>
+  {% else %}
+    <label for="{{ field.id_for_label }}" class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>
+    {{ field }}
+  {% endif %}
+  {% if field.help_text %}<p class="text-[11px] text-slate-400">{{ field.help_text }}</p>{% endif %}
+  {% for e in field.errors %}<p class="text-rose-500 text-xs">{{ e }}</p>{% endfor %}
+</div>

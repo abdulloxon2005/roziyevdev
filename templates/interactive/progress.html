@@ -1,0 +1,94 @@
+{% extends 'student/base_student.html' %}
+{% load static %}
+
+{% block title %}Mening progressim — {{ course.title }}{% endblock %}
+{% block page_title %}Mening progressim{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+  <header class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-6 space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="text-xs font-semibold text-slate-500">Kurs</div>
+        <h1 class="text-2xl font-black text-slate-900 dark:text-white">{{ course.title }}</h1>
+      </div>
+      <a href="{% url 'course_learn' course.slug %}" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold">O'qishni davom ettirish →</a>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex-1 h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width: {{ summary.percent }}%"></div></div>
+      <span class="text-sm font-black">{{ summary.percent }}%</span>
+    </div>
+    <p class="text-xs text-slate-500">{{ summary.completed_lessons }} / {{ summary.total_lessons }} dars tugallangan</p>
+  </header>
+
+  {% for m in summary.modules %}
+    <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="font-extrabold">{{ m.module.order }}-modul: {{ m.module.title }}</h2>
+        {% if m.assessment %}
+          {% with st=m.assessment_status %}
+          <a href="{% url 'interactive_assessment' m.assessment.id %}" class="text-xs font-bold px-3 py-1.5 rounded-xl {% if st.passed %}bg-emerald-500/10 text-emerald-700 dark:text-emerald-400{% elif st.unlocked %}bg-amber-500/10 text-amber-700 dark:text-amber-400{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">
+            {% if st.passed %}<i class="fa-solid fa-trophy mr-1"></i>Nazorat: {{ st.best.percent|floatformat:0 }}% — o'tdi
+            {% elif st.best %}<i class="fa-solid fa-flag-checkered mr-1"></i>Nazorat: eng yaxshi {{ st.best.percent|floatformat:0 }}% — qayta topshiring
+            {% elif st.unlocked %}<i class="fa-solid fa-flag-checkered mr-1"></i>Nazorat ochiq
+            {% else %}<i class="fa-solid fa-lock mr-1"></i>Nazorat yopiq ({{ st.lessons_done }}/{{ st.lessons_total }}){% endif %}
+          </a>
+          {% endwith %}
+        {% endif %}
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[560px]">
+          <thead class="text-[11px] uppercase tracking-wider text-slate-500 bg-slate-50 dark:bg-slate-900/50">
+            <tr><th class="text-left px-5 py-2">Dars</th><th class="text-left px-3 py-2">Holat</th><th class="text-left px-3 py-2">Testlar</th><th class="text-left px-3 py-2">Vazifa</th></tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+            {% for row in m.lessons %}
+              <tr>
+                <td class="px-5 py-2.5"><a href="{% url 'course_learn_lesson' course.slug row.lesson.id %}" class="font-semibold hover:text-blue-600">{{ row.lesson.order }}. {{ row.lesson.title }}</a></td>
+                <td class="px-3 py-2.5">{% if row.completed %}<span class="text-emerald-600 dark:text-emerald-400 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>Tugallangan</span>{% else %}<span class="text-slate-400">Tugallanmagan</span>{% endif %}</td>
+                <td class="px-3 py-2.5">{% if row.quiz_total %}{{ row.quiz_solved }}/{{ row.quiz_total }}{% else %}—{% endif %}</td>
+                <td class="px-3 py-2.5">
+                  {% for a in row.assignments %}
+                    <a href="{% url 'course_learn_lesson' course.slug row.lesson.id %}#vazifa-{{ a.task.id }}" class="inline-block text-xs font-bold {% if a.status == 'solved' %}text-emerald-600 dark:text-emerald-400{% elif a.status == 'attempted' %}text-amber-600 dark:text-amber-400{% else %}text-slate-400{% endif %}">
+                      {% if a.status == 'solved' %}Bajarilgan{% elif a.status == 'attempted' %}{{ a.progress.attempts_count }} urinish{% else %}Boshlanmagan{% endif %}
+                    </a>
+                  {% empty %}—{% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endfor %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-5">
+      <h2 class="font-extrabold mb-3">So'nggi urinishlar</h2>
+      <ul class="divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+        {% for a in recent_attempts %}
+          <li class="py-2 flex items-center justify-between gap-2">
+            <span class="min-w-0 truncate">{{ a.task.title }} <span class="text-xs text-slate-400">#{{ a.attempt_number }}{% if a.context == 'assessment' %} · nazorat{% endif %}</span></span>
+            <span class="shrink-0 text-xs font-bold {% if a.is_correct %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">{% if a.is_correct %}To'g'ri{% else %}Noto'g'ri{% endif %} · {{ a.created_at|date:"d.m H:i" }}</span>
+          </li>
+        {% empty %}
+          <li class="py-2 text-slate-500">Hali urinishlar yo'q.</li>
+        {% endfor %}
+      </ul>
+    </section>
+    <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-5">
+      <h2 class="font-extrabold mb-3">Modul nazorati natijalari</h2>
+      <ul class="divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+        {% for a in assessment_attempts %}
+          <li class="py-2 flex items-center justify-between gap-2">
+            <a href="{% url 'interactive_assessment_result' a.id %}" class="min-w-0 truncate hover:text-blue-600">{{ a.assessment.title }} <span class="text-xs text-slate-400">#{{ a.attempt_number }}</span></a>
+            <span class="shrink-0 text-xs font-bold {% if a.passed %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">{{ a.percent|floatformat:0 }}% · {% if a.passed %}o'tdi{% else %}o'tmadi{% endif %}</span>
+          </li>
+        {% empty %}
+          <li class="py-2 text-slate-500">Hali nazorat topshirilmagan.</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

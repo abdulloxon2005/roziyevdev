@@ -102,6 +102,11 @@ class Course(TimeStampedModel):
     )
     is_published = models.BooleanField(default=True, verbose_name="E'lon qilinganmi?")
     is_featured = models.BooleanField(default=False, verbose_name="Bosh sahifada tavsiya etilsinmi?")
+    is_archived = models.BooleanField(
+        default=False,
+        verbose_name="Arxivlanganmi?",
+        help_text="Arxivlangan kurs katalogda ko'rinmaydi, lekin barcha ma'lumotlar va o'quvchi natijalari saqlanadi."
+    )
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.00, verbose_name="Reyting")
     students_count = models.PositiveIntegerField(default=0, verbose_name="O'quvchilar soni")
 
@@ -113,6 +118,9 @@ class Course(TimeStampedModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
+        if self.is_archived:
+            # Arxivlangan kurs hech qayerda (katalog, bosh sahifa, API) e'lon qilinmaydi
+            self.is_published = False
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -127,7 +135,7 @@ class Course(TimeStampedModel):
 
     @property
     def lessons_count(self):
-        return Lesson.objects.filter(module__course=self).count()
+        return Lesson.objects.filter(module__course=self, is_published=True, module__is_published=True).count()
 
     @property
     def formatted_price(self):
@@ -160,7 +168,13 @@ class CourseModule(TimeStampedModel):
     """
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='modules', verbose_name="Kurs")
     title = models.CharField(max_length=200, verbose_name="Bo'lim sarlavhasi")
+    description = models.TextField(blank=True, verbose_name="Modul tavsifi")
     order = models.PositiveIntegerField(default=1, verbose_name="Tartib raqami")
+    is_published = models.BooleanField(
+        default=True,
+        verbose_name="Nashr qilinganmi?",
+        help_text="Belgilanmasa — qoralama: o'quvchilarga ko'rinmaydi."
+    )
 
     class Meta:
         verbose_name = 'Kurs bo\'limi'
@@ -174,6 +188,7 @@ class CourseModule(TimeStampedModel):
 class LessonType(models.TextChoices):
     VIDEO = 'video', 'Video dars'
     TEXT = 'text', "Matnli qo'llanma"
+    INTERACTIVE = 'interactive', "Interaktiv dars (nazariya + kod muharriri + topshiriqlar)"
 
 
 YOUTUBE_RE = re.compile(r'(?:youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})')
@@ -187,7 +202,13 @@ class Lesson(TimeStampedModel):
     module = models.ForeignKey(CourseModule, on_delete=models.CASCADE, related_name='lessons', verbose_name="Bo'lim")
     title = models.CharField(max_length=200, verbose_name="Dars sarlavhasi")
     lesson_type = models.CharField(
-        max_length=10, choices=LessonType.choices, default=LessonType.VIDEO, verbose_name="Dars turi"
+        max_length=20, choices=LessonType.choices, default=LessonType.VIDEO, verbose_name="Dars turi"
+    )
+    objective = models.TextField(blank=True, verbose_name="Darsning maqsadi")
+    key_concepts = models.TextField(
+        blank=True,
+        verbose_name="O'rganiladigan tushunchalar",
+        help_text="Har bir tushunchani yangi qatordan yozing"
     )
     video_url = models.URLField(
         blank=True,
@@ -208,6 +229,11 @@ class Lesson(TimeStampedModel):
     source_code_url = models.URLField(blank=True, verbose_name="Manba kod havolasi (GitHub)")
     duration_minutes = models.PositiveIntegerField(default=15, verbose_name="Davomiyligi (daqiqa)")
     is_preview = models.BooleanField(default=False, verbose_name="Ochiq darsmi (Preview)?")
+    is_published = models.BooleanField(
+        default=True,
+        verbose_name="Nashr qilinganmi?",
+        help_text="Belgilanmasa — qoralama: faqat admin oldindan ko'rish rejimida ko'radi."
+    )
     order = models.PositiveIntegerField(default=1, verbose_name="Tartib raqami")
 
     class Meta:
@@ -217,6 +243,14 @@ class Lesson(TimeStampedModel):
 
     def __str__(self):
         return f"{self.module.title} - {self.title}"
+
+    @property
+    def is_interactive(self):
+        return self.lesson_type == LessonType.INTERACTIVE
+
+    @property
+    def concept_list(self):
+        return [c.strip() for c in (self.key_concepts or '').splitlines() if c.strip()]
 
     @property
     def embed_url(self):

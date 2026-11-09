@@ -1,0 +1,18 @@
+{% with t=tv.obj r=tv.rules %}
+{% if t.hint %}
+  <button type="button" data-action="hint" class="px-3 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/20 inline-flex items-center gap-1.5">
+    <i class="fa-regular fa-lightbulb"></i> Maslahat
+  </button>
+{% endif %}
+{% if t.partial_solution %}
+  <button type="button" data-action="partial" {% if not r.partial %}disabled{% endif %} title="Kamida bir marta urinib ko'rgach ochiladi" class="px-3 py-2 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/30 text-xs font-bold hover:bg-sky-500/20 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+    <i class="fa-solid fa-puzzle-piece"></i> Qisman yechim
+  </button>
+{% endif %}
+<button type="button" data-action="solution" {% if not r.solution %}disabled{% endif %} data-unlock-after="{{ t.solution_unlock_attempts }}"
+  title="{% if r.solution %}Yechimni ko'rish{% else %}{{ t.solution_unlock_attempts }} ta mustaqil urinishdan keyin ochiladi{% endif %}"
+  class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+  <i class="fa-solid fa-key"></i> {% if t.uses_editor %}To'liq yechim{% else %}Javob va tushuntirish{% endif %}
+  {% if not r.solution %}<span data-unlock-count class="text-[10px] font-semibold opacity-70">({{ r.attempts_needed }})</span>{% endif %}
+</button>
+{% endwith %}

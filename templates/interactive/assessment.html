@@ -1,0 +1,185 @@
+{% extends 'student/base_student.html' %}
+{% load static core_extras %}
+
+{% block title %}{{ assessment.title }} — {{ course.title }}{% endblock %}
+{% block page_title %}{{ assessment.title }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/interactive.css' %}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-python.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-one_dark.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-static_highlight.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  <header class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-6 space-y-3">
+    <nav class="text-xs font-semibold text-slate-500 flex flex-wrap gap-1.5">
+      <a href="{% url 'course_detail' course.slug %}" class="hover:text-blue-600">{{ course.title }}</a>
+      <span>›</span><span>{{ module.order }}-modul: {{ module.title }}</span>
+    </nav>
+    <h1 class="text-2xl font-black text-slate-900 dark:text-white"><i class="fa-solid fa-flag-checkered text-amber-500 mr-2"></i>{{ assessment.title }}</h1>
+    {% if description_html %}<div class="lesson-prose text-sm">{{ description_html|safe }}</div>{% endif %}
+    <div class="flex flex-wrap gap-2 text-xs font-semibold">
+      <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800">{{ task_views|length }} ta topshiriq</span>
+      <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400">O'tish mezoni: {{ assessment.pass_percent }}%</span>
+      <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800">Darslar: {{ status.lessons_done }}/{{ status.lessons_total }}</span>
+      <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800">Urinishlar: {{ status.attempts_used }}{% if assessment.max_attempts %}/{{ assessment.max_attempts }}{% endif %}</span>
+      {% if status.best %}<span class="px-2.5 py-1 rounded-lg {% if status.passed %}bg-emerald-500/10 text-emerald-700 dark:text-emerald-400{% else %}bg-rose-500/10 text-rose-700 dark:text-rose-400{% endif %}">Eng yaxshi natija: {{ status.best.percent|floatformat:0 }}%</span>{% endif %}
+    </div>
+  </header>
+
+  {% if not status.unlocked or not status.can_attempt %}
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-8 text-center space-y-3">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-2xl"><i class="fa-solid fa-lock"></i></div>
+      <p class="text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto">{{ status.reason }}</p>
+      <a href="{% url 'course_learn' course.slug %}" class="inline-flex px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold">Darslarga qaytish</a>
+    </div>
+  {% else %}
+    <form method="POST" id="assessment-form" class="space-y-5">
+      {% csrf_token %}
+      {% for tv in task_views %}
+        {% with t=tv.obj %}
+        <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-5 space-y-3" data-assess-item data-task-id="{{ t.id }}" data-kind="{{ t.kind }}">
+          <div class="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-wider">
+            <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs">{{ forloop.counter }}</span>
+            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500">{{ t.get_kind_display }}</span>
+            <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500">{{ t.points }} ball</span>
+          </div>
+          <h3 class="font-extrabold text-slate-900 dark:text-white">{{ t.title }}</h3>
+          <div class="lesson-prose text-[0.93rem]">{{ tv.prompt_html|safe }}</div>
+
+          {% if t.is_choice %}
+            {% if t.code_snippet %}<pre class="static-code rounded-xl" data-highlight>{{ t.code_snippet }}</pre>{% endif %}
+            {% if t.kind == 'multiple_choice' %}<p class="text-xs font-semibold text-amber-600 dark:text-amber-400">Bir nechta to'g'ri javob bo'lishi mumkin.</p>{% endif %}
+            <div class="space-y-2">
+              {% for o in tv.options %}
+                <label class="task-option flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-400 cursor-pointer">
+                  <input type="{% if t.kind == 'multiple_choice' %}checkbox{% else %}radio{% endif %}" name="t{{ t.id }}_opt" value="{{ o.id }}" class="mt-1 accent-blue-600">
+                  <div class="lesson-prose text-sm [&>p]:m-0">{{ o.text|markdownify }}</div>
+                </label>
+              {% endfor %}
+            </div>
+          {% elif t.kind == 'predict_output' %}
+            <pre class="static-code rounded-xl" data-highlight>{{ t.code_snippet }}</pre>
+            <textarea name="t{{ t.id }}_text" rows="3" spellcheck="false" placeholder="Dastur nimani chiqaradi?" class="w-full px-3 py-2.5 rounded-xl bg-slate-950 text-emerald-300 font-mono text-[13px] border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          {% elif t.kind == 'fill_blank' %}
+            <div class="fill-code">{% for p in tv.parts %}{% if p.blank %}<input type="text" name="t{{ t.id }}_b{{ p.index }}" autocomplete="off" spellcheck="false">{% else %}{{ p.text }}{% endif %}{% endfor %}</div>
+          {% else %}
+            {% if t.expected_output_example %}
+              <div>
+                <div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">Kutilayotgan natija namunasi</div>
+                <pre class="rounded-xl bg-slate-950 text-emerald-300 text-[13px] font-mono p-3 overflow-x-auto whitespace-pre">{{ t.expected_output_example }}</pre>
+              </div>
+            {% endif %}
+            {% if tv.visible_tests %}
+              <ul class="space-y-1 text-[13px] text-slate-600 dark:text-slate-300">
+                {% for test in tv.visible_tests %}<li><i class="fa-regular fa-square-check text-slate-400 mr-1.5"></i>{{ test.description }}</li>{% endfor %}
+              </ul>
+            {% endif %}
+            <div class="rounded-xl overflow-hidden border border-slate-800 bg-[#21252b]">
+              <div class="flex items-center justify-between px-3 py-2 bg-[#191c21] border-b border-slate-800">
+                <span class="text-[11px] font-mono text-slate-400"><i class="fa-brands fa-python text-amber-400 mr-1"></i>main.py</span>
+                <button type="button" data-run class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold"><i class="fa-solid fa-play mr-1"></i>Kodni ishga tushirish</button>
+              </div>
+              <div class="ilesson-editor" data-editor-key="task-{{ t.id }}" style="height: {% if t.section == 'project' %}320{% else %}220{% endif %}px"></div>
+            </div>
+            <textarea name="t{{ t.id }}_code" class="hidden" data-code-field></textarea>
+            <div data-output class="run-output compact"></div>
+          {% endif %}
+        </section>
+        {% endwith %}
+      {% endfor %}
+
+      <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p class="text-xs text-slate-500">Javoblaringiz yuborilgach avtomatik tekshiriladi. Natija {{ assessment.pass_percent }}% va undan yuqori bo'lsa — nazoratdan o'tasiz. Qayta topshirish mumkin.</p>
+        <button type="submit" id="assessment-submit" class="shrink-0 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-extrabold shadow-lg shadow-blue-600/20"><i class="fa-solid fa-paper-plane mr-1.5"></i>Javoblarni yuborish</button>
+      </div>
+    </form>
+  {% endif %}
+
+  {% if history %}
+    <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-5">
+      <h2 class="font-extrabold mb-3">Oldingi urinishlarim</h2>
+      <ul class="divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+        {% for a in history %}
+          <li class="py-2 flex items-center justify-between gap-3">
+            <span>#{{ a.attempt_number }} · {{ a.created_at|date:"d.m.Y H:i" }}</span>
+            <span class="font-bold {% if a.passed %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">{{ a.percent|floatformat:0 }}% — {% if a.passed %}o'tdi{% else %}o'tmadi{% endif %}</span>
+            <a href="{% url 'interactive_assessment_result' a.id %}" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Batafsil</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+</div>
+{{ js_config|json_script:"interactive-config" }}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  const cfg = JSON.parse(document.getElementById('interactive-config').textContent);
+  const csrfInput = document.querySelector('#assessment-form [name=csrfmiddlewaretoken]');
+  const csrf = csrfInput ? csrfInput.value : '';
+  const esc = (t) => { const d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; };
+
+  // Statik kodni rangli ko'rsatish
+  try {
+    const hl = ace.require('ace/ext/static_highlight');
+    document.querySelectorAll('pre[data-highlight]').forEach((pre) => {
+      const code = pre.textContent;
+      hl.render(code, 'ace/mode/python', 'ace/theme/one_dark', 1, true, (r) => { pre.innerHTML = r.html; });
+    });
+  } catch (e) {}
+
+  const items = [];
+  document.querySelectorAll('[data-assess-item]').forEach((item) => {
+    const edEl = item.querySelector('[data-editor-key]');
+    if (!edEl || !window.ace) return;
+    const editor = ace.edit(edEl, { mode: 'ace/mode/python', theme: 'ace/theme/one_dark', fontSize: 14, tabSize: 4, useSoftTabs: true, showPrintMargin: false, wrap: true });
+    editor.session.setValue((cfg.starters || {})[edEl.dataset.editorKey] || '');
+    const field = item.querySelector('[data-code-field]');
+    const out = item.querySelector('[data-output]');
+    items.push({ editor, field });
+    item.querySelector('[data-run]').addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget;
+      btn.disabled = true;
+      out.className = 'run-output compact rounded-xl bg-slate-950 p-3 text-[13px]';
+      out.innerHTML = '<p class="text-xs text-slate-400 font-mono">Bajarilmoqda...</p>';
+      try {
+        const res = await fetch(cfg.urls.run, {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+          body: JSON.stringify({ code: editor.getValue(), task_id: parseInt(item.dataset.taskId, 10) }),
+        });
+        const body = await res.json();
+        if (!body.ok) { out.innerHTML = '<p class="text-amber-300 text-xs">' + esc(body.error) + '</p>'; return; }
+        const r = body.result;
+        let html = r.stdout ? '<pre class="stdout-box font-mono text-slate-100">' + esc(r.stdout) + '</pre>' : '';
+        if (r.status !== 'ok') {
+          html += '<p class="mt-1 text-rose-300 text-xs font-bold">' + esc(r.status_label) + '</p>';
+          if (r.friendly_error) html += '<p class="text-rose-200 text-xs mt-1">' + esc(r.friendly_error) + '</p>';
+          if (r.stderr) html += '<pre class="mt-1 font-mono text-[12px] text-rose-300">' + esc(r.stderr) + '</pre>';
+        } else if (!r.stdout) html += '<p class="text-xs text-slate-500">(Dastur ekranga hech narsa chiqarmadi)</p>';
+        out.innerHTML = html;
+      } catch (e) {
+        out.innerHTML = '<p class="text-amber-300 text-xs">Serverga ulanib bo\'lmadi.</p>';
+      } finally { btn.disabled = false; }
+    });
+  });
+
+  const form = document.getElementById('assessment-form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      items.forEach(({ editor, field }) => { field.value = editor.getValue(); });
+      if (!confirm("Javoblarni yuborasizmi? Yuborilgach avtomatik tekshiriladi.")) { e.preventDefault(); return; }
+      const btn = document.getElementById('assessment-submit');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Tekshirilmoqda...';
+    });
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,383 @@
+{% extends 'student/base_student.html' %}
+{% load static core_extras %}
+
+{% block title %}{{ current_lesson.title }} — {{ course.title }}{% endblock %}
+{% block page_title %}{{ course.title }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/interactive.css' %}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-python.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-one_dark.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ext-static_highlight.js"></script>
+{% endblock %}
+
+{% block content %}
+<div id="ilesson" class="max-w-[1400px] mx-auto space-y-5">
+
+  {% if is_draft_preview %}
+    <div class="rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300 px-4 py-3 text-sm font-semibold flex items-center gap-2">
+      <i class="fa-solid fa-eye"></i>
+      Oldindan ko'rish rejimi: bu dars (yoki modul/kurs) hali nashr qilinmagan — o'quvchilar uni ko'rmaydi.
+    </div>
+  {% endif %}
+
+  <!-- ================= DARS MA'LUMOTLARI ================= -->
+  <header class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-5 sm:p-6 space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <nav class="text-xs font-semibold text-slate-500 flex flex-wrap items-center gap-1.5 min-w-0">
+        <a href="{% url 'course_detail' course.slug %}" class="hover:text-blue-600 truncate">{{ course.title }}</a>
+        <i class="fa-solid fa-chevron-right text-[9px]"></i>
+        <span class="truncate">{{ module.order }}-modul: {{ module.title }}</span>
+        <i class="fa-solid fa-chevron-right text-[9px]"></i>
+        <span class="text-slate-700 dark:text-slate-300">{{ current_lesson.order }}-dars</span>
+      </nav>
+      <div class="flex items-center gap-2">
+        {% if is_manager %}
+          <a href="{% url 'dashboard_lesson_interactive' course.slug current_lesson.id %}" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fa-solid fa-pen-to-square mr-1"></i>Tahrirlash</a>
+        {% endif %}
+        <button type="button" data-open-syllabus class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fa-solid fa-list-ul mr-1"></i>Mundarija</button>
+      </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div class="space-y-2 min-w-0">
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">{{ current_lesson.title }}</h1>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold"><i class="fa-regular fa-clock mr-1"></i>{{ current_lesson.duration_minutes }} daqiqa</span>
+          <span id="lesson-status-chip" class="px-2.5 py-1 rounded-lg font-bold {% if is_lesson_completed %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">
+            {% if is_lesson_completed %}<i class="fa-solid fa-circle-check mr-1"></i>Dars tugallangan{% else %}<i class="fa-regular fa-circle mr-1"></i>Dars tugallanmagan{% endif %}
+          </span>
+          {% if enrollment %}
+            <span class="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold">Kurs progressi: <span id="course-progress-label">{{ enrollment.progress_percent }}</span>%</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        {% if prev_lesson %}
+          <a href="{% url 'course_learn_lesson' course.slug prev_lesson.id %}" class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800" title="{{ prev_lesson.title }}"><i class="fa-solid fa-arrow-left mr-1"></i>Oldingi dars</a>
+        {% endif %}
+        {% if next_lesson %}
+          <a href="{% url 'course_learn_lesson' course.slug next_lesson.id %}" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold" title="{{ next_lesson.title }}">Keyingi dars<i class="fa-solid fa-arrow-right ml-1"></i></a>
+        {% elif assessment %}
+          <a href="{% url 'interactive_assessment' assessment.id %}" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold"><i class="fa-solid fa-flag-checkered mr-1"></i>Modul nazorati</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if can_view and current_lesson.objective or can_view and current_lesson.concept_list %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {% if current_lesson.objective %}
+          <div class="rounded-2xl bg-blue-500/5 border border-blue-500/20 p-4">
+            <div class="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1"><i class="fa-solid fa-bullseye mr-1"></i>Darsning maqsadi</div>
+            <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{{ current_lesson.objective }}</p>
+          </div>
+        {% endif %}
+        {% if current_lesson.concept_list %}
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-4">
+            <div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2"><i class="fa-solid fa-graduation-cap mr-1"></i>O'rganiladigan tushunchalar</div>
+            <div class="flex flex-wrap gap-1.5">
+              {% for c in current_lesson.concept_list %}
+                <span class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200">{{ c }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </header>
+
+  {% if not can_view %}
+    <!-- Yopiq dars -->
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-8 text-center space-y-3">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-2xl"><i class="fa-solid fa-lock"></i></div>
+      <h2 class="text-lg font-extrabold">Bu dars yopiq</h2>
+      <p class="text-sm text-slate-500 max-w-md mx-auto">Darsni o'qish, kod yozish va topshiriqlarni bajarish uchun kursga yoziling.</p>
+      {% if user.is_authenticated %}
+        <a href="{% url 'enroll_course' course.slug %}" class="inline-flex px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold">{% if course.is_paid %}Kursni sotib olish{% else %}Bepul yozilish{% endif %}</a>
+      {% else %}
+        <a href="{% url 'login' %}?next={{ request.path|urlencode }}" class="inline-flex px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold">Tizimga kirish</a>
+      {% endif %}
+    </div>
+  {% else %}
+
+  {% if not can_interact %}
+    <div class="rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-800 dark:text-sky-300 px-4 py-3 text-sm font-semibold flex flex-wrap items-center gap-2">
+      <i class="fa-solid fa-circle-info"></i>
+      Kodni ishga tushirish va topshiriqlarni tekshirish uchun {% if user.is_authenticated %}kursga yoziling{% else %}tizimga kiring{% endif %}.
+      {% if user.is_authenticated %}<a href="{% url 'enroll_course' course.slug %}" class="underline">Yozilish</a>{% else %}<a href="{% url 'login' %}?next={{ request.path|urlencode }}" class="underline">Kirish</a>{% endif %}
+    </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- ================= NAZARIYA VA MASHQLAR ================= -->
+    <article class="lg:col-span-7 space-y-6 min-w-0">
+
+      {% if current_lesson.has_video %}
+        <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800">
+          {% if current_lesson.video_file %}
+            <video src="{{ current_lesson.video_file.url }}" controls playsinline class="w-full h-full object-contain"></video>
+          {% elif current_lesson.embed_url %}
+            <iframe src="{{ current_lesson.embed_url }}" title="{{ current_lesson.title }}" class="absolute inset-0 w-full h-full border-0" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if current_lesson.content %}
+        <section class="lesson-prose">{{ current_lesson.content|markdownify }}</section>
+      {% endif %}
+
+      {% for b in blocks %}
+        {% with block=b.obj %}
+        {% if block.block_type == 'text' %}
+          <section class="lesson-prose">
+            {% if block.title %}<h2>{{ block.title }}</h2>{% endif %}
+            {{ b.html|safe }}
+          </section>
+
+        {% elif block.block_type == 'callout' %}
+          <aside class="rounded-2xl p-4 sm:p-5 border flex gap-3
+            {% if block.callout_style == 'tip' %}bg-emerald-500/5 border-emerald-500/30
+            {% elif block.callout_style == 'warning' %}bg-rose-500/5 border-rose-500/30
+            {% elif block.callout_style == 'important' %}bg-amber-500/5 border-amber-500/30
+            {% elif block.callout_style == 'analogy' %}bg-violet-500/5 border-violet-500/30
+            {% else %}bg-sky-500/5 border-sky-500/30{% endif %}">
+            <div class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center
+              {% if block.callout_style == 'tip' %}bg-emerald-500/15 text-emerald-600 dark:text-emerald-400
+              {% elif block.callout_style == 'warning' %}bg-rose-500/15 text-rose-600 dark:text-rose-400
+              {% elif block.callout_style == 'important' %}bg-amber-500/15 text-amber-600 dark:text-amber-400
+              {% elif block.callout_style == 'analogy' %}bg-violet-500/15 text-violet-600 dark:text-violet-400
+              {% else %}bg-sky-500/15 text-sky-600 dark:text-sky-400{% endif %}">
+              {% if block.callout_style == 'tip' %}<i class="fa-regular fa-lightbulb"></i>
+              {% elif block.callout_style == 'warning' %}<i class="fa-solid fa-triangle-exclamation"></i>
+              {% elif block.callout_style == 'important' %}<i class="fa-solid fa-star"></i>
+              {% elif block.callout_style == 'analogy' %}<i class="fa-solid fa-people-arrows"></i>
+              {% else %}<i class="fa-solid fa-circle-info"></i>{% endif %}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[11px] font-black uppercase tracking-wider mb-1 text-slate-500">{% if block.title %}{{ block.title }}{% else %}{{ block.get_callout_style_display }}{% endif %}</div>
+              <div class="lesson-prose text-[0.93rem]">{{ b.html|safe }}</div>
+            </div>
+          </aside>
+
+        {% elif block.block_type == 'code' %}
+          <section class="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827]" data-example>
+            <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200 dark:border-slate-800">
+              <span class="text-xs font-extrabold text-slate-700 dark:text-slate-200"><i class="fa-solid fa-code text-blue-500 mr-1.5"></i>{% if block.title %}{{ block.title }}{% else %}Kod misoli{% endif %}</span>
+              {% if block.is_runnable %}
+                <div class="flex items-center gap-1.5">
+                  <button type="button" data-example-load class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fa-solid fa-arrow-right-to-bracket mr-1"></i>Muharrirga yuklash</button>
+                  <button type="button" data-example-run class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold"><i class="fa-solid fa-play mr-1"></i>Ishga tushirish</button>
+                </div>
+              {% endif %}
+            </div>
+            <pre class="static-code" data-highlight data-example-code>{{ block.code }}</pre>
+            {% if b.html %}<div class="lesson-prose text-[0.92rem] px-4 py-3 border-t border-slate-200 dark:border-slate-800">{{ b.html|safe }}</div>{% endif %}
+          </section>
+
+        {% elif block.block_type == 'image' and block.image %}
+          <figure class="space-y-2">
+            <img src="{{ block.image.url }}" alt="{{ block.title|default:current_lesson.title }}" class="w-full rounded-2xl border border-slate-200 dark:border-slate-800" loading="lazy">
+            {% if block.title or b.html %}<figcaption class="text-xs text-slate-500 text-center">{{ block.title }} {{ b.html|striptags }}</figcaption>{% endif %}
+          </figure>
+
+        {% elif block.block_type == 'video' and block.embed_url %}
+          <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800">
+            <iframe src="{{ block.embed_url }}" title="{{ block.title|default:current_lesson.title }}" class="absolute inset-0 w-full h-full border-0" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+          </div>
+
+        {% elif block.block_type == 'task' and b.task %}
+          <div class="space-y-2">
+            <div class="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400"><i class="fa-solid fa-hand-pointer mr-1"></i>Mashq — o'zingiz sinab ko'ring</div>
+            {% include 'interactive/_task.html' with tv=b.task mode='inline' %}
+          </div>
+        {% endif %}
+        {% endwith %}
+      {% endfor %}
+
+      {% for tv in inline_tasks %}
+        {% include 'interactive/_task.html' with tv=tv mode='inline' %}
+      {% endfor %}
+
+      <!-- ===== Nazariy test ===== -->
+      {% if quiz_tasks %}
+        <section class="space-y-3 pt-2" id="quiz">
+          <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-clipboard-question text-blue-500"></i>Bilimingizni tekshiring</h2>
+          {% for tv in quiz_tasks %}
+            {% include 'interactive/_task.html' with tv=tv mode='inline' %}
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      <!-- ===== Takrorlash ===== -->
+      {% if review_tasks %}
+        <section class="space-y-3" id="review">
+          <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-rotate text-violet-500"></i>Takrorlash: oldingi mavzu</h2>
+          {% for tv in review_tasks %}
+            {% include 'interactive/_task.html' with tv=tv mode='inline' %}
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      <!-- ===== Mustaqil vazifa ===== -->
+      {% if assignment_tasks %}
+        <section class="space-y-3" id="assignment">
+          <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-laptop-code text-emerald-500"></i>Mustaqil amaliy vazifa</h2>
+          {% for tv in assignment_tasks %}
+            <div class="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-transparent p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4" data-assignment-card="{{ tv.obj.id }}">
+              <div class="min-w-0">
+                <div class="text-[11px] font-mono text-slate-400">{{ tv.obj.logical_name }}</div>
+                <h3 class="text-base font-extrabold text-slate-900 dark:text-white">{{ tv.obj.title }}</h3>
+                <p class="text-xs mt-1 font-semibold" data-assignment-status="{{ tv.obj.id }}">
+                  {% if tv.is_solved %}<span class="text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i>Bajarilgan</span>
+                  {% elif tv.progress %}<span class="text-amber-600 dark:text-amber-400">{{ tv.progress.attempts_count }} ta urinish — hali yechilmagan</span>
+                  {% else %}<span class="text-slate-500">Hali boshlanmagan</span>{% endif %}
+                </p>
+              </div>
+              <button type="button" data-open-workspace="{{ tv.obj.id }}" class="shrink-0 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-extrabold shadow-lg shadow-emerald-600/20 inline-flex items-center gap-2">
+                <i class="fa-solid fa-pen-ruler"></i> Vazifani bajarish
+              </button>
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      <!-- ===== Qo'shimcha mashqlar ===== -->
+      {% if practice_tasks %}
+        <section class="space-y-3" id="practice">
+          <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-dumbbell text-amber-500"></i>Qo'shimcha mashqlar</h2>
+          <p class="text-xs text-slate-500 -mt-1">Ixtiyoriy: oson → o'rta → qiyin. Bilimni mustahkamlash uchun.</p>
+          {% for tv in practice_tasks %}
+            {% include 'interactive/_task.html' with tv=tv mode='inline' %}
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      <!-- ===== Darsni yakunlash ===== -->
+      <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="font-extrabold text-slate-900 dark:text-white">Darsni yakunladingizmi?</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Dars tugallanishi va vazifa bajarilishi alohida hisoblanadi. Modul nazorati barcha darslar tugagach ochiladi.</p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          {% if enrollment and current_lesson.is_published %}
+            <form id="lesson-complete-form" method="POST" action="{% url 'toggle_lesson_progress' current_lesson.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" id="lesson-complete-btn" class="px-4 py-2.5 rounded-xl text-sm font-extrabold {% if is_lesson_completed %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300{% else %}bg-blue-600 hover:bg-blue-500 text-white{% endif %}">
+                {% if is_lesson_completed %}<i class="fa-solid fa-rotate-left mr-1"></i>Tugallanmagan deb belgilash{% else %}<i class="fa-solid fa-check mr-1"></i>Darsni tugatdim{% endif %}
+              </button>
+            </form>
+          {% endif %}
+          {% if next_lesson %}
+            <a href="{% url 'course_learn_lesson' course.slug next_lesson.id %}" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">Keyingi dars →</a>
+          {% elif assessment %}
+            <a href="{% url 'interactive_assessment' assessment.id %}" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-extrabold">Modul nazoratiga o'tish →</a>
+          {% endif %}
+        </div>
+      </section>
+    </article>
+
+    <!-- ================= INTERAKTIV KOD MUHARRIRI ================= -->
+    <aside id="playground-panel" class="lg:col-span-5 lg:sticky lg:top-0">
+      <div class="playground-card flex flex-col rounded-2xl overflow-hidden border border-slate-800 bg-[#21252b] shadow-xl lg:h-[calc(100vh-8.5rem)] lg:min-h-[520px]">
+        <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 bg-[#191c21] border-b border-slate-800">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-xs font-extrabold text-slate-200"><i class="fa-brands fa-python text-amber-400 mr-1"></i>Kod muharriri</span>
+            <span data-save-state class="text-[10px] text-slate-500 font-mono"></span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button type="button" id="pg-clear" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold" title="Muharrirni tozalash"><i class="fa-solid fa-eraser mr-1"></i>Tozalash</button>
+            <button type="button" id="pg-run" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold" title="Ctrl+Enter"><i class="fa-solid fa-play mr-1"></i>Ishga tushirish</button>
+            <button type="button" id="pg-close" class="lg:hidden px-2 py-1 rounded-lg bg-slate-800 text-slate-300 text-[11px]" aria-label="Yopish"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+        <div id="playground-editor" class="ilesson-editor flex-1 min-h-[220px]" data-editor-key="playground"></div>
+        <details class="border-t border-slate-800 bg-[#1b1e23] text-slate-300">
+          <summary class="px-3 py-1.5 text-[11px] font-semibold cursor-pointer select-none"><i class="fa-solid fa-keyboard mr-1"></i>input() uchun kiritish ma'lumotlari</summary>
+          <textarea id="pg-stdin" rows="2" spellcheck="false" placeholder="Har bir qiymat yangi qatordan" class="w-full px-3 py-2 bg-[#15171b] text-slate-200 font-mono text-xs border-0 focus:outline-none"></textarea>
+        </details>
+        <div class="border-t border-slate-800 bg-slate-950 flex flex-col min-h-[150px] lg:h-[38%]">
+          <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-800">
+            <span class="text-[11px] font-bold text-slate-300 font-mono"><i class="fa-solid fa-terminal text-emerald-400 mr-1"></i>Natija</span>
+            <button type="button" id="pg-rerun" class="text-[11px] text-slate-400 hover:text-white font-semibold"><i class="fa-solid fa-rotate-right mr-1"></i>Qayta ishga tushirish</button>
+          </div>
+          <div id="pg-output" class="run-output flex-1 overflow-auto p-3 text-[13px]">
+            <p class="text-slate-500 font-mono text-xs">Kod yozing yoki misoldagi «Muharrirga yuklash» tugmasini bosing, so'ng «Ishga tushirish» (Ctrl+Enter).</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Mobil: muharrirni ochish tugmasi -->
+  <button type="button" id="playground-fab" class="fixed bottom-5 right-5 z-40 px-4 py-3 rounded-2xl bg-emerald-600 text-white text-sm font-extrabold shadow-xl shadow-emerald-600/30"><i class="fa-solid fa-code mr-1.5"></i>Muharrir</button>
+
+  <!-- ================= VAZIFA ISH MAYDONLARI (dars sahifasining ichida) ================= -->
+  {% for tv in assignment_tasks %}
+    <div class="workspace-overlay fixed inset-0 z-[70] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-4" data-workspace="{{ tv.obj.id }}" role="dialog" aria-modal="true" aria-label="{{ tv.obj.title }}">
+      <div class="w-full h-full max-w-[1400px] mx-auto rounded-2xl sm:rounded-3xl overflow-hidden bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 flex flex-col">
+        <div class="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 border-b border-slate-200 dark:border-slate-800">
+          <div class="min-w-0">
+            <div class="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Vazifa ish maydoni</div>
+            <div class="text-sm font-extrabold truncate">{{ current_lesson.title }}</div>
+          </div>
+          <button type="button" data-close-workspace class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fa-solid fa-arrow-left mr-1"></i>Darsga qaytish</button>
+        </div>
+        <div class="flex-1 min-h-0">
+          {% include 'interactive/_task.html' with tv=tv mode='workspace' %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+
+  {% endif %}{# can_view #}
+
+  <!-- ================= MUNDARIJA ================= -->
+  <div id="syllabus-drawer" class="hidden fixed inset-0 z-[65]">
+    <div class="absolute inset-0 bg-slate-950/50" data-close-syllabus></div>
+    <div class="absolute right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-[#111827] border-l border-slate-200 dark:border-slate-800 flex flex-col">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800">
+        <h3 class="font-extrabold">Kurs mundarijasi</h3>
+        <button type="button" data-close-syllabus class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Yopish"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-5">
+        {% for m in modules_with_lessons %}
+          <div>
+            <div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">{{ m.module.order }}-modul: {{ m.module.title }}{% if not m.module.is_published %} <span class="text-amber-500">(qoralama)</span>{% endif %}</div>
+            <ul class="space-y-1">
+              {% for l in m.lessons %}
+                <li>
+                  <a href="{% url 'course_learn_lesson' course.slug l.id %}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm {% if l.id == current_lesson.id %}bg-blue-600 text-white font-bold{% else %}hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
+                    {% if l.id in completed_lesson_ids %}<i class="fa-solid fa-circle-check {% if l.id == current_lesson.id %}text-white{% else %}text-emerald-500{% endif %}"></i>{% else %}<i class="fa-regular fa-circle opacity-50"></i>{% endif %}
+                    <span class="truncate">{{ l.order }}. {{ l.title }}</span>
+                    {% if not l.is_published %}<span class="ml-auto text-[10px] text-amber-500">qoralama</span>{% endif %}
+                  </a>
+                </li>
+              {% endfor %}
+              {% if m.module.id == module.id and assessment %}
+                <li>
+                  <a href="{% url 'interactive_assessment' assessment.id %}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm hover:bg-slate-100 dark:hover:bg-slate-800 text-amber-600 dark:text-amber-400 font-bold">
+                    {% if assessment_status and assessment_status.passed %}<i class="fa-solid fa-trophy"></i>{% elif assessment_status and not assessment_status.unlocked %}<i class="fa-solid fa-lock"></i>{% else %}<i class="fa-solid fa-flag-checkered"></i>{% endif %}
+                    <span class="truncate">{{ assessment.title }}</span>
+                  </a>
+                </li>
+              {% endif %}
+            </ul>
+          </div>
+        {% endfor %}
+        {% if enrollment %}
+          <a href="{% url 'interactive_course_progress' course.slug %}" class="block text-center px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700"><i class="fa-solid fa-chart-line mr-1"></i>Mening progressim</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ js_config|json_script:"interactive-config" }}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/interactive-lesson.js' %}"></script>
+{% endblock %}

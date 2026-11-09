@@ -67,6 +67,12 @@ class Profile(TimeStampedModel):
     telegram = models.CharField(max_length=100, blank=True, null=True, verbose_name="Telegram (@username yoki havola)")
     website = models.URLField(blank=True, null=True, verbose_name="Shaxsiy veb-sayt")
 
+    # Manzil (hozircha faqat O'zbekiston uchun)
+    country = models.CharField(max_length=100, blank=True, default="O'zbekiston", verbose_name="Davlat")
+    region = models.CharField(max_length=100, blank=True, verbose_name="Viloyat")
+    district = models.CharField(max_length=100, blank=True, verbose_name="Tuman/Shahar")
+    village = models.CharField(max_length=150, blank=True, verbose_name="Qishloq/Mahalla")
+
     class Meta:
         verbose_name = 'Profil'
         verbose_name_plural = 'Profillar'

@@ -116,12 +116,18 @@ def web_course_learn_view(request, slug, lesson_id=None):
     Onlayn dars xonasi: video pleer, dars matni, yuklanmalar,
     modullar mundarijasi va progress paneli.
     """
-    course = get_object_or_404(Course, slug=slug, is_published=True)
+    from apps.interactive.services import can_manage_content
+    is_manager = can_manage_content(request.user)
+    # Admin/o'qituvchi qoralama kurs va darslarni ham o'quvchi ko'rinishida oldindan ko'ra oladi
+    if is_manager:
+        course = get_object_or_404(Course, slug=slug)
+    else:
+        course = get_object_or_404(Course, slug=slug, is_published=True, is_archived=False)
     enrollment = get_enrollment(request.user, course) if request.user.is_authenticated else None
     has_access = has_full_access(request.user, course, enrollment)
 
-    # Kursning barcha darslari tartiblangan holda
-    all_lessons = get_course_lessons(course)
+    # Kursning barcha (o'quvchi uchun — faqat nashr qilingan) darslari tartiblangan holda
+    all_lessons = get_course_lessons(course, include_drafts=is_manager)
     if not all_lessons:
         messages.info(request, "Ushbu kursda darslar tez orada yuklanadi.")
         return redirect('course_detail', slug=course.slug)
@@ -153,7 +159,8 @@ def web_course_learn_view(request, slug, lesson_id=None):
 
     # Modullarni darslari bilan birga tayyorlash
     modules_with_lessons = []
-    for module in course.modules.all().prefetch_related('lessons'):
+    module_qs = course.modules.all() if is_manager else course.modules.filter(is_published=True)
+    for module in module_qs.order_by('order', 'id'):
         mod_lessons = [l for l in all_lessons if l.module_id == module.id]
         modules_with_lessons.append({
             'module': module,
@@ -189,6 +196,9 @@ def web_course_learn_view(request, slug, lesson_id=None):
         'assignment': assignment,
         'user_submission': user_submission,
     }
+    if current_lesson.is_interactive:
+        from apps.interactive.views import render_interactive_lesson
+        return render_interactive_lesson(request, context)
     return render(request, 'learning/player.html', context)
 
 
@@ -267,7 +277,10 @@ def web_submit_assignment_view(request, assignment_id):
 @require_POST
 def web_toggle_lesson_view(request, lesson_id):
     """Web interfeysdan darsni tugatilgan/tugatilmagan deb belgilash."""
-    lesson = get_object_or_404(Lesson.objects.select_related('module__course'), id=lesson_id)
+    lesson = get_object_or_404(
+        Lesson.objects.select_related('module__course'),
+        id=lesson_id, is_published=True, module__is_published=True,
+    )
     enrollment = get_enrollment(request.user, lesson.module.course)
     if not enrollment:
         return JsonResponse({"error": "Kursga yozilmagan"}, status=403)

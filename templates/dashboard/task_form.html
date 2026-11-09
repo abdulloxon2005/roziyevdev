@@ -1,0 +1,143 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}{% if task %}Topshiriqni tahrirlash{% else %}Yangi topshiriq{% endif %}{% endblock %}
+{% block page_title %}{% if task %}Topshiriqni tahrirlash{% else %}Yangi topshiriq{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      {% if task and task.lesson %}
+        <a href="{% url 'dashboard_lesson_interactive' course.slug task.lesson.id %}" class="text-xs font-bold text-slate-500 hover:text-blue-600"><i class="fa-solid fa-arrow-left mr-1"></i>{{ task.lesson.title }}</a>
+      {% else %}
+        <a href="{% url 'dashboard_module_assessment' course.slug module.id %}" class="text-xs font-bold text-slate-500 hover:text-blue-600"><i class="fa-solid fa-arrow-left mr-1"></i>{{ module.title }}</a>
+      {% endif %}
+      <h1 class="text-xl font-black mt-1">{% if task %}{{ task.title }}{% else %}Yangi topshiriq — {{ module.title }}{% endif %}</h1>
+      {% if task %}<p class="text-xs text-slate-400 font-mono">{{ task.logical_name }}</p>{% endif %}
+    </div>
+    {% if task and task.lesson %}
+      <a href="{% url 'course_learn_lesson' course.slug task.lesson.id %}" target="_blank" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"><i class="fa-solid fa-eye mr-1"></i>Oldindan ko'rish</a>
+    {% endif %}
+  </div>
+
+  {% if report %}
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-4 space-y-1.5">
+      <div class="text-[11px] font-black uppercase tracking-wider text-slate-500">Avtomatik tekshiruv (sandbox orqali)</div>
+      {% for level, msg in report %}
+        <p class="text-sm whitespace-pre-line {% if level == 'error' %}text-rose-600{% elif level == 'warning' %}text-amber-600{% else %}text-emerald-600{% endif %}">
+          <i class="fa-solid {% if level == 'error' %}fa-circle-xmark{% elif level == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-check{% endif %} mr-1"></i>{{ msg }}
+        </p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="POST" class="space-y-6" id="task-form">
+    {% csrf_token %}
+    {% for e in form.non_field_errors %}<p class="text-rose-500 text-sm">{{ e }}</p>{% endfor %}
+
+    <section class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+      <h2 class="font-extrabold">1. Asosiy ma'lumotlar</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% include 'dashboard/_field.html' with field=form.lesson wrapper_class='md:col-span-3' %}
+        {% include 'dashboard/_field.html' with field=form.section %}
+        {% include 'dashboard/_field.html' with field=form.kind %}
+        {% include 'dashboard/_field.html' with field=form.difficulty %}
+        {% include 'dashboard/_field.html' with field=form.order %}
+        {% include 'dashboard/_field.html' with field=form.points %}
+        {% include 'dashboard/_field.html' with field=form.is_published %}
+      </div>
+      {% include 'dashboard/_field.html' with field=form.title %}
+      {% include 'dashboard/_field.html' with field=form.prompt %}
+    </section>
+
+    <section class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+      <h2 class="font-extrabold">2. Kod va to'g'ri javob</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% include 'dashboard/_field.html' with field=form.code_snippet %}
+        {% include 'dashboard/_field.html' with field=form.starter_code %}
+        {% include 'dashboard/_field.html' with field=form.expected_output_example %}
+        {% include 'dashboard/_field.html' with field=form.correct_answer %}
+      </div>
+    </section>
+
+    <section class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-5 space-y-3" data-kind-section="choice">
+      <h2 class="font-extrabold">3. Javob variantlari <span class="text-xs font-semibold text-slate-400">(test turlari uchun)</span></h2>
+      {{ options.management_form }}
+      {% for e in options.non_form_errors %}<p class="text-rose-500 text-xs">{{ e }}</p>{% endfor %}
+      <div class="space-y-2" id="options-list">
+        {% for f in options %}
+          <div class="grid grid-cols-12 gap-2 items-start p-2 rounded-xl border border-slate-200 dark:border-slate-800">
+            {{ f.id }}
+            <div class="col-span-2 sm:col-span-1">{{ f.order }}</div>
+            <div class="col-span-10 sm:col-span-6">{{ f.text }}{% for e in f.text.errors %}<p class="text-rose-500 text-xs">{{ e }}</p>{% endfor %}</div>
+            <div class="col-span-12 sm:col-span-3">{{ f.feedback }}</div>
+            <label class="col-span-6 sm:col-span-1 flex items-center gap-1 text-xs font-bold pt-2">{{ f.is_correct }} To'g'ri</label>
+            <label class="col-span-6 sm:col-span-1 flex items-center gap-1 text-xs text-rose-500 pt-2">{{ f.DELETE }} O'chir</label>
+          </div>
+        {% endfor %}
+      </div>
+      <p class="text-[11px] text-slate-400">Ustunlar: tartib · variant matni (Markdown) · shu variant tanlanganda izoh · to'g'rimi. Ko'proq variant kerak bo'lsa — saqlab, qayta oching (har safar 2 ta bo'sh qator qo'shiladi).</p>
+    </section>
+
+    <section class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-5 space-y-3" data-kind-section="code">
+      <h2 class="font-extrabold">4. Avtomatik testlar <span class="text-xs font-semibold text-slate-400">(kod yozish, xatoni tuzatish, bo'sh joy)</span></h2>
+      {{ tests.management_form }}
+      {% for e in tests.non_form_errors %}<p class="text-rose-500 text-xs">{{ e }}</p>{% endfor %}
+      <div class="space-y-3">
+        {% for f in tests %}
+          <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+            {{ f.id }}
+            <div class="grid grid-cols-12 gap-2">
+              <div class="col-span-3 sm:col-span-1">{{ f.order }}</div>
+              <div class="col-span-9 sm:col-span-4">{{ f.check_type }}</div>
+              <div class="col-span-12 sm:col-span-7">{{ f.description }}{% for e in f.description.errors %}<p class="text-rose-500 text-xs">{{ e }}</p>{% endfor %}</div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div><div class="text-[10px] font-bold uppercase text-slate-400 mb-1">Kutilgan qiymat</div>{{ f.expected }}{% for e in f.expected.errors %}<p class="text-rose-500 text-xs">{{ e }}</p>{% endfor %}</div>
+              <div><div class="text-[10px] font-bold uppercase text-slate-400 mb-1">input() ma'lumotlari (ixtiyoriy)</div>{{ f.stdin }}</div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+              <div class="sm:col-span-6">{{ f.failure_message }}</div>
+              <label class="sm:col-span-2 flex items-center gap-1 text-xs">{{ f.ignore_case }} Harf farqsiz</label>
+              <label class="sm:col-span-2 flex items-center gap-1 text-xs">{{ f.is_hidden }} Yashirin</label>
+              <label class="sm:col-span-2 flex items-center gap-1 text-xs text-rose-500">{{ f.DELETE }} O'chir</label>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <p class="text-[11px] text-slate-400">Saqlanganda to'liq yechim sandbox'da testlar bilan avtomatik sinab ko'riladi. «Xatoni tuzatish» turida xatoli boshlang'ich kod testlardan o'tmasligi ham tekshiriladi.</p>
+    </section>
+
+    <section class="rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+      <h2 class="font-extrabold">5. Yordam va yechim</h2>
+      {% include 'dashboard/_field.html' with field=form.hint %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% include 'dashboard/_field.html' with field=form.partial_solution %}
+        {% include 'dashboard/_field.html' with field=form.full_solution %}
+      </div>
+      {% include 'dashboard/_field.html' with field=form.solution_unlock_attempts %}
+      {% include 'dashboard/_field.html' with field=form.explanation %}
+    </section>
+
+    <div class="flex flex-wrap justify-end gap-3">
+      <button type="submit" name="_continue" value="1" class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Saqlash va davom etish</button>
+      <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-extrabold">Saqlash</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Topshiriq turiga qarab bo'limlarni ajratib ko'rsatish
+  const kindSelect = document.querySelector('#task-form select[name="kind"]');
+  function applyKind() {
+    const k = kindSelect.value;
+    const isChoice = k === 'single_choice' || k === 'multiple_choice';
+    const usesTests = k === 'code' || k === 'find_error' || k === 'fill_blank';
+    document.querySelector('[data-kind-section="choice"]').style.opacity = isChoice ? '1' : '0.45';
+    document.querySelector('[data-kind-section="code"]').style.opacity = usesTests ? '1' : '0.45';
+  }
+  if (kindSelect) { kindSelect.addEventListener('change', applyKind); applyKind(); }
+</script>
+{% endblock %}

@@ -1,0 +1,259 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load humanize %}
+
+{% block title %}Statistika — roziyevdev Ustoz Studiyasi{% endblock %}
+{% block page_title %}Statistika & Tahlil{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- TOP SUMMARY CARDS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Jami Foydalanuvchilar</span>
+                <span class="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center text-base">
+                    <i class="fa-solid fa-user-group"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ total_users }} ta</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+                {{ students_count }} talaba • {{ instructors_count }} o'qituvchi
+            </div>
+        </div>
+
+        <div class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Umumiy Daromad</span>
+                <span class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-base">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400">{{ total_revenue_all_time|intcomma }}</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">so'm, barcha davr</div>
+        </div>
+
+        <div class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">O'rtacha Buyurtma</span>
+                <span class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-base">
+                    <i class="fa-solid fa-receipt"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ avg_order_value|intcomma }}</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">so'm / buyurtma</div>
+        </div>
+
+        <div class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Vazifa Qabul Darajasi</span>
+                <span class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base">
+                    <i class="fa-solid fa-circle-check"></i>
+                </span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-emerald-500">{{ approval_rate }}%</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+                {{ approved_submissions }}/{{ total_submissions }} vazifa qabul qilindi
+            </div>
+        </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- REVENUE CHART -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-chart-column"></i>
+                </span>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Oylik Daromad (so'nggi 6 oy)</h3>
+            </div>
+            <div class="h-64">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- NEW USERS CHART -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-500 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-user-plus"></i>
+                </span>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Yangi Foydalanuvchilar (so'nggi 6 oy)</h3>
+            </div>
+            <div class="h-64">
+                <canvas id="usersChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP COURSES & CATEGORY BREAKDOWN -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- TOP COURSES BY STUDENTS -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-trophy"></i>
+                </span>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Eng Ko'p O'qiladigan Kurslar</h3>
+            </div>
+            {% if top_courses_by_students %}
+            <div class="space-y-4">
+                {% for course in top_courses_by_students %}
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-800 dark:text-slate-200 truncate pr-2">{{ forloop.counter }}. {{ course.title }}</span>
+                        <span class="font-black text-blue-600 dark:text-blue-400 flex-shrink-0">{{ course.enrolled }} ta</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                        <div class="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full" style="width: {% widthratio course.enrolled top_courses_by_students.0.enrolled 100 %}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-8 text-center text-slate-400 text-xs">Hali yetarli ma'lumot yo'q.</div>
+            {% endif %}
+        </div>
+
+        <!-- CATEGORY BREAKDOWN -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-500 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-tags"></i>
+                </span>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Kategoriyalar Bo'yicha Taqsimot</h3>
+            </div>
+            {% if category_breakdown %}
+            <div class="space-y-4">
+                {% for cat in category_breakdown %}
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-800 dark:text-slate-200 truncate pr-2"><i class="{{ cat.icon }} mr-1.5 text-slate-400"></i>{{ cat.name }}</span>
+                        <span class="font-black text-pink-500 flex-shrink-0">{{ cat.students_count }} talaba • {{ cat.courses_count }} kurs</span>
+                    </div>
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                        <div class="bg-gradient-to-r from-pink-500 to-rose-500 h-full rounded-full" style="width: {% widthratio cat.students_count category_breakdown.0.students_count 100 %}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-8 text-center text-slate-400 text-xs">Hali yetarli ma'lumot yo'q.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- TOP COURSES BY REVENUE + SUBMISSION BREAKDOWN -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-coins"></i>
+                </span>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Eng Ko'p Daromad Keltirgan Kurslar</h3>
+            </div>
+            {% if top_courses_by_revenue %}
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for course in top_courses_by_revenue %}
+                <div class="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0">
+                    <span class="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{{ forloop.counter }}. {{ course.title }}</span>
+                    <span class="text-sm font-black text-amber-500 flex-shrink-0">{{ course.revenue|intcomma }} so'm</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-8 text-center text-slate-400 text-xs">Hali to'langan buyurtma yo'q.</div>
+            {% endif %}
+        </div>
+
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-list-check"></i>
+                </span>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Vazifalar Holati</h3>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-center">
+                <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                    <div class="text-xl font-black text-amber-500">{{ pending_submissions }}</div>
+                    <div class="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1">Kutilmoqda</div>
+                </div>
+                <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                    <div class="text-xl font-black text-emerald-500">{{ approved_submissions }}</div>
+                    <div class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">Qabul qilindi</div>
+                </div>
+                <div class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+                    <div class="text-xl font-black text-rose-500">{{ rejected_submissions }}</div>
+                    <div class="text-[10px] font-bold text-rose-600 dark:text-rose-400 mt-1">Qaytarildi</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.6.1/chart.umd.min.js"></script>
+<script>
+    (function () {
+        const isDark = document.documentElement.classList.contains('dark');
+        const gridColor = isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(100, 116, 139, 0.1)';
+        const tickColor = isDark ? '#94a3b8' : '#64748b';
+
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+        const monthLabels = {{ month_labels|safe }};
+
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'bar',
+            data: {
+                labels: monthLabels,
+                datasets: [{
+                    label: "Daromad (so'm)",
+                    data: {{ revenue_chart|safe }},
+                    backgroundColor: 'rgba(147, 51, 234, 0.7)',
+                    borderRadius: 8,
+                    maxBarThickness: 42,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } },
+                    x: { grid: { display: false }, ticks: { color: tickColor } }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('usersChart'), {
+            type: 'line',
+            data: {
+                labels: monthLabels,
+                datasets: [{
+                    label: "Yangi foydalanuvchilar",
+                    data: {{ users_chart|safe }},
+                    borderColor: 'rgba(6, 182, 212, 1)',
+                    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgba(6, 182, 212, 1)',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor, precision: 0 } },
+                    x: { grid: { display: false }, ticks: { color: tickColor } }
+                }
+            }
+        });
+    })();
+</script>
+{% endblock %}

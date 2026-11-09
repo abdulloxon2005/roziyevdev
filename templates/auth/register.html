@@ -129,6 +129,71 @@
                 </div>
             </div>
 
+            <!-- Manzil -->
+            <div class="pt-2 space-y-4">
+                <div class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                    <i class="fa-solid fa-location-dot text-blue-500"></i>
+                    <span>Manzil</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="country" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                            Davlat
+                        </label>
+                        <select
+                            id="country"
+                            name="country"
+                            required
+                            class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-[#0b0f19] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 transition-colors shadow-sm"
+                        >
+                            <option value="O'zbekiston" selected>O'zbekiston</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="region" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                            Viloyat
+                        </label>
+                        <select
+                            id="region"
+                            name="region"
+                            required
+                            class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-[#0b0f19] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 transition-colors shadow-sm"
+                        >
+                            <option value="">Viloyatni tanlang</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="district" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                            Tuman / Shahar
+                        </label>
+                        <select
+                            id="district"
+                            name="district"
+                            required
+                            class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-[#0b0f19] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 transition-colors shadow-sm disabled:opacity-60"
+                        >
+                            <option value="">Avval viloyatni tanlang</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="village" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                            Qishloq / Mahalla
+                        </label>
+                        <input
+                            type="text"
+                            id="village"
+                            name="village"
+                            placeholder="Masalan: Guliston MFY"
+                            class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-[#0b0f19] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 transition-colors shadow-sm"
+                        >
+                    </div>
+                </div>
+            </div>
+
             <button type="submit" class="w-full mt-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all duration-200 flex items-center justify-center gap-2">
                 <span>Ro'yxatdan O'tish</span>
                 <i class="fa-solid fa-arrow-right text-xs"></i>
@@ -144,4 +209,14 @@
         </div>
     </div>
 </div>
+
+<script src="/static/js/uzbekistan-address.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initUzbekistanAddressSelects(
+            document.getElementById('region'),
+            document.getElementById('district')
+        );
+    });
+</script>
 {% endblock %}

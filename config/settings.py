@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'apps.projects',
     'apps.student',
     'apps.duels',
+    'apps.interactive',
 ]
 
 MIDDLEWARE = [
@@ -264,6 +265,24 @@ CLICK_MERCHANT_USER_ID = os.getenv('CLICK_MERCHANT_USER_ID', '')
 
 # Faqat ishlab chiqish uchun: haqiqiy pulsiz "test to'lov"
 PAYMENTS_DEMO_ENABLED = env_bool('PAYMENTS_DEMO_ENABLED', DEBUG)
+
+# ==============================================================================
+# KOD BAJARISH SANDBOX'I (interaktiv darslar, vazifalar, loyihalar IDE)
+# ==============================================================================
+# BACKEND:
+#   subprocess — har bir ishga tushirish alohida, cheklangan Python jarayonida (lokal ishlab chiqish)
+#   http       — alohida sandbox konteyneri (code_sandbox/Dockerfile) — production uchun tavsiya
+#   disabled   — kod bajarish o'chirilgan (foydalanuvchiga halol xabar ko'rsatiladi)
+CODE_RUNNER = {
+    'BACKEND': os.getenv('CODE_RUNNER_BACKEND', 'subprocess'),
+    'URL': os.getenv('CODE_RUNNER_URL', ''),
+    'TOKEN': os.getenv('CODE_RUNNER_TOKEN', ''),
+    'TIMEOUT_SECONDS': float(os.getenv('CODE_RUNNER_TIMEOUT', '5')),
+    'CPU_SECONDS': int(os.getenv('CODE_RUNNER_CPU_SECONDS', '3')),
+    'MEMORY_MB': int(os.getenv('CODE_RUNNER_MEMORY_MB', '256')),
+    'MAX_OUTPUT_CHARS': int(os.getenv('CODE_RUNNER_MAX_OUTPUT', '20000')),
+    'RATE_LIMIT_PER_MINUTE': int(os.getenv('CODE_RUNNER_RATE_LIMIT', '40')),
+}
 
 # ==============================================================================
 # PRODUCTION XAVFSIZLIGI

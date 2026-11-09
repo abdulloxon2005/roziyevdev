@@ -9,13 +9,12 @@ from .models import Enrollment, LessonProgress
 from .signals import course_completed
 
 
-def get_course_lessons(course):
-    """Kursning barcha darslari to'g'ri tartibda (modul → dars)."""
-    return list(
-        Lesson.objects.filter(module__course=course)
-        .select_related('module')
-        .order_by('module__order', 'module__id', 'order', 'id')
-    )
+def get_course_lessons(course, include_drafts=False):
+    """Kursning darslari to'g'ri tartibda (modul → dars). Qoralamalar faqat include_drafts=True bo'lganda."""
+    qs = Lesson.objects.filter(module__course=course)
+    if not include_drafts:
+        qs = qs.filter(is_published=True, module__is_published=True)
+    return list(qs.select_related('module').order_by('module__order', 'module__id', 'order', 'id'))
 
 
 def get_enrollment(user, course):
@@ -47,8 +46,11 @@ def enroll_user(user, course):
 
 def recalculate_progress(enrollment):
     """Progressni qayta hisoblaydi. Qaytaradi: kurs aynan hozir tugatildimi (True/False)."""
-    total = Lesson.objects.filter(module__course_id=enrollment.course_id).count()
-    done = enrollment.lesson_progress.count()
+    published = Lesson.objects.filter(
+        module__course_id=enrollment.course_id, is_published=True, module__is_published=True
+    )
+    total = published.count()
+    done = enrollment.lesson_progress.filter(lesson__in=published).count()
     # floor: 199/200 dars "100%" bo'lib ko'rinmasligi uchun
     enrollment.progress_percent = (done * 100 // total) if total else 0
 

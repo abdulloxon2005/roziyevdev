@@ -79,6 +79,9 @@ urlpatterns = [
     path('student/duel/', include('apps.duels.urls')),
     path('student/', include('apps.student.urls')),
 
+    # Interaktiv ta'lim (kod muharriri, topshiriqlar, modul nazorati, progress)
+    path('interactive/', include('apps.interactive.urls')),
+
     # O'quv jarayoni (Learning)
     path('', include('apps.learning.urls')),
 

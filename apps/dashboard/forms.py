@@ -1,6 +1,8 @@
 from django import forms
+from django.contrib.auth.password_validation import validate_password
 from apps.courses.models import Course, CourseModule, Lesson, Category
 from apps.learning.models import Assignment
+from apps.users.models import CustomUser
 
 
 class TailwindFormMixin:
@@ -44,6 +46,7 @@ class CourseForm(TailwindFormMixin, forms.ModelForm):
             'requirements',
             'is_published',
             'is_featured',
+            'is_archived',
         ]
         widgets = {
             'short_description': forms.Textarea(attrs={'rows': 2, 'placeholder': "Kurs haqida qisqacha ma'lumot (kartochkalar uchun)..."}),
@@ -66,9 +69,10 @@ class CourseForm(TailwindFormMixin, forms.ModelForm):
 class CourseModuleForm(TailwindFormMixin, forms.ModelForm):
     class Meta:
         model = CourseModule
-        fields = ['title', 'order']
+        fields = ['title', 'description', 'order', 'is_published']
         widgets = {
             'title': forms.TextInput(attrs={'placeholder': "Masalan: 1-bo'lim: Kirish va asosiy tushunchalar"}),
+            'description': forms.Textarea(attrs={'rows': 2, 'placeholder': "Modul haqida qisqacha (ixtiyoriy)"}),
             'order': forms.NumberInput(attrs={'min': 1}),
         }
 
@@ -151,10 +155,15 @@ class LessonForm(TailwindFormMixin, forms.ModelForm):
             'source_code_url',
             'duration_minutes',
             'is_preview',
+            'is_published',
+            'objective',
+            'key_concepts',
             'order',
         ]
         widgets = {
             'title': forms.TextInput(attrs={'placeholder': "Masalan: 1.1. Dart dasturlash tiliga kirish"}),
+            'objective': forms.Textarea(attrs={'rows': 2, 'placeholder': "Dars oxirida o'quvchi nimani bila oladi / qila oladi?"}),
+            'key_concepts': forms.Textarea(attrs={'rows': 3, 'placeholder': "print() funksiyasi\nsep va end parametrlari"}),
             'video_url': forms.URLInput(attrs={'placeholder': "https://www.youtube.com/watch?v=... yoki Vimeo"}),
             'source_code_url': forms.URLInput(attrs={'placeholder': "https://github.com/foydalanuvchi/loyiha"}),
             'content': forms.Textarea(attrs={'rows': 6, 'placeholder': "Dars konspekti, formulalar, izohlar (Markdown)..."}),
@@ -233,3 +242,73 @@ class LessonForm(TailwindFormMixin, forms.ModelForm):
                 assignment.is_active = False
                 assignment.save()
             return None
+
+
+class CategoryForm(TailwindFormMixin, forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ['name', 'icon', 'description', 'order', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': "Masalan: Web Dasturlash"}),
+            'icon': forms.TextInput(attrs={'placeholder': "fa-solid fa-globe"}),
+            'description': forms.Textarea(attrs={'rows': 3, 'placeholder': "Kategoriya haqida qisqacha tavsif..."}),
+            'order': forms.NumberInput(attrs={'min': 0}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['icon'].required = False
+
+    def clean_icon(self):
+        return self.cleaned_data.get('icon') or 'fa-solid fa-code'
+
+
+class UserRoleForm(TailwindFormMixin, forms.ModelForm):
+    """Mavjud foydalanuvchining rolini va holatini tahrirlash uchun (Admin paneli)."""
+    class Meta:
+        model = CustomUser
+        fields = ['role', 'is_active', 'is_staff']
+        labels = {
+            'role': "Foydalanuvchi roli",
+            'is_active': "Hisob faolmi? (Nofaol bo'lsa tizimga kira olmaydi)",
+            'is_staff': "Django Admin paneliga kirish huquqi (Staff)",
+        }
+
+
+class UserCreateForm(TailwindFormMixin, forms.ModelForm):
+    """Admin panelidan yangi foydalanuvchi (masalan, o'qituvchi) qo'shish uchun."""
+    password = forms.CharField(
+        label="Boshlang'ich parol",
+        widget=forms.PasswordInput(attrs={'placeholder': "Kamida 6 ta belgi"}),
+        validators=[validate_password],
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'username', 'email', 'phone', 'role']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'placeholder': "Ism"}),
+            'last_name': forms.TextInput(attrs={'placeholder': "Familiya"}),
+            'username': forms.TextInput(attrs={'placeholder': "username"}),
+            'email': forms.EmailInput(attrs={'placeholder': "email@misol.uz"}),
+            'phone': forms.TextInput(attrs={'placeholder': "+998 90 123 45 67"}),
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        if CustomUser.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("Bu elektron pochta bilan foydalanuvchi allaqachon mavjud.")
+        return email
+
+    def clean_username(self):
+        username = self.cleaned_data['username'].strip()
+        if CustomUser.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError("Bu foydalanuvchi nomi band qilingan.")
+        return username
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password'])
+        if commit:
+            user.save()
+        return user

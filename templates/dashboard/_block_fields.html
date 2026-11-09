@@ -1,0 +1,13 @@
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+  {% include 'dashboard/_field.html' with field=form.block_type wrapper_class='sm:col-span-2' %}
+  {% include 'dashboard/_field.html' with field=form.order %}
+</div>
+{% include 'dashboard/_field.html' with field=form.title %}
+{% include 'dashboard/_field.html' with field=form.callout_style %}
+{% include 'dashboard/_field.html' with field=form.code %}
+{% include 'dashboard/_field.html' with field=form.is_runnable %}
+{% include 'dashboard/_field.html' with field=form.body %}
+{% include 'dashboard/_field.html' with field=form.image %}
+{% include 'dashboard/_field.html' with field=form.video_url %}
+{% include 'dashboard/_field.html' with field=form.task %}
+{% for e in form.non_field_errors %}<p class="text-rose-500 text-xs">{{ e }}</p>{% endfor %}

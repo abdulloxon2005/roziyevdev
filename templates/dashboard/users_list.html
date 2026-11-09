@@ -1,0 +1,263 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Foydalanuvchilar — roziyevdev Ustoz Studiyasi{% endblock %}
+{% block page_title %}Foydalanuvchilarni Boshqarish{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- SEARCH & FILTER BAR -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <form method="GET" class="flex flex-wrap items-center gap-3 flex-1">
+            <div class="relative flex-1 min-w-[200px]">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="Ism, username yoki email bo'yicha qidirish..."
+                    class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+            </div>
+
+            <select name="role" onchange="this.form.submit()" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Barcha Rollar</option>
+                {% for value, label in role_choices %}
+                    <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="status" onchange="this.form.submit()" class="px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Barcha Holatlar</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Faol</option>
+                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Nofaol</option>
+            </select>
+
+            {% if query or role_filter or status_filter %}
+                <a href="{% url 'dashboard_users_list' %}" class="text-xs text-rose-500 hover:underline px-2 py-1 font-semibold">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Tozalash
+                </a>
+            {% endif %}
+        </form>
+
+        <div class="flex items-center gap-3 flex-shrink-0">
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400">
+                Jami: <span class="text-slate-900 dark:text-white font-black">{{ total_count }}</span> ta foydalanuvchi
+            </div>
+            <button onclick="openCreateUserModal()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold transition-all shadow-md shadow-blue-600/20 inline-flex items-center gap-2">
+                <i class="fa-solid fa-user-plus"></i> Yangi Foydalanuvchi
+            </button>
+        </div>
+    </div>
+
+    <!-- USERS TABLE -->
+    <div class="rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        {% if users %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs sm:text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 uppercase text-[10px] font-black tracking-wider">
+                        <th class="py-4 px-5">Foydalanuvchi</th>
+                        <th class="py-4 px-4">Rol</th>
+                        <th class="py-4 px-4">Kurslar</th>
+                        <th class="py-4 px-4">Tangachalar</th>
+                        <th class="py-4 px-4">Holati</th>
+                        <th class="py-4 px-4">Ro'yxatdan o'tgan</th>
+                        <th class="py-4 px-5 text-right">Amallar</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for u in users %}
+                    <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                        <!-- USER -->
+                        <td class="py-4 px-5">
+                            <div class="flex items-center gap-3">
+                                <img src="{{ u.profile.avatar_url }}" alt="{{ u.display_name }}" class="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                        {{ u.display_name }}
+                                        {% if u.is_superuser %}
+                                            <i class="fa-solid fa-crown text-amber-400 text-[10px]" title="Superadmin"></i>
+                                        {% endif %}
+                                    </h4>
+                                    <p class="text-[11px] text-slate-400">{{ u.email }}</p>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- ROLE -->
+                        <td class="py-4 px-4">
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border {% if u.role == 'admin' %}bg-purple-500/10 text-purple-500 border-purple-500/20{% elif u.role == 'instructor' %}bg-indigo-500/10 text-indigo-500 border-indigo-500/20{% else %}bg-cyan-500/10 text-cyan-500 border-cyan-500/20{% endif %}">
+                                {{ u.get_role_display }}
+                            </span>
+                        </td>
+
+                        <!-- ENROLLMENTS -->
+                        <td class="py-4 px-4 text-slate-600 dark:text-slate-300 font-semibold">
+                            {{ u.enrollments_count }} ta
+                        </td>
+
+                        <!-- COINS -->
+                        <td class="py-4 px-4">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                <span class="material-symbols-outlined text-[14px] text-amber-500">monetization_on</span> {{ u.coins }}
+                            </span>
+                        </td>
+
+                        <!-- STATUS -->
+                        <td class="py-4 px-4">
+                            {% if u.is_active %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check text-[10px]"></i> Faol
+                                </span>
+                            {% else %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-ban text-[10px]"></i> Nofaol
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- DATE -->
+                        <td class="py-4 px-4 text-slate-400 text-xs">
+                            {{ u.date_joined|date:"d.m.Y" }}
+                        </td>
+
+                        <!-- ACTIONS -->
+                        <td class="py-4 px-5">
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="openEditUserModal({{ u.id }}, '{{ u.display_name|escapejs }}', '{{ u.role }}', {{ u.is_active|yesno:"true,false" }}, {{ u.is_staff|yesno:"true,false" }})" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition-colors text-xs" title="Tahrirlash">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                {% if u.id != request.user.id %}
+                                <form method="POST" action="{% url 'dashboard_user_delete' u.id %}" onsubmit="return confirm('«{{ u.display_name }}» foydalanuvchisini butunlay o\'chirmoqchimisiz? Bu amalni ortga qaytarib bo\'lmaydi.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors text-xs" title="O'chirish">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-16 text-center space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-violet-500/10 text-violet-500 flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-user-gear"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Foydalanuvchilar topilmadi</h3>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto">Qidiruv so'zini o'zgartiring yoki filtrlarni tozalang.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CREATE USER MODAL -->
+<div id="create-user-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-base font-black text-slate-900 dark:text-white">Yangi Foydalanuvchi Qo'shish</h3>
+            <button onclick="closeCreateUserModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        <form method="POST" action="{% url 'dashboard_user_create' %}" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Ism</label>
+                    {{ create_form.first_name }}
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Familiya</label>
+                    {{ create_form.last_name }}
+                </div>
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Username <span class="text-rose-500">*</span></label>
+                {{ create_form.username }}
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Email <span class="text-rose-500">*</span></label>
+                {{ create_form.email }}
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Telefon</label>
+                {{ create_form.phone }}
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Rol</label>
+                {{ create_form.role }}
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Boshlang'ich parol <span class="text-rose-500">*</span></label>
+                {{ create_form.password }}
+            </div>
+            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                <button type="button" onclick="closeCreateUserModal()" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold">Bekor qilish</button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold shadow-sm">Yaratish</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div id="edit-user-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-base font-black text-slate-900 dark:text-white">
+                <span id="edit-user-name"></span>ni Tahrirlash
+            </h3>
+            <button onclick="closeEditUserModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        <form id="edit-user-form" method="POST" action="" class="space-y-4">
+            {% csrf_token %}
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Rol</label>
+                <select id="edit-user-role" name="role" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {% for value, label in role_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="space-y-2.5 pt-1">
+                <label class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <input type="checkbox" id="edit-user-is-active" name="is_active" class="w-5 h-5 text-blue-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 rounded focus:ring-blue-500 focus:ring-2">
+                    Hisob faol (nofaol bo'lsa tizimga kira olmaydi)
+                </label>
+                <label class="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <input type="checkbox" id="edit-user-is-staff" name="is_staff" class="w-5 h-5 text-blue-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 rounded focus:ring-blue-500 focus:ring-2">
+                    Django Admin paneliga kirish huquqi (Staff)
+                </label>
+            </div>
+            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                <button type="button" onclick="closeEditUserModal()" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold">Bekor qilish</button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold shadow-sm">Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function openCreateUserModal() { document.getElementById('create-user-modal').classList.remove('hidden'); }
+    function closeCreateUserModal() { document.getElementById('create-user-modal').classList.add('hidden'); }
+
+    function openEditUserModal(id, name, role, isActive, isStaff) {
+        const form = document.getElementById('edit-user-form');
+        form.action = "/dashboard/users/" + id + "/edit/";
+        document.getElementById('edit-user-name').textContent = name;
+        document.getElementById('edit-user-role').value = role;
+        document.getElementById('edit-user-is-active').checked = isActive;
+        document.getElementById('edit-user-is-staff').checked = isStaff;
+        document.getElementById('edit-user-modal').classList.remove('hidden');
+    }
+    function closeEditUserModal() { document.getElementById('edit-user-modal').classList.add('hidden'); }
+</script>
+{% endblock %}

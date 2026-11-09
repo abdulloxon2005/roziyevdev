@@ -1,11 +1,6 @@
 import os
 import io
-import ast
-import sys
-import time
-import builtins as _builtins_module
 import zipfile
-import contextlib
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -207,203 +202,47 @@ def student_assignment_solve_view(request, assignment_id):
 # 3. LOYIHALAR BO'LIMI (PROJECTS & IN-BROWSER IDE)
 # ==============================================================================
 
-# Talaba kodini bajarishda ruxsat etilgan "xavfsiz" builtin'lar ro'yxati.
-# Fayl tizimiga, tarmoqqa, boshqa modullarga (os, sys, subprocess va h.k.)
-# kirish imkonini beradigan hech narsa shu ro'yxatga kiritilmaydi
-# (masalan: open, __import__, eval, exec, compile, globals, locals, dir).
-_SAFE_BUILTIN_NAMES = (
-    'abs', 'all', 'any', 'bin', 'bool', 'chr', 'complex', 'dict', 'divmod',
-    'enumerate', 'filter', 'float', 'format', 'frozenset', 'hex', 'int',
-    'isinstance', 'issubclass', 'len', 'list', 'map', 'max', 'min', 'next',
-    'oct', 'ord', 'pow', 'print', 'range', 'repr', 'reversed', 'round',
-    'set', 'slice', 'sorted', 'str', 'sum', 'tuple', 'type', 'zip',
-    'super', 'object', 'property', 'classmethod', 'staticmethod',
-    'True', 'False', 'None', 'NotImplemented', '__build_class__', '__name__',
-    'Exception', 'BaseException', 'ValueError', 'TypeError', 'IndexError',
-    'KeyError', 'ZeroDivisionError', 'StopIteration', 'RuntimeError',
-    'ArithmeticError', 'OverflowError', 'NameError', 'AttributeError',
-    'AssertionError', 'FloatingPointError', 'LookupError', 'UnicodeError',
-    'NotImplementedError', 'RecursionError',
-)
-
-# Bajarilish vaqti / amallar soni chegarasi (cheksiz sikllarni to'xtatish uchun)
-_EXEC_MAX_SECONDS = 3
-_EXEC_MAX_STEPS = 300_000
-_EXEC_MAX_OUTPUT_CHARS = 20_000
-
-# `object.__class__.__bases__[0].__subclasses__()` kabi "sandbox escape"
-# usullarining oldini olish uchun xavfli dunder atributlarga murojaat
-# (attribute access) qilish taqiqlanadi. Oddiy magic metodlar
-# (__init__, __str__, super().__init__() va h.k.) ta'sirlanmaydi, chunki ular
-# metod ta'rifi (FunctionDef) sifatida yoziladi, Attribute access sifatida emas.
-_BLOCKED_DUNDER_ATTRS = {
-    '__class__', '__bases__', '__base__', '__subclasses__', '__mro__',
-    '__globals__', '__builtins__', '__import__', '__getattribute__',
-    '__code__', '__closure__', '__func__', '__self__', '__dict__',
-    '__reduce__', '__reduce_ex__', '__subclasshook__', '__loader__',
-    '__spec__', '__module__',
-}
-_BLOCKED_NAMES = {
-    'exec', 'eval', 'compile', '__import__', 'globals', 'locals', 'vars',
-    'open', 'getattr', 'setattr', 'delattr', 'dir', 'help', 'breakpoint',
-}
+# Talaba kodi web-server jarayonida HECH QACHON exec() qilinmaydi: barcha bajarish
+# apps.core.code_runner orqali alohida, resurslari cheklangan sandbox'ga yuboriladi.
+# Hozircha faqat Python qo'llab-quvvatlanadi; boshqa tillar uchun soxta natija
+# ko'rsatilmaydi — halol "qo'llab-quvvatlanmaydi" xabari qaytariladi.
+DEFAULT_PROJECT_STDIN = ""
 
 
-def _find_unsafe_construct(code):
-    """Kodni bajarishdan oldin AST orqali xavfli konstruksiyalarni aniqlaydi."""
-    try:
-        tree = ast.parse(code)
-    except SyntaxError:
-        return None  # Sintaksis xatosi - buni haqiqiy exec() xato sifatida ko'rsatamiz
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Attribute) and node.attr in _BLOCKED_DUNDER_ATTRS:
-            return node.attr
-        if isinstance(node, ast.Name) and node.id in _BLOCKED_NAMES:
-            return node.id
-    return None
+def _format_run_output(res):
+    """RunResult'ni terminal uchun matnga aylantiradi."""
+    parts = []
+    if res.stdout:
+        parts.append(res.stdout.rstrip('\n'))
+    if res.stderr:
+        parts.append(res.stderr.rstrip('\n'))
+    if res.friendly_error:
+        parts.append(f"[Izoh] {res.friendly_error}")
+    if res.status == 'ok' and not res.stdout and not res.stderr:
+        parts.append("[Dastur muvaffaqiyatli yakunlandi, ekranga hech narsa chiqarilmadi.]")
+    if res.status in ('unavailable', 'busy', 'invalid') and not res.stderr:
+        parts.append("[Kod bajarish xizmati vaqtincha mavjud emas.]")
+    return "\n".join(parts)
 
 
-class _ExecutionLimitExceeded(Exception):
-    """Kod juda uzoq ishlaganda yoki juda ko'p amal bajarganda ko'tariladi."""
-
-
-def _build_safe_globals(custom_input):
-    safe_builtins = {
-        name: getattr(_builtins_module, name)
-        for name in _SAFE_BUILTIN_NAMES
-        if hasattr(_builtins_module, name)
-    }
-    safe_builtins['input'] = custom_input
-    return {
-        '__name__': '__main__',
-        '__builtins__': safe_builtins,
-    }
-
-
-def _make_step_limiter():
-    state = {'steps': 0, 'start': time.time()}
-
-    def tracer(frame, event, arg):
-        if event == 'line':
-            state['steps'] += 1
-            if state['steps'] > _EXEC_MAX_STEPS or (time.time() - state['start']) > _EXEC_MAX_SECONDS:
-                raise _ExecutionLimitExceeded(
-                    "Kod bajarilishi vaqt (3s) yoki amallar sonining chegarasidan oshib ketdi "
-                    "(cheksiz sikl yoki juda og'ir hisoblash bo'lishi mumkin)."
-                )
-        return tracer
-    return tracer
-
-
-def _execute_code_safely(language, code):
+def _execute_code_safely(language, code, files=None, entry='main.py', stdin=None):
     """
-    Kodni xavfsiz simulyatsiya qilish yoki Python kodini cheklangan (sandboxed) muhitda bajarish.
+    Kodni izolyatsiyalangan sandbox'da bajaradi.
 
-    Eslatma: bu faqat bazaviy himoya (import/fayl/tarmoqqa kirish taqiqlangan, vaqt/amal
-    chegarasi qo'yilgan). To'liq xavfsizlik uchun productionda kodni alohida, tarmoqsiz,
-    resurslari cheklangan konteyner/subprocess ichida bajarish tavsiya etiladi.
+    Qaytaradi: (terminal_matni, muvaffaqiyatli_mi, elapsed_ms)
     """
-    start_time = time.time()
-    if language == 'python':
-        stdout_buf = io.StringIO()
-        stderr_buf = io.StringIO()
+    from apps.core.code_runner import run_python
 
-        unsafe = _find_unsafe_construct(code)
-        if unsafe:
-            elapsed_ms = int((time.time() - start_time) * 1000)
-            return (
-                f"[Xavfsizlik xatosi] Kodda ruxsat etilmagan '{unsafe}' konstruksiyasi aniqlandi. "
-                "Iltimos, standart dasturlash amallaridan foydalaning."
-            ), False, elapsed_ms
-
-        old_trace = sys.gettrace()
-        try:
-            # Standart avtomatik test inputlar
-            mock_inputs = iter(["Foydalanuvchi", "21", "100", "50", "roziyevdev", "1"])
-            def custom_input(prompt=""):
-                if prompt:
-                    stdout_buf.write(str(prompt) + "\n")
-                try:
-                    val = next(mock_inputs)
-                    stdout_buf.write(f">> [Kiritildi]: {val}\n")
-                    return val
-                except StopIteration:
-                    return "0"
-
-            globs = _build_safe_globals(custom_input)
-
-            sys.settrace(_make_step_limiter())
-            try:
-                with contextlib.redirect_stdout(stdout_buf), contextlib.redirect_stderr(stderr_buf):
-                    exec(code, globs)
-            finally:
-                sys.settrace(old_trace)
-
-            output = stdout_buf.getvalue()
-            errors = stderr_buf.getvalue()
-            elapsed_ms = int((time.time() - start_time) * 1000)
-
-            if len(output) > _EXEC_MAX_OUTPUT_CHARS:
-                output = output[:_EXEC_MAX_OUTPUT_CHARS] + "\n...\n[Chiqish hajm chegarasi tufayli qisqartirildi]"
-
-            if errors:
-                return f"{output}\n[Xatolik]:\n{errors}", False, elapsed_ms
-            return output or "[Dastur muvaffaqiyatli yakunlandi, ekranga hech narsa chiqarilmadi.]", True, elapsed_ms
-        except _ExecutionLimitExceeded as e:
-            sys.settrace(old_trace)
-            elapsed_ms = int((time.time() - start_time) * 1000)
-            partial_output = stdout_buf.getvalue()[:_EXEC_MAX_OUTPUT_CHARS]
-            return f"{partial_output}\n[Xatolik] {str(e)}", False, elapsed_ms
-        except Exception as e:
-            sys.settrace(old_trace)
-            elapsed_ms = int((time.time() - start_time) * 1000)
-            return f"{stdout_buf.getvalue()}\n[Dastur xatosi] {type(e).__name__}: {str(e)}", False, elapsed_ms
-    elif language == 'csharp':
-        elapsed_ms = 75
-        out = (
-            "Microsoft (R) Visual C# Compiler version 4.8\n"
-            "Build succeeded (0.07s)\n"
-            "----------------------------------------\n"
-            "[Chiqish]:\n"
-            "Dastur muvaffaqiyatli ishga tushirildi.\n"
-            "Process terminated with code 0."
+    if language != 'python':
+        return (
+            f"[{language.upper()}] Bu til uchun brauzerda kodni bajarish hozircha qo'llab-quvvatlanmaydi. "
+            "Kodingiz saqlanadi; uni o'z kompyuteringizda ishga tushirib ko'ring.",
+            False,
+            0,
         )
-        return out, True, elapsed_ms
-    elif language == 'java':
-        elapsed_ms = 92
-        out = (
-            "OpenJDK 64-Bit Server VM (build 21.0.1)\n"
-            "Main.java compiled successfully.\n"
-            "----------------------------------------\n"
-            "[Chiqish]:\n"
-            "Java konsol dasturi ishga tushirildi.\n"
-            "Process finished with exit code 0."
-        )
-        return out, True, elapsed_ms
-    elif language == 'cpp':
-        elapsed_ms = 50
-        out = (
-            "g++ (GCC) 13.2.0 -std=c++20\n"
-            "Compilation completed.\n"
-            "----------------------------------------\n"
-            "[Chiqish]:\n"
-            "C++ dasturi muvaffaqiyatli bajarildi.\n"
-            "Process returned 0 (0x0)."
-        )
-        return out, True, elapsed_ms
-    elif language == 'javascript':
-        elapsed_ms = 35
-        out = (
-            "Node.js v20.10.0 runtime\n"
-            "----------------------------------------\n"
-            "[Chiqish]:\n"
-            "JavaScript dasturi muvaffaqiyatli ishga tushirildi.\n"
-            "Program exited with code 0."
-        )
-        return out, True, elapsed_ms
-    else:
-        elapsed_ms = 40
-        return f"[{language.upper()}] Dastur muvaffaqiyatli bajarildi.", True, elapsed_ms
+    res = run_python(code if files is None else None, files=files, entry=entry,
+                     stdin=DEFAULT_PROJECT_STDIN if stdin is None else stdin)
+    return _format_run_output(res), res.ok, res.elapsed_ms
 
 
 @login_required
@@ -692,15 +531,46 @@ def student_project_run_code_view(request, project_id):
     if project.author != request.user and not request.user.is_staff:
         return JsonResponse({'success': False, 'error': "Ruxsat etilmagan"}, status=403)
 
+    from apps.core.code_runner import check_rate_limit
+    if not check_rate_limit(request.user.id):
+        return JsonResponse({
+            'success': False,
+            'output': "[Cheklov] Juda ko'p ishga tushirish. Bir daqiqadan so'ng qayta urinib ko'ring.",
+            'elapsed_ms': 0,
+        }, status=429)
+
     code = request.POST.get('code', '')
     file_id = request.POST.get('file_id')
+    stdin = request.POST.get('stdin', '')
 
+    # Ko'p faylli loyiha: barcha fayllar sandbox'ga xotiradan import qilish uchun uzatiladi
+    files = {}
+    entry = 'main.py'
+    for f in project.files.filter(is_folder=False).select_related('parent'):
+        files[f.get_full_path()] = f.content
     if file_id and file_id.isdigit():
-        file_obj = project.files.filter(id=int(file_id)).first()
-        if file_obj and not code:
-            code = file_obj.content
+        file_obj = project.files.filter(id=int(file_id), is_folder=False).first()
+        if file_obj:
+            entry = file_obj.get_full_path()
+            if not code:
+                code = file_obj.content
+    if code or entry not in files:
+        files[entry] = code  # muharrirdagi (hali saqlanmagan) kod ustun
+    code = files.get(entry, '')
 
-    output, success, elapsed_ms = _execute_code_safely(project.language, code)
+    if project.language == 'python' and not entry.endswith('.py'):
+        # Tanlangan fayl (masalan, README.md) dastur emas — loyihaning kirish nuqtasini ishga tushiramiz
+        py_files = sorted(name for name in files if name.endswith('.py'))
+        entry = 'main.py' if 'main.py' in files else (py_files[0] if py_files else '')
+        code = files.get(entry, '')
+    if project.language == 'python' and not entry:
+        output, success, elapsed_ms = (
+            "[Xatolik] Loyihada ishga tushiriladigan .py fayli topilmadi.", False, 0
+        )
+    else:
+        output, success, elapsed_ms = _execute_code_safely(
+            project.language, code, files=files, entry=entry, stdin=stdin
+        )
 
     return JsonResponse({
         'success': success,

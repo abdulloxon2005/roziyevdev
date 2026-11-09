@@ -183,9 +183,16 @@ class ChangePasswordAPIView(APIView):
 # WEB TEMPLATE VIEWS (Server-rendered UI)
 # ==============================================================================
 
+def _default_landing_url(user):
+    """O'qituvchi/admin huquqiga ega foydalanuvchilarni Ustoz Studiyasiga, oddiy talabalarni esa O'quvchi Kabinetiga yo'naltiradi."""
+    if user.is_staff or user.is_superuser or getattr(user, 'role', '') in ['instructor', 'admin']:
+        return 'dashboard_index'
+    return 'student_dashboard'
+
+
 def web_login_view(request):
     if request.user.is_authenticated:
-        return redirect('student_dashboard')
+        return redirect(_default_landing_url(request.user))
 
     if request.method == 'POST':
         identifier = request.POST.get('email', '').strip()
@@ -203,7 +210,7 @@ def web_login_view(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Xush kelibsiz, {user.display_name}!")
-                next_url = request.GET.get('next') or request.POST.get('next') or 'student_dashboard'
+                next_url = request.GET.get('next') or request.POST.get('next') or _default_landing_url(user)
                 return redirect(next_url)
 
         messages.error(request, "Email yoki parol xato kiritildi!")
@@ -213,7 +220,7 @@ def web_login_view(request):
 
 def web_register_view(request):
     if request.user.is_authenticated:
-        return redirect('student_dashboard')
+        return redirect(_default_landing_url(request.user))
 
     if request.method == 'POST':
         email = request.POST.get('email', '').strip().lower()
@@ -224,9 +231,16 @@ def web_register_view(request):
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
 
+        country = request.POST.get('country', '').strip() or "O'zbekiston"
+        region = request.POST.get('region', '').strip()
+        district = request.POST.get('district', '').strip()
+        village = request.POST.get('village', '').strip()
+
         # Validatsiya
         if not email or not username or not password:
             messages.error(request, "Iltimos, barcha majburiy maydonlarni to'ldiring.")
+        elif not region or not district:
+            messages.error(request, "Iltimos, manzil bo'limida viloyat va tumanni tanlang.")
         elif password != password_confirm:
             messages.error(request, "Kiritilgan parollar bir-biriga mos kelmadi.")
         elif len(password) < 6:
@@ -244,6 +258,11 @@ def web_register_view(request):
                 last_name=last_name,
                 phone=phone,
             )
+            user.profile.country = country
+            user.profile.region = region
+            user.profile.district = district
+            user.profile.village = village
+            user.profile.save()
             login(request, user)
             messages.success(request, "Hisobingiz muvaffaqiyatli yaratildi!")
             return redirect('student_dashboard')

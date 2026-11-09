@@ -1,16 +1,21 @@
+import json
 from functools import wraps
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.db.models import Count, Sum, Q
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
 
 from apps.courses.models import Course, CourseModule, Lesson, Category
 from apps.learning.models import Enrollment, Assignment, AssignmentSubmission, SubmissionStatus
 from apps.orders.models import Order, OrderStatus
-from apps.users.models import CustomUser
-from .forms import CourseForm, CourseModuleForm, LessonForm
+from apps.users.models import CustomUser, UserRole
+from .forms import CourseForm, CourseModuleForm, LessonForm, CategoryForm, UserRoleForm, UserCreateForm
 
 
 def instructor_required(view_func):
@@ -405,3 +410,271 @@ def dashboard_orders_list_view(request):
         'active_menu': 'orders',
     }
     return render(request, 'dashboard/orders_list.html', context)
+
+
+# ==============================================================================
+# KATEGORIYALAR BOSHQARUVI (CRUD)
+# ==============================================================================
+
+@instructor_required
+def dashboard_categories_list_view(request):
+    """Kurs kategoriyalari ro'yxati va boshqaruvi."""
+    categories = Category.objects.annotate(
+        courses_count=Count('courses', distinct=True)
+    ).order_by('order', 'name')
+
+    context = {
+        'categories': categories,
+        'category_form': CategoryForm(),
+        'active_menu': 'categories',
+    }
+    return render(request, 'dashboard/categories_list.html', context)
+
+
+@instructor_required
+@require_POST
+def dashboard_category_create_view(request):
+    """Yangi kategoriya yaratish."""
+    form = CategoryForm(request.POST)
+    if form.is_valid():
+        category = form.save()
+        messages.success(request, f"«{category.name}» kategoriyasi yaratildi.")
+    else:
+        messages.error(request, "Kategoriyani saqlashda xatolik: " + "; ".join(
+            f"{field}: {', '.join(errs)}" for field, errs in form.errors.items()
+        ))
+    return redirect('dashboard_categories_list')
+
+
+@instructor_required
+@require_POST
+def dashboard_category_edit_view(request, category_id):
+    """Mavjud kategoriyani tahrirlash."""
+    category = get_object_or_404(Category, id=category_id)
+    form = CategoryForm(request.POST, instance=category)
+    if form.is_valid():
+        form.save()
+        messages.success(request, f"«{category.name}» kategoriyasi yangilandi.")
+    else:
+        messages.error(request, "Kategoriyani saqlashda xatolik: " + "; ".join(
+            f"{field}: {', '.join(errs)}" for field, errs in form.errors.items()
+        ))
+    return redirect('dashboard_categories_list')
+
+
+@instructor_required
+@require_POST
+def dashboard_category_delete_view(request, category_id):
+    """Kategoriyani o'chirish (unga bog'langan kurslar saqlanib qoladi, faqat kategoriyasiz qoladi)."""
+    category = get_object_or_404(Category, id=category_id)
+    name = category.name
+    category.delete()
+    messages.warning(request, f"«{name}» kategoriyasi o'chirildi.")
+    return redirect('dashboard_categories_list')
+
+
+# ==============================================================================
+# FOYDALANUVCHILARNI BOSHQARISH (USER MANAGEMENT)
+# ==============================================================================
+
+@instructor_required
+def dashboard_users_list_view(request):
+    """Platformadagi barcha foydalanuvchilar (talaba, o'qituvchi, admin) ro'yxati va boshqaruvi."""
+    query = request.GET.get('q', '').strip()
+    role_filter = request.GET.get('role', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+
+    qs = CustomUser.objects.select_related('profile').annotate(
+        enrollments_count=Count('enrollments', distinct=True)
+    ).order_by('-date_joined')
+
+    if query:
+        qs = qs.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(username__icontains=query) |
+            Q(email__icontains=query)
+        )
+
+    if role_filter in dict(UserRole.choices):
+        qs = qs.filter(role=role_filter)
+
+    if status_filter == 'active':
+        qs = qs.filter(is_active=True)
+    elif status_filter == 'inactive':
+        qs = qs.filter(is_active=False)
+
+    context = {
+        'users': qs,
+        'total_count': qs.count(),
+        'query': query,
+        'role_filter': role_filter,
+        'status_filter': status_filter,
+        'role_choices': UserRole.choices,
+        'create_form': UserCreateForm(),
+        'active_menu': 'users',
+    }
+    return render(request, 'dashboard/users_list.html', context)
+
+
+@instructor_required
+@require_POST
+def dashboard_user_create_view(request):
+    """Admin panelidan to'g'ridan-to'g'ri yangi foydalanuvchi (masalan, o'qituvchi) qo'shish."""
+    form = UserCreateForm(request.POST)
+    if form.is_valid():
+        user = form.save()
+        messages.success(request, f"«{user.display_name}» foydalanuvchisi ({user.get_role_display()}) muvaffaqiyatli yaratildi.")
+    else:
+        messages.error(request, "Foydalanuvchi yaratishda xatolik: " + "; ".join(
+            f"{field}: {', '.join(errs)}" for field, errs in form.errors.items()
+        ))
+    return redirect('dashboard_users_list')
+
+
+@instructor_required
+@require_POST
+def dashboard_user_edit_view(request, user_id):
+    """Foydalanuvchining rolini, faollik va staff holatini tahrirlash."""
+    target = get_object_or_404(CustomUser, id=user_id)
+
+    # Superuser'ni faqat boshqa superuser o'zgartira oladi
+    if target.is_superuser and not request.user.is_superuser:
+        messages.error(request, "Superadmin hisobini faqat boshqa superadmin tahrirlashi mumkin.")
+        return redirect('dashboard_users_list')
+
+    form = UserRoleForm(request.POST, instance=target)
+    if form.is_valid():
+        if target.id == request.user.id and not form.cleaned_data['is_active']:
+            messages.error(request, "O'zingizning hisobingizni nofaol qila olmaysiz.")
+            return redirect('dashboard_users_list')
+        form.save()
+        messages.success(request, f"«{target.display_name}» foydalanuvchisi ma'lumotlari yangilandi.")
+    else:
+        messages.error(request, "Saqlashda xatolik yuz berdi.")
+    return redirect('dashboard_users_list')
+
+
+@instructor_required
+@require_POST
+def dashboard_user_delete_view(request, user_id):
+    """Foydalanuvchini butunlay o'chirish."""
+    target = get_object_or_404(CustomUser, id=user_id)
+
+    if target.id == request.user.id:
+        messages.error(request, "O'zingizning hisobingizni o'chira olmaysiz.")
+        return redirect('dashboard_users_list')
+
+    if target.is_superuser and not request.user.is_superuser:
+        messages.error(request, "Superadmin hisobini faqat boshqa superadmin o'chirishi mumkin.")
+        return redirect('dashboard_users_list')
+
+    name = target.display_name
+    target.delete()
+    messages.warning(request, f"«{name}» foydalanuvchisi tizimdan butunlay o'chirildi.")
+    return redirect('dashboard_users_list')
+
+
+# ==============================================================================
+# STATISTIKA / TAHLIL (ANALYTICS)
+# ==============================================================================
+
+@instructor_required
+def dashboard_statistics_view(request):
+    """Platforma bo'yicha chuqurlashtirilgan statistik tahlil: savdo, o'quvchilar, kurslar."""
+    today = timezone.now()
+    six_months_ago = (today.replace(day=1) - timedelta(days=150)).replace(day=1)
+
+    # 1. Oylar bo'yicha daromad (so'nggi 6 oy)
+    revenue_by_month = (
+        Order.objects.filter(status=OrderStatus.PAID, paid_at__gte=six_months_ago)
+        .annotate(month=TruncMonth('paid_at'))
+        .values('month')
+        .annotate(total=Sum('amount'), count=Count('id'))
+        .order_by('month')
+    )
+
+    # 2. Oylar bo'yicha yangi foydalanuvchilar
+    users_by_month = (
+        CustomUser.objects.filter(date_joined__gte=six_months_ago)
+        .annotate(month=TruncMonth('date_joined'))
+        .values('month')
+        .annotate(count=Count('id'))
+        .order_by('month')
+    )
+
+    # Grafik uchun bir xil oylik o'qlarga normallashtirish
+    month_labels = []
+    cursor = six_months_ago
+    while cursor <= today.replace(day=1):
+        month_labels.append(cursor.strftime('%Y-%m'))
+        cursor = (cursor + timedelta(days=32)).replace(day=1)
+
+    revenue_map = {r['month'].strftime('%Y-%m'): float(r['total'] or 0) for r in revenue_by_month}
+    users_map = {u['month'].strftime('%Y-%m'): u['count'] for u in users_by_month}
+
+    revenue_chart = [revenue_map.get(m, 0) for m in month_labels]
+    users_chart = [users_map.get(m, 0) for m in month_labels]
+    month_display_labels = []
+    oy_nomlari = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
+    for m in month_labels:
+        y, mo = m.split('-')
+        month_display_labels.append(f"{oy_nomlari[int(mo) - 1]} {y}")
+
+    # 3. Eng ko'p o'qiladigan kurslar (TOP 5)
+    top_courses_by_students = (
+        Course.objects.annotate(enrolled=Count('enrollments', distinct=True))
+        .order_by('-enrolled')[:5]
+    )
+
+    # 4. Eng ko'p daromad keltirgan kurslar (TOP 5)
+    top_courses_by_revenue = (
+        Course.objects.annotate(
+            revenue=Sum('orders__amount', filter=Q(orders__status=OrderStatus.PAID))
+        ).filter(revenue__gt=0).order_by('-revenue')[:5]
+    )
+
+    # 5. Kategoriyalar bo'yicha taqsimot
+    category_breakdown = (
+        Category.objects.annotate(
+            courses_count=Count('courses', distinct=True),
+            students_count=Count('courses__enrollments', distinct=True),
+        ).filter(courses_count__gt=0).order_by('-students_count')
+    )
+
+    # 6. Vazifalar / topshiriqlar statistikasi
+    total_submissions = AssignmentSubmission.objects.count()
+    approved_submissions = AssignmentSubmission.objects.filter(status=SubmissionStatus.APPROVED).count()
+    rejected_submissions = AssignmentSubmission.objects.filter(status=SubmissionStatus.REJECTED).count()
+    pending_submissions = AssignmentSubmission.objects.filter(status=SubmissionStatus.PENDING).count()
+    approval_rate = round((approved_submissions / total_submissions) * 100, 1) if total_submissions else 0
+
+    # 7. Umumiy sarlavha ko'rsatkichlari
+    total_users = CustomUser.objects.count()
+    students_count = CustomUser.objects.filter(role=UserRole.STUDENT).count()
+    instructors_count = CustomUser.objects.filter(role=UserRole.INSTRUCTOR).count()
+    total_revenue_all_time = Order.objects.filter(status=OrderStatus.PAID).aggregate(t=Sum('amount'))['t'] or 0
+    avg_order_value = (
+        Order.objects.filter(status=OrderStatus.PAID).aggregate(a=Sum('amount'))['a'] or 0
+    ) / (Order.objects.filter(status=OrderStatus.PAID).count() or 1)
+
+    context = {
+        'month_labels': json.dumps(month_display_labels),
+        'revenue_chart': json.dumps(revenue_chart),
+        'users_chart': json.dumps(users_chart),
+        'top_courses_by_students': top_courses_by_students,
+        'top_courses_by_revenue': top_courses_by_revenue,
+        'category_breakdown': category_breakdown,
+        'total_submissions': total_submissions,
+        'approved_submissions': approved_submissions,
+        'rejected_submissions': rejected_submissions,
+        'pending_submissions': pending_submissions,
+        'approval_rate': approval_rate,
+        'total_users': total_users,
+        'students_count': students_count,
+        'instructors_count': instructors_count,
+        'total_revenue_all_time': total_revenue_all_time,
+        'avg_order_value': round(avg_order_value),
+        'active_menu': 'statistics',
+    }
+    return render(request, 'dashboard/statistics.html', context)

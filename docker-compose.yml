@@ -30,6 +30,7 @@ services:
     restart: always
     command: >
       sh -c "python manage.py migrate &&
+             python manage.py seed_python_course &&
              python manage.py collectstatic --noinput &&
              gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 300 config.wsgi:application"
     volumes:
@@ -43,11 +44,49 @@ services:
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER:-roziyev_user}:${POSTGRES_PASSWORD:-roziyev_secret_pass}@db:5432/${POSTGRES_DB:-roziyev_db}
       - REDIS_URL=redis://redis:6379/1
+      # O'quvchi kodi web-konteynerda emas, alohida izolyatsiyalangan sandbox konteynerida bajariladi
+      - CODE_RUNNER_BACKEND=http
+      - CODE_RUNNER_URL=http://sandbox:8080
+      - CODE_RUNNER_TOKEN=${CODE_SANDBOX_TOKEN:?CODE_SANDBOX_TOKEN .env faylida o'rnatilishi shart}
+    networks:
+      - default
+      - sandbox_net
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_started
+      sandbox:
+        condition: service_started
+
+  # Python kod sandbox'i: root emas, read-only FS, internetga chiqishsiz (internal tarmoq),
+  # xotira/CPU/jarayonlar soni cheklangan, loyiha kodi va maxfiy kalitlarsiz.
+  sandbox:
+    build:
+      context: .
+      dockerfile: code_sandbox/Dockerfile
+    container_name: roziyevdev_sandbox
+    restart: always
+    environment:
+      - CODE_SANDBOX_TOKEN=${CODE_SANDBOX_TOKEN:?CODE_SANDBOX_TOKEN .env faylida o'rnatilishi shart}
+      - CODE_SANDBOX_MAX_CONCURRENT=4
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: 1.0
+    networks:
+      - sandbox_net
+
+networks:
+  default:
+  sandbox_net:
+    internal: true   # tashqi internetga chiqish yo'q; faqat web konteyner ulana oladi
 
 volumes:
   postgres_data:

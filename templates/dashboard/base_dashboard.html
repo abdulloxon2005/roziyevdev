@@ -15,7 +15,7 @@
         } else {
             document.documentElement.classList.add('dark');
         }
-        if (localStorage.getItem('sidebar_collapsed') === 'true') {
+        if (localStorage.getItem('sidebar_collapsed') === 'true' && !window.matchMedia('(max-width: 1023.98px)').matches) {
             document.documentElement.classList.add('sidebar-collapsed');
         }
     </script>
@@ -123,6 +123,23 @@
             gap: 0.75rem;
             justify-content: center;
         }
+
+        /* Mobil (<1024px): sidebar kontentni siqmaydi — yashirin tortma (drawer), sarlavhadagi tugma bilan ochiladi */
+        @media (max-width: 1023.98px) {
+            #dashboard-sidebar {
+                position: fixed !important;
+                top: 0; left: 0; height: 100vh;
+                width: 18rem !important; min-width: 18rem !important;
+                transform: translateX(-100%);
+                transition: transform 0.2s ease;
+                z-index: 80;
+            }
+            html.sidebar-mobile-open #dashboard-sidebar { transform: translateX(0); }
+            html.sidebar-mobile-open #mobile-sidebar-backdrop { display: block; }
+        }
+        @media (min-width: 1024px) {
+            #mobile-menu-btn, #mobile-sidebar-backdrop { display: none !important; }
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -180,7 +197,15 @@
                         </span>
                     </a>
 
-                    <!-- 3. Vazifalarni tekshirish (Review Desk) -->
+                    <!-- 3. Kategoriyalar -->
+                    <a href="{% url 'dashboard_categories_list' %}" title="Kategoriyalar" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'categories' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-tags w-5 text-center shrink-0 {% if active_menu == 'categories' %}text-white{% else %}text-pink-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Kategoriyalar</span>
+                        </div>
+                    </a>
+
+                    <!-- 4. Vazifalarni tekshirish (Review Desk) -->
                     <a href="{% url 'dashboard_reviews_list' %}" title="Vazifalarni tekshirish" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'reviews' or request.resolver_match.url_name == 'submissions_review_list' or request.resolver_match.url_name == 'submission_review_detail' or request.resolver_match.url_name == 'dashboard_reviews_list' or request.resolver_match.url_name == 'dashboard_review_detail' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
                         <div class="flex items-center gap-3">
                             <i class="fa-solid fa-list-check w-5 text-center shrink-0 {% if active_menu == 'reviews' %}text-white{% else %}text-indigo-500{% endif %}"></i>
@@ -188,19 +213,35 @@
                         </div>
                     </a>
 
+                    <!-- 5. Statistika -->
+                    <a href="{% url 'dashboard_statistics' %}" title="Statistika" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'statistics' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-chart-line w-5 text-center shrink-0 {% if active_menu == 'statistics' %}text-white{% else %}text-rose-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Statistika</span>
+                        </div>
+                    </a>
+
                     <div class="sidebar-section-title px-3 pt-4 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         O'quvchilar & Moliya
                     </div>
 
-                    <!-- 4. O'quvchilar -->
-                    <a href="{% url 'dashboard_students_list' %}" title="O'quvchilar ro'yxati" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'students' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                    <!-- 6. Foydalanuvchilar (to'liq hisoblar boshqaruvi) -->
+                    <a href="{% url 'dashboard_users_list' %}" title="Foydalanuvchilar" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'users' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
                         <div class="flex items-center gap-3">
-                            <i class="fa-solid fa-users w-5 text-center shrink-0 {% if active_menu == 'students' %}text-white{% else %}text-cyan-500{% endif %}"></i>
-                            <span class="sidebar-text truncate">O'quvchilar ro'yxati</span>
+                            <i class="fa-solid fa-user-gear w-5 text-center shrink-0 {% if active_menu == 'users' %}text-white{% else %}text-violet-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">Foydalanuvchilar</span>
                         </div>
                     </a>
 
-                    <!-- 5. Buyurtmalar va To'lovlar -->
+                    <!-- 7. O'quvchilar (kurs progresi) -->
+                    <a href="{% url 'dashboard_students_list' %}" title="O'quvchilar ro'yxati" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'students' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-users w-5 text-center shrink-0 {% if active_menu == 'students' %}text-white{% else %}text-cyan-500{% endif %}"></i>
+                            <span class="sidebar-text truncate">O'quvchilar progresi</span>
+                        </div>
+                    </a>
+
+                    <!-- 8. Buyurtmalar va To'lovlar -->
                     <a href="{% url 'dashboard_orders_list' %}" title="Buyurtmalar & Savdo" class="sidebar-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {% if active_menu == 'orders' %}bg-blue-600 text-white shadow-lg shadow-blue-600/20{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
                         <div class="flex items-center gap-3">
                             <i class="fa-solid fa-receipt w-5 text-center shrink-0 {% if active_menu == 'orders' %}text-white{% else %}text-amber-500{% endif %}"></i>
@@ -256,12 +297,14 @@
                 </div>
             </div>
         </aside>
+        <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="hidden fixed inset-0 z-[79] bg-slate-950/50 lg:hidden"></div>
 
         <!-- MAIN WRAPPER -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
             <!-- TOP HEADER BAR -->
             <header class="h-16 bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30">
                 <div class="flex items-center gap-3 sm:gap-4">
+                    <button type="button" id="mobile-menu-btn" onclick="toggleMobileSidebar()" class="lg:hidden p-2 -ml-1 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0" aria-label="Menyu"><i class="fa-solid fa-bars"></i></button>
                     <div class="flex items-center gap-2">
                         <h1 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                             {% block page_title %}Ustoz Studiyasi{% endblock %}
@@ -322,7 +365,15 @@
     <!-- SCRIPTS -->
     <script>
         // Logoni bosganda sidebarni qisqartirish / kengaytirish
+        function toggleMobileSidebar(force) {
+            const root = document.documentElement;
+            const open = typeof force === 'boolean' ? force : !root.classList.contains('sidebar-mobile-open');
+            root.classList.toggle('sidebar-mobile-open', open);
+        }
+        function isMobileLayout() { return window.matchMedia('(max-width: 1023.98px)').matches; }
+
         function toggleDashboardSidebar() {
+            if (isMobileLayout()) { toggleMobileSidebar(false); return; }
             const root = document.documentElement;
             const isCollapsed = root.classList.toggle('sidebar-collapsed');
             localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');

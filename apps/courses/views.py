@@ -1,9 +1,19 @@
 from django.shortcuts import render, get_object_or_404
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from rest_framework import generics, permissions, filters
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
-from .models import Category, Course
+from .models import Category, Course, CourseModule, Lesson
+
+
+def published_curriculum_prefetch():
+    """Faqat nashr qilingan modul va darslarni oldindan yuklash (qoralamalar o'quvchiga ko'rinmaydi)."""
+    return Prefetch(
+        'modules',
+        queryset=CourseModule.objects.filter(is_published=True).order_by('order', 'id').prefetch_related(
+            Prefetch('lessons', queryset=Lesson.objects.filter(is_published=True).order_by('order', 'id'))
+        ),
+    )
 from .serializers import (
     CategorySerializer,
     CourseListSerializer,
@@ -76,7 +86,7 @@ class CourseDetailAPIView(generics.RetrieveAPIView):
     """
     Kursning to'liq ma'lumotlarini slug bo'yicha olish API'si (Mundarija va darslar bilan).
     """
-    queryset = Course.objects.filter(is_published=True).prefetch_related('modules__lessons')
+    queryset = Course.objects.filter(is_published=True).prefetch_related(published_curriculum_prefetch())
     serializer_class = CourseDetailSerializer
     permission_classes = [permissions.AllowAny]
     lookup_field = 'slug'
@@ -129,7 +139,7 @@ def web_course_list_view(request):
 
 def web_course_detail_view(request, slug):
     course = get_object_or_404(
-        Course.objects.prefetch_related('modules__lessons', 'category', 'instructor'),
+        Course.objects.select_related('category', 'instructor').prefetch_related(published_curriculum_prefetch()),
         slug=slug,
         is_published=True
     )

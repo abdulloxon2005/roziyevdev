@@ -1,0 +1,77 @@
+{% extends 'student/base_student.html' %}
+{% load static core_extras %}
+
+{% block title %}Natija — {{ assessment.title }}{% endblock %}
+{% block page_title %}Nazorat natijasi{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/interactive.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  <header class="rounded-3xl border p-6 text-center space-y-2 {% if attempt.passed %}border-emerald-500/40 bg-emerald-500/5{% else %}border-rose-500/40 bg-rose-500/5{% endif %}">
+    <div class="text-5xl font-black {% if attempt.passed %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">{{ attempt.percent|floatformat:0 }}%</div>
+    <h1 class="text-xl font-extrabold">{{ assessment.title }} — {% if attempt.passed %}nazoratdan o'tdingiz!{% else %}hali o'tmadingiz{% endif %}</h1>
+    <p class="text-sm text-slate-500">Ball: {{ attempt.score|floatformat:"-2" }} / {{ attempt.max_score|floatformat:"-2" }} · O'tish mezoni: {{ attempt.pass_percent }}% · Urinish #{{ attempt.attempt_number }} · {{ attempt.created_at|date:"d.m.Y H:i" }}</p>
+    <div class="flex flex-wrap justify-center gap-2 pt-2">
+      <a href="{% url 'interactive_assessment' assessment.id %}" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold">{% if attempt.passed %}Yana topshirish{% else %}Qayta topshirish{% endif %}</a>
+      <a href="{% url 'interactive_course_progress' course.slug %}" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Mening progressim</a>
+    </div>
+  </header>
+
+  {% for row in rows %}
+    {% with t=row.task a=row.answer %}
+    <section class="rounded-2xl border bg-white dark:bg-[#111827] p-5 space-y-3 {% if a.is_correct %}border-emerald-500/40{% else %}border-rose-500/40{% endif %}">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="font-extrabold">{{ forloop.counter }}. {{ t.title }}</h3>
+        <span class="text-xs font-bold {% if a.is_correct %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">
+          {% if a.is_correct %}<i class="fa-solid fa-check"></i> To'g'ri{% else %}<i class="fa-solid fa-xmark"></i> Noto'g'ri{% endif %} · {{ a.score|floatformat:"-2" }}/{{ a.max_score|floatformat:"-2" }}
+        </span>
+      </div>
+      <div class="lesson-prose text-sm">{{ row.prompt_html|safe }}</div>
+
+      {% if row.options %}
+        <ul class="space-y-1.5 text-sm">
+          {% for o in row.options %}
+            <li class="task-option px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 {% if o.selected and o.obj.is_correct %}is-correct{% elif o.selected %}is-wrong{% elif show_solutions and o.obj.is_correct %}is-correct{% endif %}">
+              {% if o.selected %}<i class="fa-solid fa-hand-point-right mr-1 text-slate-400"></i>{% endif %}{{ o.obj.text }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% elif t.kind == 'predict_output' %}
+        <div class="text-xs font-bold text-slate-500">Sizning javobingiz:</div>
+        <pre class="rounded-lg bg-slate-950 text-slate-200 font-mono text-[13px] p-2.5 whitespace-pre">{{ a.answer.text|default:"—" }}</pre>
+      {% elif t.kind == 'fill_blank' %}
+        <div class="text-sm">Sizning javoblaringiz: {% for b in a.answer.blanks %}<code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono">{{ b }}</code> {% endfor %}</div>
+      {% elif a %}
+        {% if a.test_results %}
+          <ul class="space-y-1 text-[13px]">
+            {% for tr in a.test_results %}
+              <li class="{% if tr.passed %}text-emerald-700 dark:text-emerald-400{% else %}text-rose-700 dark:text-rose-400{% endif %}"><i class="fa-solid {% if tr.passed %}fa-check{% else %}fa-xmark{% endif %} mr-1"></i>{{ tr.description }}{% if tr.message %} <span class="text-xs opacity-80">— {{ tr.message }}</span>{% endif %}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        <details><summary class="text-xs font-bold text-slate-500 cursor-pointer">Yuborilgan kod</summary>
+          <pre class="mt-2 static-code rounded-lg">{{ a.code|default:"(bo'sh)" }}</pre>
+        </details>
+      {% endif %}
+
+      {% if row.explanation_html %}
+        <div class="rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-3">
+          <div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">Tushuntirish</div>
+          <div class="lesson-prose text-[13px]">{{ row.explanation_html|safe }}</div>
+        </div>
+      {% elif not a.is_correct and t.hint %}
+        <div class="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-[13px]"><i class="fa-regular fa-lightbulb mr-1"></i>{{ t.hint }}</div>
+      {% endif %}
+      {% if show_solutions and t.full_solution %}
+        <details><summary class="text-xs font-bold text-slate-500 cursor-pointer">Namunaviy yechim</summary>
+          <pre class="mt-2 static-code rounded-lg">{{ t.full_solution }}</pre>
+        </details>
+      {% endif %}
+    </section>
+    {% endwith %}
+  {% endfor %}
+</div>
+{% endblock %}

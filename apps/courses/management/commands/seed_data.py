@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from apps.users.models import CustomUser, Profile, UserRole
-from apps.courses.models import Category, Course, CourseLevel, CourseModule, Lesson
+from apps.courses.models import Category, Course, CourseLevel, CourseModule, Lesson, LessonType
 from apps.learning.models import Assignment, AssignmentSubmission, SubmissionStatus, CoinTransaction
 from apps.learning.services import enroll_user, mark_lesson_complete
 from apps.certificates.services import create_or_get_certificate
@@ -506,4 +506,471 @@ class Command(BaseCommand):
             }
         )
 
+        # 10. Yangi kurslar kataloggi (Prompt Injiniring, Python, Web, UX/UI, Mobil, Telegram Bot)
+        cat_ai, _ = Category.objects.get_or_create(
+            slug="prompt-injiniring",
+            defaults={
+                "name": "Sun'iy Intellekt & Prompt Injiniring",
+                "icon": "fa-solid fa-wand-magic-sparkles",
+                "description": "ChatGPT, Claude va boshqa yirik til modellari bilan samarali muloqot qilish va ulardan ish jarayonlarida foydalanish.",
+                "order": 5,
+            }
+        )
+        cat_web, _ = Category.objects.get_or_create(
+            slug="web-dasturlash",
+            defaults={
+                "name": "Web Dasturlash",
+                "icon": "fa-solid fa-globe",
+                "description": "HTML, CSS, JavaScript va zamonaviy freymvorklar yordamida veb-saytlar va veb-ilovalar yaratish.",
+                "order": 6,
+            }
+        )
+        cat_uxui, _ = Category.objects.get_or_create(
+            slug="ux-ui-dizayn",
+            defaults={
+                "name": "UX/UI Dizayn",
+                "icon": "fa-solid fa-pen-ruler",
+                "description": "Foydalanuvchi uchun qulay va chiroyli interfeyslar loyihalash: Figma, dizayn tizimlari va prototiplash.",
+                "order": 7,
+            }
+        )
+
+        # Kurs: Prompt Injiniring
+        course_prompt, _ = Course.objects.get_or_create(
+            slug="prompt-injiniring-suniy-intellekt-bilan-samarali-ishlash",
+            defaults={
+                "title": "Prompt Injiniring: Sun'iy Intellekt bilan Samarali Ishlash",
+                "category": cat_ai,
+                "instructor": instructor,
+                "short_description": "ChatGPT, Claude va boshqa yirik til modellaridan professional darajada foydalanish: aniq va samarali promptlar yozish san'ati.",
+                "description": (
+                    "Sun'iy intellekt modellari bugungi kunda ish unumdorligini bir necha barobar oshirish imkonini beradi, "
+                    "biroq natija sifatini belgilovchi asosiy omil — to'g'ri so'rov (prompt) tuzish mahoratidir. "
+                    "Ushbu kursda siz til modellarining ishlash tamoyillarini, rol berish (role prompting), zanjir fikrlash (chain-of-thought), "
+                    "few-shot misollar va promptlarni tizimli optimallashtirish usullarini amaliy mashqlar orqali o'rganasiz."
+                ),
+                "level": CourseLevel.ALL_LEVELS,
+                "price": 220000,
+                "is_free": False,
+                "duration_hours": 10,
+                "students_count": 95,
+                "rating": 4.80,
+                "is_featured": False,
+                "what_you_will_learn": (
+                    "Yirik til modellari (LLM) qanday ishlashi haqida asosiy tushunchalar\n"
+                    "Aniq, qisqa va natijali promptlar tuzish texnikalari\n"
+                    "Rol berish, few-shot va chain-of-thought usullaridan foydalanish\n"
+                    "Matn, kod va rasm generatsiyasi uchun maxsus promptlar yaratish\n"
+                    "Ish jarayonlarini (workflow) AI yordamida avtomatlashtirish"
+                ),
+                "requirements": (
+                    "Internetga ulangan kompyuter yoki telefon\n"
+                    "ChatGPT yoki Claude kabi xizmatlardan foydalanish imkoniyati\n"
+                    "Maxsus dasturlash bilimi talab qilinmaydi"
+                ),
+            }
+        )
+        m_prompt, _ = CourseModule.objects.get_or_create(course=course_prompt, title="1-Modul: Prompt Injiniring Asoslari", order=1)
+        Lesson.objects.get_or_create(
+            module=m_prompt,
+            title="1.1. Til modeli qanday fikrlaydi?",
+            defaults={
+                "duration_minutes": 12,
+                "is_preview": True,
+                "order": 1,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# Til Modeli Qanday Fikrlaydi?\n\n"
+                    "Yirik til modellari (LLM) matnni token deb ataluvchi kichik bo'laklarga bo'lib, "
+                    "har bir keyingi tokenni oldingi kontekst asosida ehtimollik bo'yicha tanlaydi.\n\n"
+                    "### Muhim xulosa:\n"
+                    "Model sizning so'rovingizdagi **har bir so'zni** kontekst sifatida hisobga oladi — "
+                    "shuning uchun noaniq so'rov noaniq javobga olib keladi."
+                )
+            }
+        )
+        Lesson.objects.get_or_create(
+            module=m_prompt,
+            title="1.2. Aniq prompt tuzish formulasi (Rol + Vazifa + Format)",
+            defaults={
+                "duration_minutes": 18,
+                "is_preview": False,
+                "order": 2,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# Aniq Prompt Tuzish Formulasi\n\n"
+                    "Samarali prompt odatda uchta qismdan iborat bo'ladi:\n\n"
+                    "1. **Rol** — modelga qanday mutaxassis sifatida javob berishini aytasiz.\n"
+                    "2. **Vazifa** — aniq nima qilish kerakligini tushuntirasiz.\n"
+                    "3. **Format** — javob qanday ko'rinishda bo'lishi kerakligini belgilaysiz.\n\n"
+                    "```\n"
+                    "Siz tajribali marketolog sifatida ishlang.\n"
+                    "Quyidagi mahsulot uchun 3 ta sarlavha taklif qiling.\n"
+                    "Javobni ro'yxat ko'rinishida bering.\n"
+                    "```\n"
+                )
+            }
+        )
+
+        # Kurs: Python dasturlash tili asoslari
+        course_py_basics, _ = Course.objects.get_or_create(
+            slug="python-dasturlash-tili-asoslari",
+            defaults={
+                "title": "Python Dasturlash Tili Asoslari",
+                "category": cat_backend,
+                "instructor": instructor,
+                "short_description": "Dasturlashni noldan boshlaydiganlar uchun Python tilining sintaksisi, ma'lumot turlari va amaliy mashqlar bilan mustahkam poydevor.",
+                "description": (
+                    "Python — soddaligi va keng qo'llanilishi bilan dasturlashni o'rganish uchun eng yaxshi tanlovlardan biri. "
+                    "Ushbu kursda o'zgaruvchilar, shartli operatorlar, sikllar, funksiyalar, ro'yxatlar (list), lug'atlar (dict) "
+                    "va obyektga yo'naltirilgan dasturlash (OOP) asoslarini amaliy misollar orqali bosqichma-bosqich o'rganasiz."
+                ),
+                "level": CourseLevel.BEGINNER,
+                "price": 0,
+                "is_free": True,
+                "duration_hours": 20,
+                "students_count": 310,
+                "rating": 4.92,
+                "is_featured": False,
+                "what_you_will_learn": (
+                    "Python sintaksisi, o'zgaruvchilar va ma'lumot turlari\n"
+                    "Shartli operatorlar (if/elif/else) va takrorlash sikllari (for, while)\n"
+                    "Funksiyalar yozish va argumentlar bilan ishlash\n"
+                    "Ro'yxat (list), lug'at (dict) va to'plam (set) tuzilmalari\n"
+                    "Obyektga yo'naltirilgan dasturlash (OOP) asoslari"
+                ),
+                "requirements": (
+                    "Kompyuter (Windows, macOS yoki Linux)\n"
+                    "Hech qanday oldindan dasturlash bilimi talab qilinmaydi"
+                ),
+            }
+        )
+        m_py1, _ = CourseModule.objects.get_or_create(course=course_py_basics, title="1-Modul: Python Sintaksisi va O'zgaruvchilar", order=1)
+        Lesson.objects.get_or_create(
+            module=m_py1,
+            title="1.1. Python o'rnatish va birinchi dastur",
+            defaults={
+                "duration_minutes": 10,
+                "is_preview": True,
+                "order": 1,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# Python O'rnatish va Birinchi Dastur\n\n"
+                    "Python rasmiy saytidan (python.org) so'nggi versiyani yuklab oling va o'rnating.\n\n"
+                    "```python\n"
+                    "print('Salom, RoziyevDev!')\n"
+                    "```\n\n"
+                    "Ushbu bitta qator kod — sizning birinchi Python dasturingiz!"
+                )
+            }
+        )
+        Lesson.objects.get_or_create(
+            module=m_py1,
+            title="1.2. O'zgaruvchilar va ma'lumot turlari",
+            defaults={
+                "duration_minutes": 20,
+                "is_preview": True,
+                "order": 2,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# O'zgaruvchilar va Ma'lumot Turlari\n\n"
+                    "```python\n"
+                    "name = 'Ali'        # str\n"
+                    "age = 25             # int\n"
+                    "height = 1.75        # float\n"
+                    "is_student = True    # bool\n"
+                    "```\n\n"
+                    "Python'da o'zgaruvchi turini alohida ko'rsatish shart emas — til buni avtomatik aniqlaydi."
+                )
+            }
+        )
+
+        # Kurs: Web dasturlash
+        course_web, _ = Course.objects.get_or_create(
+            slug="web-dasturlash-html-css-javascript",
+            defaults={
+                "title": "Web Dasturlash: HTML, CSS va JavaScript Asoslari",
+                "category": cat_web,
+                "instructor": instructor,
+                "short_description": "Zamonaviy veb-saytlar yaratishning uchta ustuni — HTML, CSS va JavaScript'ni noldan amaliy loyihalar orqali o'rganing.",
+                "description": (
+                    "Ushbu kursda siz veb-sahifa tuzilishini HTML bilan shakllantirishni, CSS yordamida chiroyli va "
+                    "moslashuvchan (responsive) dizayn yaratishni, hamda JavaScript bilan sahifaga interaktivlik qo'shishni "
+                    "amaliy loyihalar asosida o'rganasiz."
+                ),
+                "level": CourseLevel.BEGINNER,
+                "price": 280000,
+                "is_free": False,
+                "duration_hours": 24,
+                "students_count": 210,
+                "rating": 4.88,
+                "is_featured": False,
+                "what_you_will_learn": (
+                    "HTML5 yordamida veb-sahifalar tuzilishini yaratish\n"
+                    "CSS3 bilan zamonaviy va responsive dizayn (Flexbox, Grid)\n"
+                    "JavaScript asoslari: o'zgaruvchilar, funksiyalar, DOM bilan ishlash\n"
+                    "Formalar, animatsiyalar va interaktiv elementlar yaratish\n"
+                    "Tayyor veb-sahifani hostingga joylashtirish"
+                ),
+                "requirements": (
+                    "Kompyuter va zamonaviy brauzer\n"
+                    "Dasturlashga qiziqish, oldindan bilim talab qilinmaydi"
+                ),
+            }
+        )
+        m_web1, _ = CourseModule.objects.get_or_create(course=course_web, title="1-Modul: HTML va CSS Asoslari", order=1)
+        Lesson.objects.get_or_create(
+            module=m_web1,
+            title="1.1. HTML hujjat tuzilishi",
+            defaults={
+                "duration_minutes": 14,
+                "is_preview": True,
+                "order": 1,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# HTML Hujjat Tuzilishi\n\n"
+                    "```html\n"
+                    "<!DOCTYPE html>\n"
+                    "<html lang=\"uz\">\n"
+                    "<head>\n"
+                    "    <meta charset=\"UTF-8\">\n"
+                    "    <title>Mening Sahifam</title>\n"
+                    "</head>\n"
+                    "<body>\n"
+                    "    <h1>Salom, Dunyo!</h1>\n"
+                    "</body>\n"
+                    "</html>\n"
+                    "```\n"
+                )
+            }
+        )
+        Lesson.objects.get_or_create(
+            module=m_web1,
+            title="1.2. CSS bilan uslublashtirish",
+            defaults={
+                "duration_minutes": 22,
+                "is_preview": False,
+                "order": 2,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# CSS Bilan Uslublashtirish\n\n"
+                    "```css\n"
+                    "body {\n"
+                    "    font-family: sans-serif;\n"
+                    "    background-color: #f4f4f4;\n"
+                    "}\n"
+                    "h1 {\n"
+                    "    color: #2563eb;\n"
+                    "}\n"
+                    "```\n"
+                )
+            }
+        )
+
+        # Kurs: UX/UI interfeys
+        course_uxui, _ = Course.objects.get_or_create(
+            slug="ux-ui-interfeys-dizayni-asoslari",
+            defaults={
+                "title": "UX/UI Interfeys Dizayni Asoslari",
+                "category": cat_uxui,
+                "instructor": instructor,
+                "short_description": "Foydalanuvchi tajribasi (UX) va interfeys dizayni (UI) tamoyillari, Figma'da amaliy loyihalash va prototiplash.",
+                "description": (
+                    "Yaxshi mahsulot nafaqat to'g'ri ishlashi, balki foydalanuvchi uchun qulay va tushunarli bo'lishi ham kerak. "
+                    "Ushbu kursda siz UX tadqiqot usullari, interfeys dizayni tamoyillari, rang va tipografika asoslarini, "
+                    "hamda Figma dasturida interaktiv prototip yaratishni amaliy loyihalar orqali o'rganasiz."
+                ),
+                "level": CourseLevel.BEGINNER,
+                "price": 260000,
+                "is_free": False,
+                "duration_hours": 18,
+                "students_count": 140,
+                "rating": 4.83,
+                "is_featured": False,
+                "what_you_will_learn": (
+                    "UX tadqiqot asoslari: foydalanuvchi ehtiyojlarini aniqlash\n"
+                    "UI dizayn tamoyillari: rang, tipografika, bo'shliq (spacing)\n"
+                    "Figma dasturida interfeys komponentlari yaratish\n"
+                    "Wireframe va interaktiv prototip tayyorlash\n"
+                    "Dizayn tizimini (Design System) tashkil qilish"
+                ),
+                "requirements": (
+                    "Kompyuter (Figma veb-brauzerda ham ishlaydi)\n"
+                    "Vizual did va dizaynga qiziqish, oldindan tajriba shart emas"
+                ),
+            }
+        )
+        m_uxui1, _ = CourseModule.objects.get_or_create(course=course_uxui, title="1-Modul: UX/UI Asosiy Tushunchalar", order=1)
+        Lesson.objects.get_or_create(
+            module=m_uxui1,
+            title="1.1. UX va UI o'rtasidagi farq",
+            defaults={
+                "duration_minutes": 11,
+                "is_preview": True,
+                "order": 1,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# UX va UI O'rtasidagi Farq\n\n"
+                    "- **UX (User Experience)** — foydalanuvchining mahsulot bilan ishlash tajribasi: qulaylik, mantiqiylik, tezlik.\n"
+                    "- **UI (User Interface)** — foydalanuvchi ko'rib turgan vizual qism: tugmalar, ranglar, shriftlar.\n\n"
+                    "Yaxshi mahsulot — ham chiroyli (UI), ham qulay (UX) bo'lishi kerak."
+                )
+            }
+        )
+        Lesson.objects.get_or_create(
+            module=m_uxui1,
+            title="1.2. Rang va tipografika asoslari",
+            defaults={
+                "duration_minutes": 19,
+                "is_preview": False,
+                "order": 2,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# Rang va Tipografika Asoslari\n\n"
+                    "Interfeys uchun odatda 1 ta asosiy rang, 1-2 ta qo'shimcha rang va neytral kulrang palitradan foydalaniladi. "
+                    "Matn uchun esa o'qilishi oson shrift tanlab, sarlavha va asosiy matn o'lchamlari orasida aniq ierarxiya yaratiladi."
+                )
+            }
+        )
+
+        # Kurs: Mobil dasturlash (Android/Kotlin — Flutter kursidan farqli, native yondashuv)
+        course_mobile2, _ = Course.objects.get_or_create(
+            slug="mobil-dasturlash-android-va-ios-asoslari",
+            defaults={
+                "title": "Mobil Dasturlash: Android va iOS Asoslari",
+                "category": cat_mobile,
+                "instructor": instructor,
+                "short_description": "Mobil ilovalar dunyosiga kirish: platformalar farqi, UI komponentlar va birinchi mobil ilovangizni yaratish.",
+                "description": (
+                    "Mobil dasturlash sohasiga kirishni rejalashtirgan talabalar uchun mo'ljallangan ushbu kursda "
+                    "Android va iOS platformalarining ishlash tamoyillari, mobil UI/UX qoidalari, hamda kross-platforma "
+                    "yondashuvlar bilan tanishasiz va birinchi oddiy mobil ilovangizni yaratasiz."
+                ),
+                "level": CourseLevel.BEGINNER,
+                "price": 240000,
+                "is_free": False,
+                "duration_hours": 16,
+                "students_count": 175,
+                "rating": 4.75,
+                "is_featured": False,
+                "what_you_will_learn": (
+                    "Android va iOS platformalarining asosiy farqlari\n"
+                    "Mobil interfeys (UI) loyihalash qoidalari\n"
+                    "Native va kross-platforma (Flutter, React Native) yondashuvlar\n"
+                    "Birinchi oddiy mobil ilovani yaratish va ishga tushirish\n"
+                    "Ilovani do'konlarga (Google Play / App Store) joylashtirish bosqichlari"
+                ),
+                "requirements": (
+                    "Kompyuter (Android Studio yoki Xcode o'rnatish imkoniyati)\n"
+                    "Oldindan dasturlash bilimi shart emas, lekin mantiqiy fikrlash foydali"
+                ),
+            }
+        )
+        m_mob1, _ = CourseModule.objects.get_or_create(course=course_mobile2, title="1-Modul: Mobil Dasturlashga Kirish", order=1)
+        Lesson.objects.get_or_create(
+            module=m_mob1,
+            title="1.1. Android va iOS: asosiy farqlar",
+            defaults={
+                "duration_minutes": 13,
+                "is_preview": True,
+                "order": 1,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# Android va iOS: Asosiy Farqlar\n\n"
+                    "- **Android** — Google tomonidan, ochiq manbali, Kotlin/Java tillarida ishlab chiqiladi.\n"
+                    "- **iOS** — Apple tomonidan, yopiq ekotizim, Swift tilida ishlab chiqiladi.\n\n"
+                    "Bitta kod bazasi bilan ikkala platformaga ilova yaratish uchun Flutter yoki React Native kabi "
+                    "kross-platforma freymvorklaridan foydalaniladi."
+                )
+            }
+        )
+        Lesson.objects.get_or_create(
+            module=m_mob1,
+            title="1.2. Mobil UI loyihalash qoidalari",
+            defaults={
+                "duration_minutes": 17,
+                "is_preview": False,
+                "order": 2,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# Mobil UI Loyihalash Qoidalari\n\n"
+                    "Mobil interfeys kichik ekranga mo'ljallangani uchun tugmalar barmoq bosishga qulay o'lchamda "
+                    "(kamida 44x44 piksel), matn o'qilishi oson va asosiy harakatlar ekranning pastki qismida joylashgan bo'lishi tavsiya etiladi."
+                )
+            }
+        )
+
+        # Kurs: Pythonda Telegram Bot Yaratish
+        course_tg_bot, _ = Course.objects.get_or_create(
+            slug="pythonda-telegram-bot-yaratish",
+            defaults={
+                "title": "Pythonda Telegram Bot Yaratish",
+                "category": cat_backend,
+                "instructor": instructor,
+                "short_description": "python-telegram-bot kutubxonasi yordamida real loyihalar: buyruqlar, klaviaturalar, bazaga ulanish va botni serverga joylashtirish.",
+                "description": (
+                    "Telegram botlar — avtomatlashtirish, mijozlar bilan ishlash va shaxsiy loyihalar uchun eng qulay vositalardan biri. "
+                    "Ushbu kursda siz Python tilida Telegram Bot API bilan ishlashni, buyruqlar va inline klaviaturalar yaratishni, "
+                    "botni ma'lumotlar bazasiga ulashni va uni serverga joylashtirib doimiy ishlashini ta'minlashni o'rganasiz."
+                ),
+                "level": CourseLevel.INTERMEDIATE,
+                "price": 250000,
+                "is_free": False,
+                "duration_hours": 14,
+                "students_count": 130,
+                "rating": 4.87,
+                "is_featured": False,
+                "what_you_will_learn": (
+                    "Telegram Bot API va BotFather orqali bot yaratish\n"
+                    "python-telegram-bot kutubxonasi bilan buyruqlar yozish\n"
+                    "Inline va oddiy klaviaturalar yaratish\n"
+                    "Botni ma'lumotlar bazasi (SQLite/PostgreSQL) bilan bog'lash\n"
+                    "Botni serverga joylashtirish va 24/7 ishlashini ta'minlash"
+                ),
+                "requirements": (
+                    "Python tilining asoslarini bilish (o'zgaruvchilar, funksiyalar)\n"
+                    "Telegram akkaunti"
+                ),
+            }
+        )
+        m_tg1, _ = CourseModule.objects.get_or_create(course=course_tg_bot, title="1-Modul: Birinchi Telegram Bot", order=1)
+        Lesson.objects.get_or_create(
+            module=m_tg1,
+            title="1.1. BotFather orqali bot yaratish",
+            defaults={
+                "duration_minutes": 10,
+                "is_preview": True,
+                "order": 1,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# BotFather Orqali Bot Yaratish\n\n"
+                    "Telegram'da @BotFather'ga yozib, `/newbot` buyrug'i orqali yangi bot yaratasiz va undan olingan "
+                    "**API token**ni xavfsiz joyda saqlaysiz — bu token orqali dasturingiz bot bilan bog'lanadi."
+                )
+            }
+        )
+        Lesson.objects.get_or_create(
+            module=m_tg1,
+            title="1.2. Birinchi /start buyrug'ini yozish",
+            defaults={
+                "duration_minutes": 20,
+                "is_preview": True,
+                "order": 2,
+                "lesson_type": LessonType.TEXT,
+                "content": (
+                    "# Birinchi /start Buyrug'ini Yozish\n\n"
+                    "```python\n"
+                    "from telegram import Update\n"
+                    "from telegram.ext import Application, CommandHandler, ContextTypes\n\n"
+                    "async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):\n"
+                    "    await update.message.reply_text('Salom! Men roziyev.dev botiman.')\n\n"
+                    "app = Application.builder().token('TOKEN').build()\n"
+                    "app.add_handler(CommandHandler('start', start))\n"
+                    "app.run_polling()\n"
+                    "```\n"
+                )
+            }
+        )
+
+        self.stdout.write(self.style.SUCCESS("Yangi kurslar (Prompt Injiniring, Python, Web, UX/UI, Mobil, Telegram Bot) kiritildi!"))
         self.stdout.write(self.style.SUCCESS("Barcha demo ma'lumotlar va blog maqolalari muvaffaqiyatli kiritildi!"))

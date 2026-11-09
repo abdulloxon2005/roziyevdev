@@ -1,0 +1,132 @@
+{% load core_extras %}{% with t=tv.obj %}
+<div class="task-widget {% if mode == 'workspace' %}h-full min-h-0{% else %}rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-4 sm:p-5{% endif %}"
+     data-task data-task-id="{{ t.id }}" data-kind="{{ t.kind }}" data-section="{{ t.section }}" data-mode="{{ mode }}">
+  <div class="{% if mode == 'workspace' %}grid grid-cols-1 lg:grid-cols-2 gap-0 h-full min-h-0{% else %}space-y-4{% endif %}">
+
+    <!-- ===== SHART, YORDAM, TARIX ===== -->
+    <div class="{% if mode == 'workspace' %}p-4 sm:p-6 space-y-4 overflow-y-auto min-h-0 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800{% else %}space-y-3{% endif %}">
+      <div class="flex flex-wrap items-center gap-1.5 text-[10px] font-black uppercase tracking-wider">
+        <span class="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">{{ t.get_section_display }}</span>
+        <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{{ t.get_kind_display }}</span>
+        {% if t.section == 'practice' or t.section == 'assignment' or t.section == 'project' %}
+          <span class="px-2 py-0.5 rounded-md {% if t.difficulty == 'easy' %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400{% elif t.difficulty == 'medium' %}bg-amber-500/10 text-amber-600 dark:text-amber-400{% else %}bg-rose-500/10 text-rose-600 dark:text-rose-400{% endif %}">{{ t.get_difficulty_display }}</span>
+        {% endif %}
+        <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{{ t.points }} ball</span>
+        <span data-status-badge class="ml-auto normal-case tracking-normal text-[11px] font-bold {% if tv.is_solved %}text-emerald-600 dark:text-emerald-400{% else %}text-slate-400{% endif %}">
+          {% if tv.is_solved %}<i class="fa-solid fa-circle-check"></i> Bajarilgan{% elif tv.progress %}{{ tv.progress.attempts_count }} ta urinish{% endif %}
+        </span>
+      </div>
+
+      <div>
+        <h4 class="text-base font-extrabold text-slate-900 dark:text-white leading-snug">{{ t.title }}</h4>
+        <p class="text-[11px] text-slate-400 font-mono mt-0.5">{{ t.logical_name }}</p>
+      </div>
+
+      <div class="lesson-prose text-[0.93rem]">{{ tv.prompt_html|safe }}</div>
+
+      {% if t.kind == 'predict_output' or t.kind == 'single_choice' or t.kind == 'multiple_choice' %}
+        {% if t.code_snippet %}
+          <pre class="static-code rounded-xl" data-highlight>{{ t.code_snippet }}</pre>
+        {% endif %}
+      {% endif %}
+
+      {% if t.uses_editor %}
+        {% if t.expected_output_example %}
+          <div>
+            <div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Kutilayotgan natija namunasi</div>
+            <pre class="rounded-xl bg-slate-950 text-emerald-300 text-[13px] font-mono p-3 overflow-x-auto whitespace-pre">{{ t.expected_output_example }}</pre>
+          </div>
+        {% endif %}
+        {% if tv.visible_tests or tv.hidden_tests_count %}
+          <div>
+            <div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Avtomatik tekshiruv talablari</div>
+            <ul class="space-y-1 text-[13px] text-slate-600 dark:text-slate-300" data-requirements>
+              {% for test in tv.visible_tests %}
+                <li class="flex gap-2"><i class="fa-regular fa-square-check text-slate-400 mt-0.5"></i><span>{{ test.description }}</span></li>
+              {% endfor %}
+              {% if tv.hidden_tests_count %}
+                <li class="flex gap-2 text-slate-400"><i class="fa-solid fa-eye-slash mt-0.5"></i><span>+ {{ tv.hidden_tests_count }} ta yashirin test</span></li>
+              {% endif %}
+            </ul>
+          </div>
+        {% endif %}
+      {% endif %}
+
+      {% if mode == 'workspace' %}
+        <div class="flex flex-wrap gap-2 pt-1" data-help-buttons>
+          {% include 'interactive/_task_help_buttons.html' %}
+        </div>
+        <div data-reveal class="space-y-3"></div>
+        <div>
+          <button type="button" data-action="history" class="text-xs font-bold text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 inline-flex items-center gap-1.5">
+            <i class="fa-solid fa-clock-rotate-left"></i> Oldingi yechimlarim
+          </button>
+          <div data-history class="hidden mt-2 space-y-2"></div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- ===== JAVOB / MUHARRIR ===== -->
+    <div class="{% if mode == 'workspace' %}p-4 sm:p-6 flex flex-col gap-3 min-h-0 overflow-y-auto bg-slate-50 dark:bg-[#0b0f19]{% else %}space-y-3{% endif %}">
+
+      {% if t.kind == 'single_choice' or t.kind == 'multiple_choice' %}
+        {% if t.kind == 'multiple_choice' %}<p class="text-xs font-semibold text-amber-600 dark:text-amber-400"><i class="fa-solid fa-list-check mr-1"></i>Bir nechta to'g'ri javob bo'lishi mumkin.</p>{% endif %}
+        <div class="space-y-2" data-options>
+          {% for o in tv.options %}
+            <label class="task-option flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-400 cursor-pointer" data-option-id="{{ o.id }}">
+              <input type="{% if t.kind == 'multiple_choice' %}checkbox{% else %}radio{% endif %}" name="task-{{ t.id }}" value="{{ o.id }}" class="mt-1 shrink-0 accent-blue-600">
+              <div class="lesson-prose text-sm [&>p]:m-0 min-w-0">{{ o.text|markdownify }}</div>
+            </label>
+          {% endfor %}
+        </div>
+
+      {% elif t.kind == 'predict_output' %}
+        <label class="block text-[11px] font-black uppercase tracking-wider text-slate-500">Dastur ekranga nima chiqaradi?</label>
+        <textarea data-answer-text rows="3" spellcheck="false" autocomplete="off" placeholder="Natijani aynan ekranda ko'rinadigandek yozing..."
+          class="w-full px-3 py-2.5 rounded-xl bg-slate-950 text-emerald-300 font-mono text-[13px] border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+
+      {% elif t.kind == 'fill_blank' %}
+        <label class="block text-[11px] font-black uppercase tracking-wider text-slate-500">Bo'sh joylarni to'ldiring</label>
+        <div class="fill-code" data-fill>{% for p in tv.parts %}{% if p.blank %}<input type="text" data-blank="{{ p.index }}" autocomplete="off" spellcheck="false" aria-label="{{ p.index|add:1 }}-bo'sh joy">{% else %}{{ p.text }}{% endif %}{% endfor %}</div>
+
+      {% elif t.uses_editor %}
+        <div class="rounded-xl overflow-hidden border border-slate-800 bg-[#21252b] {% if mode == 'workspace' %}flex-1 min-h-[280px] flex flex-col{% endif %}">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-[#191c21] border-b border-slate-800">
+            <span class="text-[11px] font-mono text-slate-400"><i class="fa-brands fa-python text-amber-400 mr-1"></i>main.py <span data-save-state class="ml-2 text-slate-500"></span></span>
+            <div class="flex flex-wrap items-center gap-1.5">
+              {% if mode == 'workspace' %}
+                <button type="button" data-action="from-playground" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold" title="Dars muharriridagi kodni bu yerga nusxalash"><i class="fa-solid fa-file-import mr-1"></i>Dars muharriridan</button>
+              {% endif %}
+              <button type="button" data-action="reset" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold" title="Boshlang'ich kodni qaytarish"><i class="fa-solid fa-rotate-left mr-1"></i>Tozalash</button>
+              <button type="button" data-action="run" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold" title="Ctrl+Enter"><i class="fa-solid fa-play mr-1"></i>Kodni ishga tushirish</button>
+            </div>
+          </div>
+          <div class="ilesson-editor {% if mode == 'workspace' %}flex-1{% endif %}" data-editor data-editor-key="task-{{ t.id }}" style="{% if mode == 'workspace' %}min-height: 260px;{% else %}height: 220px;{% endif %}"></div>
+        </div>
+        <div data-output class="run-output {% if mode != 'workspace' %}compact{% endif %}"></div>
+      {% endif %}
+
+      <div class="flex flex-wrap items-center gap-2 pt-1">
+        <button type="button" data-action="check" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold shadow-sm disabled:opacity-50 inline-flex items-center gap-1.5">
+          <i class="fa-solid fa-check-double"></i> Tekshirish
+        </button>
+        {% if mode != 'workspace' %}
+          {% include 'interactive/_task_help_buttons.html' %}
+          {% if t.uses_editor %}
+            <button type="button" data-action="history" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left"></i> Tarix
+            </button>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <div data-feedback class="hidden"></div>
+      <ul data-tests class="hidden space-y-1.5"></ul>
+      {% if mode != 'workspace' %}
+        <div data-reveal class="space-y-3"></div>
+        {% if t.uses_editor %}<div data-history class="hidden space-y-2"></div>{% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endwith %}

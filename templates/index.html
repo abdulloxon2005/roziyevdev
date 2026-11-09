@@ -2,6 +2,69 @@
 
 {% block title %}roziyevdev — Mobil Dasturlash, Algoritmlar va Ma'lumotlar Bazasi Kurslari{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* Terminal karta atrofidagi sekin "nafas oluvchi" porlash — ko'zni shu bo'limga tortadi */
+    @keyframes heroGlowPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.0), 0 25px 60px -15px rgba(0,0,0,0.5); }
+        50% { box-shadow: 0 0 55px 6px rgba(37, 99, 235, 0.25), 0 25px 60px -15px rgba(0,0,0,0.5); }
+    }
+    .hero-terminal-card { animation: heroGlowPulse 4s ease-in-out infinite; }
+
+    /* "Jonli" nuqtaning pulsatsiyasi */
+    @keyframes liveDotPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.4); opacity: 0.55; }
+    }
+    .live-dot { animation: liveDotPulse 1.6s ease-in-out infinite; }
+
+    /* Suzuvchi mini-kartochka — sekin yuqori-pastga qalqib turadi */
+    @keyframes heroCardFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+    .hero-float-card {
+        animation: heroCardFloat 3.2s ease-in-out infinite;
+        opacity: 0;
+    }
+    .hero-float-card.in { animation: heroFloatIn 0.7s ease forwards, heroCardFloat 3.2s ease-in-out 0.7s infinite; }
+    @keyframes heroFloatIn {
+        from { opacity: 0; transform: translateY(14px) scale(0.96); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Yozuvni "jonli" tarzda terib chiqish effekti (typewriter).
+       clip-path element o'zining tabiiy kengligiga nisbatan ishlaydi,
+       shuning uchun har bir qator o'z uzunligiga mos ravishda "terilib" chiqadi. */
+    .type-line {
+        display: inline-block;
+        white-space: nowrap;
+        vertical-align: top;
+        clip-path: inset(0 100% 0 0);
+    }
+    .type-line.go {
+        animation: heroTypeLine 0.6s steps(34, end) forwards;
+    }
+    @keyframes heroTypeLine {
+        to { clip-path: inset(0 0 0 0); }
+    }
+    .hero-cursor {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        background: #4ade80;
+        margin-left: 2px;
+        vertical-align: -0.15em;
+        opacity: 0;
+    }
+    .hero-cursor.go {
+        animation: heroCursorAppear 0.1s linear forwards, heroCursorBlink 0.9s step-end infinite;
+    }
+    @keyframes heroCursorAppear { to { opacity: 1; } }
+    @keyframes heroCursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- HERO SECTION -->
 <section class="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28">
@@ -15,18 +78,26 @@
             <!-- Left Text Content -->
             <div class="lg:col-span-7 space-y-8 text-center lg:text-left">
 
+                <!-- Trust badge: ijtimoiy isbot (social proof) birinchi nigohda ko'zga tashlanadi -->
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold mx-auto lg:mx-0">
+                    <span class="relative flex h-2 w-2">
+                        <span class="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-500"></span>
+                    </span>
+                    <span>1 450+ talaba allaqachon o'z yo'lini boshladi</span>
+                </div>
+
                 <!-- Main Headline -->
                 <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.15] text-slate-900 dark:text-white">
-                    <span class="block">Mobil Dasturlash,</span>
+                    <span class="block">Dasturlashni O'rganing,</span>
                     <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
-                        Algoritmlar & Ma'lumotlar
+                        Hayotingizni
                     </span>
-                    <span class="block">Bazasini Puxta O'rganing</span>
+                    <span class="block">Tubdan O'zgartiring</span>
                 </h1>
 
                 <!-- Subheadline -->
                 <p class="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed mx-auto lg:mx-0">
-                    Nazariyadan amaliyotga: Haqiqiy loyihalar, texnik intervyu sirlari, Flutter va PostgreSQL bo'yicha eng sara professional kurslar va shaxsiy blog platformasi.
+                    Nazariyadan charchadingizmi? Flutter, Algoritmlar va PostgreSQL bo'yicha haqiqiy loyihalar, shaxsiy mentorlik va minglab talaba tanlagan metodika bilan orzuyingizdagi dasturchi karyerasini aynan bugun boshlang.
                 </p>
 
                 <!-- Action Buttons -->
@@ -47,6 +118,10 @@
                         </a>
                     {% endif %}
                 </div>
+                <p class="text-xs text-slate-500 dark:text-slate-500 flex items-center justify-center lg:justify-start gap-1.5 -mt-1">
+                    <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                    <span>Kredit karta talab qilinmaydi — ro'yxatdan o'tish bor-yo'g'i 2 daqiqa</span>
+                </p>
 
                 <!-- Trust Points -->
                 <div class="pt-6 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-slate-600 dark:text-slate-400 font-medium">
@@ -67,7 +142,7 @@
 
             <!-- Right Interactive Visual Card / Terminal Preview -->
             <div class="lg:col-span-5">
-                <div class="relative rounded-2xl bg-gradient-to-b from-slate-800 to-[#111827] p-1 border border-slate-700 shadow-2xl">
+                <div id="hero-terminal" class="hero-terminal-card relative rounded-2xl bg-gradient-to-b from-slate-800 to-[#111827] p-1 border border-slate-700 shadow-2xl">
                     <!-- Window bar -->
                     <div class="flex items-center justify-between px-4 py-3 bg-[#0d131f] rounded-t-xl border-b border-slate-800">
                         <div class="flex items-center gap-2">
@@ -76,27 +151,32 @@
                             <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
                         </div>
                         <span class="text-xs font-mono text-slate-400">roziyevdev_academy.dart</span>
-                        <i class="fa-solid fa-terminal text-slate-500 text-xs"></i>
+                        <span class="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400">
+                            <span class="relative flex h-1.5 w-1.5">
+                                <span class="live-dot absolute inline-flex h-full w-full rounded-full bg-emerald-400"></span>
+                            </span>
+                            <span class="hidden sm:inline">Jonli kodlash</span>
+                        </span>
                     </div>
 
                     <!-- Code block -->
-                    <div class="p-6 font-mono text-xs sm:text-sm leading-relaxed text-slate-300 space-y-3 bg-[#0b0f19] rounded-b-xl overflow-x-auto">
-                        <p><span class="text-purple-400">class</span> <span class="text-amber-300">SoftwareEngineer</span> {</p>
-                        <p class="pl-4"><span class="text-blue-400">final</span> <span class="text-emerald-400">String</span> skills = <span class="text-emerald-300">"Flutter + Algorithms + SQL"</span>;</p>
-                        <p class="pl-4"><span class="text-blue-400">final</span> <span class="text-emerald-400">String</span> mentor = <span class="text-emerald-300">"Abdulloxon Roziyev"</span>;</p>
-                        <p class="pl-4 pt-2"><span class="text-purple-400">Future</span>&lt;<span class="text-amber-300">Success</span>&gt; <span class="text-blue-400">learnAndBuild</span>() <span class="text-purple-400">async</span> {</p>
-                        <p class="pl-8 text-slate-400">// 1. Noldan algoritmlarni o'rganamiz</p>
-                        <p class="pl-8"><span class="text-purple-400">await</span> masterBigOAndDataStructures();</p>
-                        <p class="pl-8 text-slate-400">// 2. Chiroyli mobil ilovalarni yozamiz</p>
-                        <p class="pl-8"><span class="text-purple-400">await</span> buildProductionMobileApp();</p>
-                        <p class="pl-8 text-slate-400">// 3. Katta kompaniyalarda karyera qilamiz</p>
-                        <p class="pl-8"><span class="text-purple-400">return</span> <span class="text-amber-300">Success</span>(status: <span class="text-emerald-300">"Senior Level Reached"</span>);</p>
+                    <div id="hero-code" class="p-6 font-mono text-xs sm:text-sm leading-relaxed text-slate-300 space-y-3 bg-[#0b0f19] rounded-b-xl overflow-x-auto">
+                        <p><span class="type-line" data-delay="0"><span class="text-purple-400">class</span> <span class="text-amber-300">SoftwareEngineer</span> {</span></p>
+                        <p class="pl-4"><span class="type-line" data-delay="450"><span class="text-blue-400">final</span> <span class="text-emerald-400">String</span> skills = <span class="text-emerald-300">"Flutter + Algorithms + SQL"</span>;</span></p>
+                        <p class="pl-4"><span class="type-line" data-delay="900"><span class="text-blue-400">final</span> <span class="text-emerald-400">String</span> mentor = <span class="text-emerald-300">"Abdulloxon Roziyev"</span>;</span></p>
+                        <p class="pl-4 pt-2"><span class="type-line" data-delay="1350"><span class="text-purple-400">Future</span>&lt;<span class="text-amber-300">Success</span>&gt; <span class="text-blue-400">learnAndBuild</span>() <span class="text-purple-400">async</span> {</span></p>
+                        <p class="pl-8 text-slate-400"><span class="type-line" data-delay="1800">// 1. Noldan algoritmlarni o'rganamiz</span></p>
+                        <p class="pl-8"><span class="type-line" data-delay="2250"><span class="text-purple-400">await</span> masterBigOAndDataStructures();</span></p>
+                        <p class="pl-8 text-slate-400"><span class="type-line" data-delay="2700">// 2. Chiroyli mobil ilovalarni yozamiz</span></p>
+                        <p class="pl-8"><span class="type-line" data-delay="3150"><span class="text-purple-400">await</span> buildProductionMobileApp();</span></p>
+                        <p class="pl-8 text-slate-400"><span class="type-line" data-delay="3600">// 3. Katta kompaniyalarda karyera qilamiz</span></p>
+                        <p class="pl-8"><span class="type-line" data-delay="4050"><span class="text-purple-400">return</span> <span class="text-amber-300">Success</span>(status: <span class="text-emerald-300">"Senior Level Reached"</span>);<span class="hero-cursor" data-delay="4600"></span></span></p>
                         <p class="pl-4">}</p>
                         <p>}</p>
                     </div>
 
                     <!-- Floating Mini Card -->
-                    <div class="absolute -bottom-6 -left-6 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-xl flex items-center gap-3 hidden sm:flex">
+                    <div id="hero-float-card" class="hero-float-card absolute -bottom-6 -left-6 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-xl items-center gap-3 hidden sm:flex">
                         <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
                             <i class="fa-solid fa-code-commit"></i>
                         </div>
@@ -383,4 +463,40 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var codeBlock = document.getElementById('hero-code');
+        var floatCard = document.getElementById('hero-float-card');
+        if (!codeBlock) return;
+
+        var typeLines = codeBlock.querySelectorAll('.type-line');
+        var cursor = codeBlock.querySelector('.hero-cursor');
+
+        function playTyping() {
+            typeLines.forEach(function (el) {
+                el.classList.remove('go');
+                void el.offsetWidth; // reflow — animatsiyani qayta boshlash uchun
+                setTimeout(function () { el.classList.add('go'); }, parseInt(el.dataset.delay || '0', 10));
+            });
+            if (cursor) {
+                cursor.classList.remove('go');
+                void cursor.offsetWidth;
+                setTimeout(function () { cursor.classList.add('go'); }, parseInt(cursor.dataset.delay || '0', 10));
+            }
+            if (floatCard) {
+                floatCard.classList.remove('in');
+                void floatCard.offsetWidth;
+                setTimeout(function () { floatCard.classList.add('in'); }, 4300);
+            }
+        }
+
+        // Birinchi marta sahifa yuklanganda "jonli kodlash" effektini ishga tushiramiz
+        playTyping();
+        // Va har 14 soniyada diqqatni ushlab turish uchun qayta ijro etamiz
+        setInterval(playTyping, 14000);
+    })();
+</script>
 {% endblock %}
