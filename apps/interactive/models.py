@@ -346,6 +346,11 @@ class TaskTest(TimeStampedModel):
     check_type = models.CharField(max_length=30, choices=TestCheck.choices, default=TestCheck.OUTPUT_EQUALS, verbose_name="Tekshirish turi")
     stdin = models.TextField(blank=True, verbose_name="Kiritish (input) ma'lumotlari")
     expected = models.TextField(blank=True, verbose_name="Kutilgan qiymat")
+    harness = models.TextField(
+        blank=True, verbose_name="Tekshiruv kodi (harness)",
+        help_text="O'quvchi kodidan KEYIN bajariladigan Python kodi (masalan, funksiyani turli argumentlar bilan chaqirib print qilish). "
+                  "Faqat shu kod chiqargan natija tekshiriladi, o'quvchining o'z print'lari hisobga olinmaydi.",
+    )
     ignore_case = models.BooleanField(default=False, verbose_name="Katta-kichik harf farqlanmasin")
     is_hidden = models.BooleanField(default=False, verbose_name="Yashirin test", help_text="O'quvchi faqat o'tdi/o'tmadi natijasini ko'radi.")
     failure_message = models.CharField(max_length=500, blank=True, verbose_name="Test o'tmaganda maslahat")
@@ -463,8 +468,14 @@ class CodeDraft(TimeStampedModel):
 # MODUL YAKUNIY NAZORATI
 # ==============================================================================
 
+class AssessmentKind(models.TextChoices):
+    MODULE = 'module', "Modul yakuniy nazorati"
+    REVIEW = 'review', "Takrorlash (oldingi modullar aralash)"
+
+
 class ModuleAssessment(TimeStampedModel):
-    module = models.OneToOneField(CourseModule, on_delete=models.CASCADE, related_name='assessment', verbose_name="Modul")
+    module = models.ForeignKey(CourseModule, on_delete=models.CASCADE, related_name='assessments', verbose_name="Modul")
+    kind = models.CharField(max_length=10, choices=AssessmentKind.choices, default=AssessmentKind.MODULE, verbose_name="Turi")
     title = models.CharField(max_length=200, verbose_name="Nazorat nomi")
     description = models.TextField(blank=True, verbose_name="Tavsif (Markdown)")
     pass_percent = models.PositiveSmallIntegerField(
@@ -480,6 +491,8 @@ class ModuleAssessment(TimeStampedModel):
     class Meta:
         verbose_name = "Modul yakuniy nazorati"
         verbose_name_plural = "Modul yakuniy nazoratlari"
+        ordering = ['module__order', 'kind', 'id']
+        constraints = [models.UniqueConstraint(fields=['module', 'kind'], name='unique_assessment_module_kind')]
 
     def __str__(self):
         return f"{self.module} — {self.title}"
@@ -504,7 +517,8 @@ class AssessmentItem(models.Model):
         constraints = [models.UniqueConstraint(fields=['assessment', 'task'], name='unique_assessment_task')]
 
     def clean(self):
-        if self.task_id and self.assessment_id and self.task.module_id != self.assessment.module_id:
+        if (self.task_id and self.assessment_id and self.assessment.kind == AssessmentKind.MODULE
+                and self.task.module_id != self.assessment.module_id):
             raise ValidationError({'task': "Topshiriq shu modulga tegishli bo'lishi kerak."})
 
     def __str__(self):

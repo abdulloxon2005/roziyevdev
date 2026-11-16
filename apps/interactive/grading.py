@@ -45,6 +45,27 @@ class GradeResult:
         return passed, total
 
 
+HARNESS_MARKER = "<<HARNESS>>"
+
+
+def build_harness_code(code, harness):
+    """O'quvchi kodi + (belgi) + tekshiruv kodi. Faqat belgidan keyingi chiqish tekshiriladi."""
+    if not (harness or '').strip():
+        return code
+    nl = chr(10)
+    marker_line = "import sys as __s" + nl + "__s.stdout.write(" + repr(HARNESS_MARKER + nl) + ")"
+    return code.rstrip() + nl + nl + marker_line + nl + harness + nl
+
+
+def _stdout_for(test, run):
+    out = run.stdout
+    if (test.harness or '').strip():
+        if HARNESS_MARKER not in out:
+            return None
+        out = out.split(HARNESS_MARKER, 1)[1]
+    return normalize_output(out)
+
+
 def evaluate_test(test, code, run):
     """Bitta testni baholaydi. run — shu test stdin'i bilan bajarilgan RunResult (yoki None)."""
     ctype = test.check_type
@@ -64,7 +85,9 @@ def evaluate_test(test, code, run):
         if run is not None and run.status != RunStatus.OK:
             return False, "Dastur xato bilan tugadi, shuning uchun bu test o'tmadi."
         return False, ''
-    out = normalize_output(run.stdout)
+    out = _stdout_for(test, run)
+    if out is None:
+        return False, "Dastur tekshiruv qismigacha yetib bormadi (kodni boshqa joyda to'xtatib qo'ymang)."
     if ctype == TestCheck.RUNS_OK:
         return True, ''
     if ctype == TestCheck.OUTPUT_EQUALS:
@@ -97,15 +120,17 @@ def grade_code(task, code):
     needs_run = [t for t in tests if t.needs_run] or ([] if tests else [None])
     for t in needs_run:
         stdin = t.stdin if t is not None else ''
-        if stdin not in runs:
-            runs[stdin] = run_python(code, stdin=stdin)
-            if runs[stdin].is_infrastructure_problem:
+        harness = (t.harness if t is not None else '') or ''
+        rkey = (stdin, harness)
+        if rkey not in runs:
+            runs[rkey] = run_python(build_harness_code(code, harness), stdin=stdin)
+            if runs[rkey].is_infrastructure_problem:
                 result.infrastructure_error = True
-                result.run = runs[stdin]
-                result.message = runs[stdin].stderr or "Kod bajarish xizmati vaqtincha mavjud emas. Keyinroq urinib ko'ring."
+                result.run = runs[rkey]
+                result.message = runs[rkey].stderr or "Kod bajarish xizmati vaqtincha mavjud emas. Keyinroq urinib ko'ring."
                 return result
 
-    primary_run = runs.get('') or (next(iter(runs.values())) if runs else None)
+    primary_run = runs.get(('', '')) or (next(iter(runs.values())) if runs else None)
     result.run = primary_run
 
     if not tests:
@@ -115,7 +140,7 @@ def grade_code(task, code):
         }]
     else:
         for t in tests:
-            run = runs.get(t.stdin) if t.needs_run else None
+            run = runs.get((t.stdin, t.harness or '')) if t.needs_run else None
             passed, note = evaluate_test(t, code, run)
             message = ''
             if not passed:

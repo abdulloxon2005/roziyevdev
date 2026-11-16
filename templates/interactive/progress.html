@@ -35,6 +35,11 @@
           </a>
           {% endwith %}
         {% endif %}
+        {% for rv in m.reviews %}
+          <a href="{% url 'interactive_assessment' rv.assessment.id %}" class="text-xs font-bold px-3 py-1.5 rounded-xl {% if rv.status.passed %}bg-emerald-500/10 text-emerald-700 dark:text-emerald-400{% elif rv.status.unlocked %}bg-sky-500/10 text-sky-700 dark:text-sky-400{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">
+            {% if rv.status.passed %}<i class="fa-solid fa-trophy mr-1"></i>{% elif rv.status.unlocked %}<i class="fa-solid fa-rotate mr-1"></i>{% else %}<i class="fa-solid fa-lock mr-1"></i>{% endif %}{{ rv.assessment.title }}{% if rv.status.best %}: {{ rv.status.best.percent|floatformat:0 }}%{% endif %}
+          </a>
+        {% endfor %}
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm min-w-[560px]">

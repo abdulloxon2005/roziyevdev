@@ -19,6 +19,7 @@ from .models import (
     AssessmentAttempt,
     BLANK_TOKEN,
     BlockType,
+    AssessmentKind,
     ModuleAssessment,
     Task,
     TaskAttempt,
@@ -126,7 +127,14 @@ def render_interactive_lesson(request, base_context):
     practice.sort(key=lambda tv: (difficulty_order.get(tv['obj'].difficulty, 9), tv['obj'].order))
 
     module = lesson.module
-    assessment = ModuleAssessment.objects.filter(module=module).first()
+    assessment = ModuleAssessment.objects.filter(module=module, kind=AssessmentKind.MODULE).first()
+    review_rows = []
+    for rv in ModuleAssessment.objects.filter(module=module, kind=AssessmentKind.REVIEW):
+        if rv.is_published or is_manager:
+            review_rows.append({
+                'assessment': rv,
+                'status': assessment_status(user, rv, base_context.get('enrollment')) if user.is_authenticated else None,
+            })
     a_status = None
     if assessment and (assessment.is_published or is_manager):
         a_status = assessment_status(user, assessment, base_context.get('enrollment')) if user.is_authenticated else None
@@ -162,6 +170,7 @@ def render_interactive_lesson(request, base_context):
         'review_tasks': by_section(TaskSection.REVIEW),
         'assessment': assessment,
         'assessment_status': a_status,
+        'review_rows': review_rows,
         'is_manager': is_manager,
         'is_draft_preview': not (lesson.is_published and module.is_published and course.is_published),
         'is_lesson_completed': lesson.id in base_context.get('completed_lesson_ids', set()),

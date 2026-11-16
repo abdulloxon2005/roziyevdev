@@ -10,6 +10,7 @@ from .models import (
     AssessmentAttempt,
     AttemptContext,
     CodeDraft,
+    AssessmentKind,
     ModuleAssessment,
     Task,
     TaskAttempt,
@@ -341,9 +342,14 @@ def course_progress_summary(user, course):
             })
             total_lessons += 1
             total_done += 1 if lesson.id in completed_ids else 0
-        assessment = ModuleAssessment.objects.filter(module=module).first()
+        assessment = ModuleAssessment.objects.filter(module=module, kind=AssessmentKind.MODULE).first()
         a_status = assessment_status(user, assessment, enrollment) if assessment else None
-        modules.append({'module': module, 'lessons': lessons, 'assessment': assessment, 'assessment_status': a_status})
+        reviews = [
+            {'assessment': rv, 'status': assessment_status(user, rv, enrollment)}
+            for rv in ModuleAssessment.objects.filter(module=module, kind=AssessmentKind.REVIEW, is_published=True)
+        ]
+        modules.append({'module': module, 'lessons': lessons, 'assessment': assessment,
+                        'assessment_status': a_status, 'reviews': reviews})
 
     return {
         'enrollment': enrollment,

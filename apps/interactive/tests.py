@@ -59,8 +59,35 @@ class SandboxTests(TestCase):
             self.assertEqual(res.error['type'], 'PermissionError', code)
 
     def test_filesystem_blocked(self):
-        self.assertNotEqual(run_python('open("x.txt", "w").write("a")').status, 'ok')
+        # Ishchi (vaqtincha) papkadan tashqariga chiqish va loyiha fayllarini o'qish taqiqlangan
+        self.assertNotEqual(run_python('open("../x.txt", "w").write("a")').status, 'ok')
+        self.assertNotEqual(run_python('open("/tmp/x.txt", "w").write("a")').status, 'ok')
         self.assertNotEqual(run_python('print(open("manage.py").read())').status, 'ok')
+        self.assertNotEqual(run_python('import os\nos.remove("../../x")').status, 'ok')
+        self.assertNotEqual(run_python('import os\nprint(os.listdir(".."))').status, 'ok')
+
+    def test_files_inside_own_workdir_allowed(self):
+        """10-modul (fayllar) uchun: faqat shu ishga tushirishning vaqtincha papkasida fayl yaratish/o'qish/o'chirish mumkin."""
+        res = run_python(
+            'with open("a.txt", "w", encoding="utf-8") as f:\n    f.write("salom")\n'
+            'with open("a.txt", encoding="utf-8") as f:\n    print(f.read())\n'
+            'import os\nos.remove("a.txt")\nprint(os.path.exists("a.txt"))\n'
+        )
+        self.assertEqual(res.status, 'ok', res.stderr)
+        self.assertEqual(res.stdout, "salom\nFalse\n")
+
+    def test_files_do_not_persist_between_runs(self):
+        run_python('open("kalit.txt", "w").write("x")')
+        res = run_python('import os\nprint(os.path.exists("kalit.txt"))')
+        self.assertEqual(res.stdout.strip(), "False")
+
+    def test_own_module_import_from_workdir(self):
+        res = run_python(
+            'import sys\nwith open("m1.py", "w") as f:\n    f.write("X = 7\\n")\n'
+            'sys.path.append(".")\nimport m1\nprint(m1.X)\n'
+        )
+        self.assertEqual(res.status, 'ok', res.stderr)
+        self.assertEqual(res.stdout.strip(), "7")
 
     def test_secrets_not_leaked_through_environment(self):
         res = run_python('import os\nprint(sorted(os.environ))')

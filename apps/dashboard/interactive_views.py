@@ -259,7 +259,7 @@ def task_delete_view(request, slug, task_id):
 def module_assessment_view(request, slug, module_id):
     course = get_object_or_404(Course, slug=slug)
     module = get_object_or_404(CourseModule, id=module_id, course=course)
-    assessment = ModuleAssessment.objects.filter(module=module).first()
+    assessment = ModuleAssessment.objects.filter(module=module, kind='module').first()
     candidate_tasks = list(
         Task.objects.filter(module=module).select_related('lesson').order_by('lesson__order', 'section', 'order', 'id')
     )

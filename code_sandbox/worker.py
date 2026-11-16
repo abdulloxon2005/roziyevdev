@@ -42,8 +42,8 @@ BLOCKED_MODULES = {
 # Har doim bloklanadigan audit hodisalari (prefiks bo'yicha)
 BLOCKED_EVENT_PREFIXES = (
     'socket.', 'subprocess.', 'os.system', 'os.exec', 'os.posix_spawn', 'os.spawn',
-    'os.fork', 'os.forkpty', 'os.startfile', 'os.kill', 'os.killpg', 'os.remove',
-    'os.unlink', 'os.rename', 'os.replace', 'os.rmdir', 'os.mkdir', 'os.makedirs',
+    'os.fork', 'os.forkpty', 'os.startfile', 'os.kill', 'os.killpg',
+    'os.unlink', 'os.replace', 'os.rmdir', 'os.mkdir', 'os.makedirs',
     'os.chmod', 'os.chown', 'os.chflags', 'os.link', 'os.symlink', 'os.truncate',
     'os.utime', 'os.chdir', 'os.putenv', 'os.unsetenv', 'os.setxattr',
     'os.removexattr', 'os.add_dll_directory', 'os.mkfifo', 'os.mknod',
@@ -135,6 +135,20 @@ def _allowed_read_roots():
 
 def install_audit_hook():
     read_roots = _allowed_read_roots()
+    # Har bir ishga tushirishning o'z vaqtinchalik ishchi papkasi bor (u keyin o'chiriladi).
+    # O'quvchi fayllar bilan ishlashni (open/write/read) o'rganishi uchun FAQAT shu papka ichida
+    # fayl yaratish, o'qish va o'chirishga ruxsat beriladi; papkadan tashqariga chiqish taqiqlangan.
+    work_root = _norm(os.getcwd())
+    work_prefix = (work_root.rstrip(os.sep) + os.sep) if work_root else None
+
+    def in_workdir(path):
+        if isinstance(path, int) or work_prefix is None:
+            return False
+        n = _norm(path)
+        if not n:
+            return False
+        n = n.rstrip(os.sep) + os.sep
+        return n.startswith(work_prefix) and n != work_prefix
 
     def deny(what):
         raise PermissionError(f"Xavfsizlik cheklovi: «{what}» amaliga ruxsat berilmagan.")
@@ -149,6 +163,8 @@ def install_audit_hook():
         if event == 'open':
             path, mode, flags = (list(args) + [None, None, None])[:3]
             mode = mode or 'r'
+            if path is not None and in_workdir(path):
+                return
             if isinstance(mode, str) and any(c in mode for c in 'wax+'):
                 deny("faylga yozish")
             if isinstance(flags, int) and flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC):
@@ -156,10 +172,21 @@ def install_audit_hook():
             if path is None or not path_allowed(path):
                 deny("fayl tizimiga kirish")
             return
+        if event in ('os.remove', 'os.rename'):
+            # faqat ishchi papkadagi o'z fayllari
+            paths = [a for a in args[:2 if event == 'os.rename' else 1] if a is not None and not isinstance(a, int)]
+            if paths and all(in_workdir(a) for a in paths):
+                return
+            deny(event)
         if event in PATH_EVENTS:
             path = args[0] if args else None
+            # Faqat shu ishga tushirishning o'z vaqtinchalik papkasini ko'rishga ruxsat (o'z modulini import qilish uchun)
+            if path in ('', '.', None) and event in ('os.listdir', 'os.scandir'):
+                return
             if path is None or path == '' or path == '.':
                 deny("papkalarni ko'rish")
+            if _norm(path) == work_root:
+                return
             if not path_allowed(path):
                 deny("papkalarni ko'rish")
             return

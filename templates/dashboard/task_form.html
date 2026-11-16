@@ -96,6 +96,7 @@
               <div><div class="text-[10px] font-bold uppercase text-slate-400 mb-1">Kutilgan qiymat</div>{{ f.expected }}{% for e in f.expected.errors %}<p class="text-rose-500 text-xs">{{ e }}</p>{% endfor %}</div>
               <div><div class="text-[10px] font-bold uppercase text-slate-400 mb-1">input() ma'lumotlari (ixtiyoriy)</div>{{ f.stdin }}</div>
             </div>
+            <div><div class="text-[10px] font-bold uppercase text-slate-400 mb-1">Tekshiruv kodi (ixtiyoriy) — o'quvchi kodidan keyin bajariladi, faqat shu kod chiqargan natija tekshiriladi</div>{{ f.harness }}</div>
             <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
               <div class="sm:col-span-6">{{ f.failure_message }}</div>
               <label class="sm:col-span-2 flex items-center gap-1 text-xs">{{ f.ignore_case }} Harf farqsiz</label>

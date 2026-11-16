@@ -19,8 +19,9 @@ def exercise(key):
 
 
 # ---- Testlar ----
-def T(check, expected='', description='', stdin='', ignore_case=False, hidden=False, failure=''):
+def T(check, expected='', description='', stdin='', ignore_case=False, hidden=False, failure='', harness=''):
     return {
+        'harness': (harness.strip() + chr(10)) if harness and harness.strip() else '',
         'check': check, 'expected': expected, 'description': description, 'stdin': stdin,
         'ignore_case': ignore_case, 'hidden': hidden, 'failure': failure,
     }
@@ -83,3 +84,18 @@ def fix_task(key, title, prompt, section='assignment', **kw):
 
 def opt(text, correct=False, feedback=''):
     return (text, correct, feedback)
+
+
+def recap(points, question):
+    """Dars yakuni: qisqa xulosa + keyingi darsga tayyorlovchi savol (callout bloki)."""
+    body = "**Bugun o'rgandingiz:**\n\n" + "\n".join(f"- {p}" for p in points) + f"\n\n**Keyingi darsga savol:** {question}"
+    return callout('important', body, title="Dars xulosasi")
+
+
+def L(order, title, duration, objective, concepts, blocks, tasks):
+    return {'order': order, 'title': title, 'duration': duration, 'objective': objective,
+            'concepts': concepts, 'blocks': blocks, 'tasks': tasks}
+
+
+def module_assessment(title, description, tasks, pass_percent=70):
+    return {'title': title, 'description': description, 'pass_percent': pass_percent, 'tasks': tasks}

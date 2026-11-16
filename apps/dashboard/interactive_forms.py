@@ -81,10 +81,11 @@ TaskOptionFormSet = inlineformset_factory(
 
 TaskTestFormSet = inlineformset_factory(
     Task, TaskTest,
-    fields=['order', 'description', 'check_type', 'stdin', 'expected', 'ignore_case', 'is_hidden', 'failure_message'],
+    fields=['order', 'description', 'check_type', 'stdin', 'harness', 'expected', 'ignore_case', 'is_hidden', 'failure_message'],
     extra=1, can_delete=True,
     widgets={
         'stdin': forms.Textarea(attrs={'rows': 1}),
+        'harness': forms.Textarea(attrs={'rows': 2}),
         'expected': forms.Textarea(attrs={'rows': 2}),
         'order': forms.NumberInput(attrs={'min': 1, 'style': 'width:4.5rem'}),
     },
@@ -101,7 +102,7 @@ def style_formset(formset):
             else:
                 w.attrs['class'] = ('w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 '
                                     'text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500')
-                if name in ('expected', 'stdin', 'text'):
+                if name in ('expected', 'stdin', 'harness', 'text'):
                     w.attrs['class'] += ' ' + MONO
     return formset
 

@@ -364,6 +364,14 @@
                   </a>
                 </li>
               {% endif %}
+              {% if m.module.id == module.id %}{% for rv in review_rows %}
+                <li>
+                  <a href="{% url 'interactive_assessment' rv.assessment.id %}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm hover:bg-slate-100 dark:hover:bg-slate-800 text-emerald-600 dark:text-emerald-400 font-bold">
+                    {% if rv.status and rv.status.passed %}<i class="fa-solid fa-trophy"></i>{% elif rv.status and not rv.status.unlocked %}<i class="fa-solid fa-lock"></i>{% else %}<i class="fa-solid fa-rotate"></i>{% endif %}
+                    <span class="truncate">{{ rv.assessment.title }}</span>
+                  </a>
+                </li>
+              {% endfor %}{% endif %}
             </ul>
           </div>
         {% endfor %}
