@@ -50,7 +50,7 @@ class StudentPortalTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Talaba')
         self.assertContains(response, 'Vazifalar Studiyasi')
-        self.assertContains(response, 'Kurs Reytingi')
+        self.assertContains(response, "So'nggi natijalar")
 
     def test_student_assignments_hub_loads(self):
         self.client.login(username='talaba@roziyev.dev', password='Password123!')

@@ -55,10 +55,16 @@ def duel_home_view(request):
         CustomUser.objects.filter(enrollments__course_id__in=my_course_ids)
         .exclude(id=me.id).distinct().select_related('duel_stats', 'profile')
     )
+    shared_by_user = {}
+    for e in Enrollment.objects.filter(
+        user__in=rivals_qs, course_id__in=my_course_ids
+    ).select_related('course'):
+        shared_by_user.setdefault(e.user_id, []).append(e)
+
     rivals = []
     for u in rivals_qs:
         stats = getattr(u, 'duel_stats', None)
-        shared = Enrollment.objects.filter(user=u, course_id__in=my_course_ids).select_related('course')
+        shared = shared_by_user.get(u.id, [])
         rivals.append({
             'user': u,
             'points': stats.points if stats else 0,
