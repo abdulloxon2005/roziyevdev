@@ -28,9 +28,15 @@ def env_list(name, default=''):
 # ==============================================================================
 # ASOSIY XAVFSIZLIK SOZLAMALARI
 DEBUG = env_bool('DJANGO_DEBUG', False)
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-prod-safe-secret-key-roziyevdev-platform-secure-token-50-chars')
-if not DEBUG and SECRET_KEY.startswith('django-insecure'):
-    SECRET_KEY = 'django-prod-safe-secret-key-roziyevdev-platform-secure-token-50-chars'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-dev-only-key-never-use-in-production'
+    else:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY muhit o'zgaruvchisi production rejimida (DJANGO_DEBUG=False) "
+            "majburiy. .env fayliga kamida 50 belgidan iborat maxfiy kalit qo'shing."
+        )
 
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost')
 CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS')

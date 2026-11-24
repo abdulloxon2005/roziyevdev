@@ -186,10 +186,10 @@ docker compose up -d --build
 ---
 
 ## 🛡️ Tekshiruv va Test
-Barcha 38 ta test serverga joylash oldidan muvaffaqiyatli o'tgan:
+Serverga joylashdan oldin barcha testlarni ishga tushiring va muvaffaqiyatli o'tishini tasdiqlang:
 ```bash
 python manage.py test
-# Ran 38 tests -> OK
+# Ran 135 tests -> OK
 ```
 
 Tabriklaymiz, **roziyevdev** ta'lim platformasi endi serverda xavfsiz va yuqori tezlikda ishlashga 100% tayyor!
